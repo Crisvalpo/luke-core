@@ -26,6 +26,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Middleware de Contexto Multi-Tenant
 app.use(tenantResolver);
 
+// Servir Panel Web Estático (Admin UI)
+app.use(express.static('public'));
+app.get('/admin', (req, res) => {
+  res.redirect('/admin/index.html');
+});
+
 // Health Check
 app.get('/health', (req, res) => {
   return sendSuccess(res, {

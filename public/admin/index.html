@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luke Core — Panel de Administración Multi-Tenant</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo">L</div>
+        <div class="brand-info">
+          <h1>Luke Core</h1>
+          <span>Super-Admin</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a class="nav-item active" href="#">🏢 Empresas (Tenants)</a>
+        <a class="nav-item" href="#proyectos">🏗️ Faenas & Obras</a>
+        <a class="nav-item" href="#personal">👷 Dotación Global</a>
+        <a class="nav-item" href="#equipos">🚜 Flota de Activos</a>
+        <a class="nav-item" href="#auditoria">📜 Registro de Auditoría</a>
+      </nav>
+
+      <div style="font-size: 0.75rem; color: var(--color-text-muted); border-top: 1px solid var(--border-sidebar); padding-top: 1rem;">
+        <span>v1.0.0 • Oracle Cloud 24/7</span>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+      <header class="topbar">
+        <h2>Gestión de Empresas & Marcas Blancas</h2>
+        <button class="btn btn-primary" onclick="abrirModalOnboarding()">
+          ➕ Nuevo Cliente (Onboarding)
+        </button>
+      </header>
+
+      <div class="content-area">
+        <!-- KPIs Globales -->
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Empresas Activas</div>
+            <div class="kpi-value" id="kpi-tenants">-</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Obras / Faenas</div>
+            <div class="kpi-value" id="kpi-proyectos">-</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Dotación Indexada</div>
+            <div class="kpi-value" id="kpi-personal">-</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Flota de Maquinaria</div>
+            <div class="kpi-value" id="kpi-equipos">-</div>
+          </div>
+        </section>
+
+        <!-- Barra de Búsqueda -->
+        <section class="action-bar">
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="input-busqueda" placeholder="Buscar por nombre, RUT o slug..." oninput="filtrarTenants()">
+          </div>
+          <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Mostrando <strong id="contador-mostrados">0</strong> clientes
+          </div>
+        </section>
+
+        <!-- Grid de Clientes -->
+        <section class="tenants-grid" id="tenants-container">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">
+            Cargando empresas desde el Core...
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: ONBOARDING NUEVO TENANT -->
+  <div class="modal-overlay" id="modal-onboarding">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Alta de Nueva Empresa (Onboarding)</h3>
+        <button class="modal-close" onclick="cerrarModalOnboarding()">✕</button>
+      </div>
+
+      <form id="form-onboarding" onsubmit="guardarNuevoTenant(event)">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Razón Social *</label>
+            <input class="form-input" type="text" id="ob-razon-social" required placeholder="Ej: Anglo American Sur S.A.">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">RUT Empresa *</label>
+            <input class="form-input" type="text" id="ob-rut" required placeholder="Ej: 76.123.456-K">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Slug Único (Minúsculas) *</label>
+            <input class="form-input" type="text" id="ob-slug" required placeholder="Ej: anglo">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Color Primario HEX</label>
+            <input class="form-input" type="color" id="ob-color" value="#10b981" style="height: 38px; padding: 2px;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">URL del Logotipo</label>
+            <input class="form-input" type="url" id="ob-logo" placeholder="https://lukeapp.cl/assets/logo.png">
+          </div>
+
+          <div class="form-group full">
+            <label class="form-label">Módulos Contratados</label>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
+              <label><input type="checkbox" name="modulos" value="combustible" checked> ⛽ Combustible</label>
+              <label><input type="checkbox" name="modulos" value="partes_diarios" checked> 📋 Partes Diarios</label>
+              <label><input type="checkbox" name="modulos" value="cuadrillas"> 👷 Cuadrillas</label>
+              <label><input type="checkbox" name="modulos" value="mantenimiento"> 🔧 Mantención</label>
+            </div>
+          </div>
+
+          <div class="form-group full" style="border-top: 1px solid var(--border-container); padding-top: 0.75rem;">
+            <strong style="font-size: 0.85rem;">Administrador Inicial</strong>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre Completo *</label>
+            <input class="form-input" type="text" id="ob-admin-nombre" required placeholder="Ej: Juan Pérez">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">RUT Administrador *</label>
+            <input class="form-input" type="text" id="ob-admin-rut" required placeholder="Ej: 15.888.999-K">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Corporativo *</label>
+            <input class="form-input" type="email" id="ob-admin-email" required placeholder="jperez@empresa.cl">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono WhatsApp *</label>
+            <input class="form-input" type="text" id="ob-admin-tel" required placeholder="+56912345678">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="cerrarModalOnboarding()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-onboard">Dar de Alta Empresa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin/admin.js"></script>
+</body>
+</html>
