@@ -2,7 +2,52 @@
 
 **Luke Core** es el núcleo canónico y multi-tenant de datos para la gestión de faenas industriales y construcción (iniciando con operaciones para **Echeverría Izquierdo Montajes Industriales (EIM)** y **TNS Transportes & Soluciones**).
 
-Provee los servicios transversales de estructura organizacional, dotación, flota de activos, proveedores, trazabilidad conversacional y resolución de identidad de alta velocidad para bots de WhatsApp en terreno.
+Provee los servicios transversales de estructura organizacional, dotación, flota de activos, proveedores, roles dinámicos, trazabilidad conversacional y resolución de identidad de alta velocidad para bots de WhatsApp en terreno.
+
+---
+
+## 🛠️ Stack Tecnológico Oficial (Inmutable)
+
+Para mantener el código limpio, veloz y libre de dependencias conflictivas o monolitos, se define el siguiente stack oficial:
+
+```mermaid
+graph TD
+    subgraph Frontend[Capa de Presentación Web & Móvil]
+        UI[HTML5 Semántico + JS Vanilla ES6+<br/>Design Tokens CSS Corporativo Claro #10b981<br/>PWA Mobile-First para Faena]
+    end
+
+    subgraph Backend[Capa de Servicios & API REST]
+        API[Node.js 20+ LTS + TypeScript 5.7+<br/>Express 5.0+ Modular (Vertical Slice)<br/>Zod 3.24+ (Validación Estricta)<br/>XLSX (Motor de Ingesta Masiva Faenera)]
+    end
+
+    subgraph Database[Capa de Datos & Seguridad]
+        DB[PostgreSQL 15+ (Esquema core.*)<br/>Pool pg con Row-Level Security RLS<br/>Supabase Auth (GoTrue) + Supabase Storage<br/>RPCs en PL/pgSQL (< 5ms resolución)]
+    end
+
+    subgraph Infra[Infraestructura & DevOps]
+        DevOps[Oracle Cloud ARM64 24/7 (12GB RAM)<br/>PM2 Process Manager (Puerto 3080)<br/>Cloudflare Tunnels (*.lukeapp.cl)<br/>GitHub (Crisvalpo/luke-core)]
+    end
+
+    Frontend --> Backend
+    Backend --> Database
+    Backend --> Infra
+```
+
+### 📋 Detalle de Tecnologías Oficiales:
+
+| Capa | Tecnología | Versión / Detalle | Justificación Técnica |
+|---|---|---|---|
+| **Runtime Backend** | **Node.js** | `>= 20.x LTS` (ES Modules) | Estabilidad, alto rendimiento en I/O y soporte nativo ESM. |
+| **Lenguaje** | **TypeScript** | `5.7+` (Modo Estricto) | Tipado estático robusto, prevención de bugs en tiempo de compilación. |
+| **Framework HTTP** | **Express** | `5.0+` (Modular) | Ligero, sin sobrecargas innecesarias, compatible con arquitectura Vertical Slice. |
+| **Validación** | **Zod** | `3.24+` | Validación estricta de esquemas en runtime y tipado inferido automático. |
+| **Parser Excel/CSV** | **XLSX (SheetJS)** | `0.18+` | Procesamiento ultra rápido de planillas masivas de personal y maquinaria. |
+| **Motor de BD** | **PostgreSQL** | `15+` (Esquema `core.*`) | Aislamiento multi-tenant nativo con Row-Level Security (RLS) y JSONB. |
+| **Driver DB** | **pg (node-postgres)** | `8.13+` | Conexión directa mediante Pool de alto rendimiento y transacciones atómicas. |
+| **Autenticación** | **Supabase Auth** | GoTrue (Docker) | Emisión de tokens JWT con claims de `tenant_id` y `rol` para acceso web. |
+| **Almacenamiento** | **Supabase Storage** | S3-Compatible | Buckets dedicados: `core-logos`, `core-documentos`, `core-ingestas`. |
+| **Diseño / Frontend** | **Vanilla CSS Tokens** | `design-tokens.css` | Cero estilos inline, paleta clara industrial de `LukeEquipos`, cero dependencias pesadas. |
+| **Orquestador** | **PM2** | `6.0+` | Monitoreo 24/7, auto-restart en fallas y recargas sin caída de servicio. |
 
 ---
 
@@ -17,76 +62,56 @@ Provee los servicios transversales de estructura organizacional, dotación, flot
 | 5 | **Equipos** | `core.equipos` | Flota y maquinaria pesada con control de horómetro/odómetro. |
 | 6 | **Proveedores** | `core.proveedores` | Terceros (arriendo de maquinaria, insumos, subcontratos). |
 | 7 | **Sesiones & Auditoría** | `core.sesiones_canal` / `core.audit_logs` | Memoria conversacional para bots WhatsApp y trazabilidad inmutable. |
+| 8 | **Roles Dinámicos** | `core.roles_empresa` | Matriz de roles y permisos granulares JSONB clonados por industria. |
 
 ---
 
 ## 🚀 Inicio Rápido
 
-### 1. Requisitos Previos
-- Node.js >= 20.x
-- PostgreSQL >= 15.x (o Supabase Docker)
-
-### 2. Instalación de Dependencias
+### 1. Instalación y Dependencias
 ```bash
 npm install
 ```
 
-### 3. Configuración de Variables de Entorno
-Copia el archivo `.env.example` a `.env` y ajusta tus credenciales de base de datos:
+### 2. Variables de Entorno
+Configura tu archivo `.env` a partir de `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-### 4. Ejecutar Migraciones SQL y Semillas Maestras
+### 3. Migraciones y Semillas
 ```bash
-# Aplicar todas las migraciones del esquema core.*
 npm run db:migrate
-
-# Cargar las semillas iniciales de EIM y TNS
 npm run db:seed
 ```
 
-### 5. Iniciar en Modo Desarrollo
+### 4. Modo Desarrollo
 ```bash
 npm run dev
 ```
 
 ---
 
+## 🌐 Panel de Administración Visual Super-Admin
+
+Disponible al iniciar el servidor en:
+👉 **`http://localhost:3080/admin`** (o en producción en `https://lukeapp.cl/admin`)
+- Dashboard de métricas en tiempo real (Empresas, Faenas, Dotación, Flota).
+- Onboarding interactivo para dar de alta nuevas empresas y marcas blancas en 1 minuto.
+- Búsqueda instantánea por RUT, nombre o slug.
+
+---
+
 ## ⚡ Endpoints Principales de la API (v1)
+
+### 🏢 Onboarding y Gestión de Tenants
+- `POST /api/v1/tenants/onboarding` — Alta atómica de nuevo cliente (Empresa + Admin + Faena Base + Canal WA + Roles).
+- `GET /api/v1/tenants` — Lista de empresas activas con totales agregados.
+- `GET /api/v1/tenants/:idOrSlug` — Detalle de tenant por slug o ID.
 
 ### 🔍 Resolución de Identidad WhatsApp (< 5ms)
 - `GET /api/v1/identidad/resolver-whatsapp?telefono=+56977778888`
 - `POST /api/v1/identidad/resolver-whatsapp` (body: `{"telefono": "+56977778888"}`)
-
-**Respuesta de Ejemplo**:
-```json
-{
-  "ok": true,
-  "data": {
-    "encontrado": true,
-    "personal_id": "8f888888-8888-8888-8888-888888888888",
-    "rut": "15888999K",
-    "nombre_completo": "Cristian Cabello",
-    "cargo": "Jefe de Terreno & Líder Digital",
-    "rol_organizacional": "admin",
-    "telefono_whatsapp": "+56977778888",
-    "tenant_slug": "eim",
-    "tenant_razon_social": "Echeverría Izquierdo Montajes Industriales S.A.",
-    "proyecto_codigo": "ANDINA-PIP",
-    "proyecto_nombre": "Piping & Montaje Codelco Andina",
-    "frentes_disponibles": [
-      { "codigo": "FR-01", "nombre": "Chancado Primario Subterráneo", "disciplina": "PIPING" },
-      { "codigo": "FR-02", "nombre": "Molienda SAG y Bolas", "disciplina": "MECANICA" }
-    ]
-  }
-}
-```
-
-### 🏢 Gestión de Tenants y Proyectos
-- `GET /api/v1/tenants` — Lista de empresas activas con totales agregados.
-- `GET /api/v1/proyectos?tenant=eim` — Obras y faenas de Echeverría Izquierdo.
-- `GET /api/v1/proyectos/:id` — Detalle de faena con sus frentes de trabajo.
 
 ### 👷 Dotación y Flota
 - `GET /api/v1/personal?tenant=eim&proyecto=ANDINA-PIP` — Dotación asignada a la obra.
