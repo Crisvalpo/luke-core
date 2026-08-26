@@ -19,7 +19,7 @@ tenantsRouter.get('/:idOrSlug', async (req: Request, res: Response, next: NextFu
       SELECT * FROM core.tenants 
       WHERE (id::text = $1 OR slug = $1) AND activo = TRUE
       LIMIT 1;
-    `, [idOrSlug.toLowerCase()]);
+    `, [String(idOrSlug).toLowerCase()]);
 
     if (result.rows.length === 0) {
       return sendError(res, 'Tenant no encontrado', 404);
