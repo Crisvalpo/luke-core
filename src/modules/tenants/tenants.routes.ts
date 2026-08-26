@@ -137,10 +137,26 @@ tenantsRouter.delete('/:id', async (req: Request, res: Response, next: NextFunct
     // 3. Borrado en Cascada en PostgreSQL
     await query('DELETE FROM core.tenants WHERE id = $1', [id]);
 
-    // 4. Limpiar usuarios en Supabase Auth (en segundo plano)
+    // 4. Limpiar usuarios en Supabase Auth y archivo de logo en Supabase Storage
+    const { supabaseAdmin } = await import('../../config/supabase.js');
+
+    // 4.1 Borrar archivo físico del logotipo del bucket core-logos si existe
+    const logoUrl = tenant.config?.logo_url;
+    if (logoUrl && logoUrl.includes('/core-logos/')) {
+      const filePath = logoUrl.split('/core-logos/')[1];
+      if (filePath) {
+        try {
+          await supabaseAdmin.storage.from('core-logos').remove([filePath]);
+          console.log(`🗑️ [STORAGE] Logotipo '${filePath}' eliminado de Supabase Storage.`);
+        } catch (storageErr) {
+          console.warn('⚠️ Error al eliminar logo en Storage:', storageErr);
+        }
+      }
+    }
+
+    // 4.2 Borrar usuarios vinculados en Supabase Auth
     for (const row of personalRes.rows) {
       try {
-        const { supabaseAdmin } = await import('../../config/supabase.js');
         await supabaseAdmin.auth.admin.deleteUser(row.auth_user_id);
       } catch (authErr) {
         console.warn('⚠️ Aviso al borrar usuario en auth:', authErr);
