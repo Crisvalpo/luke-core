@@ -83,18 +83,30 @@ export class TenantsService {
         [tenant.id, proyecto.id]
       );
 
-      // 4. Crear Administrador Inicial en core.personal
+      // 4. Clonar Matriz de Roles Estándar según Industria (industrial o transporte)
+      const tipoIndustria = input.config?.tipo_industria || 'industrial';
+      await client.query('SELECT core.clonar_roles_estandar($1, $2)', [tenant.id, tipoIndustria]);
+
+      // 4.1 Obtener el ID del Rol ADMIN_GENERAL recién creado
+      const rolAdminRes = await client.query(
+        'SELECT id FROM core.roles_empresa WHERE tenant_id = $1 AND codigo = $2 LIMIT 1',
+        [tenant.id, 'ADMIN_GENERAL']
+      );
+      const rolAdminId = rolAdminRes.rows[0]?.id || null;
+
+      // 5. Crear Administrador Inicial en core.personal vinculado al rol funcional
       const adminRes = await client.query(
         `
         INSERT INTO core.personal (
-          tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno, activo
+          tenant_id, proyecto_id, rol_funcional_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno, activo
         )
-        VALUES ($1, $2, $3, $4, $5, 'admin', $6, $7, '5x2', TRUE)
+        VALUES ($1, $2, $3, $4, $5, $6, 'admin', $7, $8, '5x2', TRUE)
         RETURNING *;
         `,
         [
           tenant.id,
           proyecto.id,
+          rolAdminId,
           rutAdmin,
           input.administrador_inicial.nombre_completo,
           input.administrador_inicial.cargo,

@@ -24,6 +24,7 @@ export const onboardTenantSchema = z.object({
   // Configuración y Branding (Marca Blanca)
   config: z.object({
     pais: z.string().default('CL'),
+    tipo_industria: z.enum(['industrial', 'montaje', 'transporte', 'logistica']).default('industrial'),
     nombre_fantasia: z.string().optional(),
     color_primario: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color primario debe ser un código HEX (ej: #10B981)').default('#10B981'),
     color_secundario: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color secundario debe ser un código HEX').optional(),
