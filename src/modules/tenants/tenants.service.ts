@@ -117,13 +117,11 @@ export class TenantsService {
       );
       const administrador = adminRes.rows[0];
 
-      // 5.1 Crear usuario en Supabase Auth (auth.users) y vincular auth_user_id
+      // 5.1 Enviar Invitación por Correo Oficial vía Supabase Auth & Resend
       try {
-        const { data: authData } = await supabaseAdmin.auth.admin.createUser({
-          email: input.administrador_inicial.email.toLowerCase(),
-          password: 'LukeFaena2026!',
-          email_confirm: true,
-          user_metadata: {
+        const emailAdmin = input.administrador_inicial.email.toLowerCase();
+        const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailAdmin, {
+          data: {
             nombre: input.administrador_inicial.nombre_completo,
             role: 'admin',
             tenant_slug: tenant.slug
@@ -135,9 +133,12 @@ export class TenantsService {
             authData.user.id,
             administrador.id
           ]);
+          console.log(`📧 [EMAIL] Correo de invitación enviado con éxito a ${emailAdmin} desde noreply@lukeapp.cl`);
+        } else if (inviteErr) {
+          console.warn(`⚠️ Aviso al invitar usuario por email (${emailAdmin}):`, inviteErr.message);
         }
-      } catch (authErr) {
-        console.warn('⚠️ Supabase Auth auto-create aviso:', authErr);
+      } catch (authErr: any) {
+        console.warn('⚠️ Supabase Auth invite aviso:', authErr.message);
       }
 
       // 6. Inicializar Sesión Conversacional de WhatsApp para el Admin
