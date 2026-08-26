@@ -220,6 +220,46 @@ async function guardarNuevoTenant(event) {
 }
 
 // -----------------------------------------------------------------------------
+// SUBIDA DE LOGO A SUPABASE STORAGE (ORACLE CLOUD)
+// -----------------------------------------------------------------------------
+async function subirLogoModal(event, hiddenInputId, previewContainerId) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const preview = document.getElementById(previewContainerId);
+  preview.innerHTML = `<span style="font-size: 0.65rem; color: #10b981;">Subiendo...</span>`;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    try {
+      const res = await fetch('/api/v1/storage/upload', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          filename: file.name,
+          base64: base64,
+          contentType: file.type || 'image/png',
+          bucket: 'core-logos'
+        })
+      });
+
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Error al subir imagen');
+
+      const logoUrl = json.data.url;
+      document.getElementById(hiddenInputId).value = logoUrl;
+      preview.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+
+    } catch (err) {
+      alert(`❌ Error al subir imagen: ${err.message}`);
+      preview.innerHTML = `<span style="font-size: 0.65rem; color: #c21a25;">Error</span>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// -----------------------------------------------------------------------------
 // EDICIÓN DE EMPRESA
 // -----------------------------------------------------------------------------
 function abrirModalEdicion(tenantId) {
@@ -231,7 +271,16 @@ function abrirModalEdicion(tenantId) {
   document.getElementById('edit-rut').value = tenant.rut;
   document.getElementById('edit-slug').value = tenant.slug;
   document.getElementById('edit-color').value = tenant.config?.color_primario || '#10b981';
-  document.getElementById('edit-logo').value = tenant.config?.logo_url || '';
+  
+  const logoUrl = tenant.config?.logo_url || '';
+  document.getElementById('edit-logo').value = logoUrl;
+  const preview = document.getElementById('edit-logo-preview');
+  if (logoUrl) {
+    preview.innerHTML = `<img src="${logoUrl}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+  } else {
+    preview.innerHTML = `<span style="font-size: 0.7rem; color: var(--color-text-muted);">Logo</span>`;
+  }
+
   document.getElementById('edit-activo').value = tenant.activo ? 'true' : 'false';
 
   const modulosActivos = tenant.config?.modulos_activos || [];
@@ -288,6 +337,40 @@ async function guardarEdicionTenant(event) {
   } finally {
     btn.disabled = false;
     btn.innerText = 'Guardar Cambios';
+  }
+}
+
+async function eliminarTenantActual() {
+  const tenantId = document.getElementById('edit-tenant-id').value;
+  const razonSocial = document.getElementById('edit-razon-social').value;
+  const slug = document.getElementById('edit-slug').value;
+
+  const confirmacion = prompt(
+    `⚠️ PELIGRO: Esto eliminará permanentemente la empresa "${razonSocial}" y TODOS sus proyectos, faenas, personal, flota de maquinaria, roles y canales de WhatsApp.\n\nEscribe el slug "${slug}" para confirmar la eliminación:`
+  );
+
+  if (confirmacion !== slug) {
+    if (confirmacion !== null) {
+      alert('❌ El slug ingresado no coincide. Operación cancelada.');
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/v1/tenants/${tenantId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar empresa');
+
+    alert(`🗑️ ${json.meta?.mensaje || 'Empresa eliminada exitosamente'}`);
+    cerrarModalEdicion();
+    cargarTenants();
+
+  } catch (error) {
+    alert(`❌ Error al eliminar: ${error.message}`);
   }
 }
 

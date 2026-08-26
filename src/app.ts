@@ -13,6 +13,7 @@ import { personalRouter } from './modules/personal/personal.routes.js';
 import { equiposRouter } from './modules/equipos/equipos.routes.js';
 import { proveedoresRouter } from './modules/proveedores/proveedores.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { storageRouter } from './modules/storage/storage.routes.js';
 
 export const app = express();
 
@@ -53,6 +54,7 @@ apiV1.use('/personal', personalRouter);
 apiV1.use('/equipos', equiposRouter);
 apiV1.use('/proveedores', proveedoresRouter);
 apiV1.use('/auth', authRouter);
+apiV1.use('/storage', storageRouter);
 
 app.use('/api/v1', apiV1);
 

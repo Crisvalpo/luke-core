@@ -1,4 +1,5 @@
 import { dbPool } from '../../config/database.js';
+import { supabaseAdmin } from '../../config/supabase.js';
 import { normalizarRut, validarRut } from '../../shared/utils/rut.js';
 import { normalizarTelefonoChileno } from '../../shared/utils/phone.js';
 import { OnboardTenantInput } from './tenants.schema.js';
@@ -116,7 +117,30 @@ export class TenantsService {
       );
       const administrador = adminRes.rows[0];
 
-      // 5. Inicializar Sesión Conversacional de WhatsApp para el Admin
+      // 5.1 Crear usuario en Supabase Auth (auth.users) y vincular auth_user_id
+      try {
+        const { data: authData } = await supabaseAdmin.auth.admin.createUser({
+          email: input.administrador_inicial.email.toLowerCase(),
+          password: 'LukeFaena2026!',
+          email_confirm: true,
+          user_metadata: {
+            nombre: input.administrador_inicial.nombre_completo,
+            role: 'admin',
+            tenant_slug: tenant.slug
+          }
+        });
+
+        if (authData?.user) {
+          await client.query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [
+            authData.user.id,
+            administrador.id
+          ]);
+        }
+      } catch (authErr) {
+        console.warn('⚠️ Supabase Auth auto-create aviso:', authErr);
+      }
+
+      // 6. Inicializar Sesión Conversacional de WhatsApp para el Admin
       const sesionRes = await client.query(
         `
         INSERT INTO core.sesiones_canal (

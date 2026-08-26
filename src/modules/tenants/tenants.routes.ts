@@ -115,3 +115,46 @@ tenantsRouter.patch('/:id/config', async (req: Request, res: Response, next: Nex
     next(error);
   }
 });
+
+// 6. Eliminar empresa y todo su contenido en Cascada (Proyectos, Personal, Flota, Roles, Sesiones)
+tenantsRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Obtener datos antes de borrar
+    const tenantRes = await query('SELECT * FROM core.tenants WHERE id = $1', [id]);
+    if (tenantRes.rows.length === 0) {
+      return sendError(res, 'Empresa no encontrada', 404);
+    }
+    const tenant = tenantRes.rows[0];
+
+    // 2. Obtener auth_user_id del personal para limpiar en Supabase Auth
+    const personalRes = await query(
+      'SELECT auth_user_id FROM core.personal WHERE tenant_id = $1 AND auth_user_id IS NOT NULL',
+      [id]
+    );
+
+    // 3. Borrado en Cascada en PostgreSQL
+    await query('DELETE FROM core.tenants WHERE id = $1', [id]);
+
+    // 4. Limpiar usuarios en Supabase Auth (en segundo plano)
+    for (const row of personalRes.rows) {
+      try {
+        const { supabaseAdmin } = await import('../../config/supabase.js');
+        await supabaseAdmin.auth.admin.deleteUser(row.auth_user_id);
+      } catch (authErr) {
+        console.warn('⚠️ Aviso al borrar usuario en auth:', authErr);
+      }
+    }
+
+    return sendSuccess(res, {
+      id: tenant.id,
+      slug: tenant.slug,
+      razon_social: tenant.razon_social,
+      eliminado: true
+    }, 200, { mensaje: `Empresa '${tenant.razon_social}' y todos sus datos fueron eliminados permanentemente.` });
+
+  } catch (error) {
+    next(error);
+  }
+});
