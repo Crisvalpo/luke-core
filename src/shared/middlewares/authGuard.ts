@@ -13,7 +13,7 @@ declare global {
 /**
  * Middleware para requerir autenticación mediante Bearer Token o API Key
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const adminKey = req.headers['x-admin-key'];
 
@@ -32,7 +32,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   const token = authHeader.split(' ')[1];
-  const payload = AuthService.validarToken(token);
+  const payload = await AuthService.validarToken(token);
 
   if (!payload) {
     return sendError(res, 'Token inválido o expirado. Inicie sesión nuevamente.', 401);

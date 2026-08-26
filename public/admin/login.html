@@ -110,7 +110,7 @@
         if (!json.ok) throw new Error(json.error || 'Credenciales inválidas');
 
         // Guardar token y datos del usuario
-        localStorage.setItem('luke_core_token', json.data.token);
+        localStorage.setItem('luke_core_token', json.data.access_token || json.data.token);
         localStorage.setItem('luke_core_user', JSON.stringify(json.data));
 
         window.location.href = '/admin/index.html';

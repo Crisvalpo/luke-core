@@ -1,8 +1,8 @@
+import { supabase, supabaseAdmin } from '../../config/supabase.js';
 import { query } from '../../config/database.js';
 import { env } from '../../config/env.js';
-import { normalizarRut } from '../../shared/utils/rut.js';
 import { LoginInput } from './auth.schema.js';
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 export interface UserSession {
   id: string;
@@ -12,112 +12,138 @@ export interface UserSession {
   tenant_id: string | null;
   tenant_slug?: string;
   tenant_razon_social?: string;
-  token: string;
+  access_token: string;
 }
 
 export class AuthService {
   /**
-   * Genera un token HMAC firmado para la sesión
+   * Valida un token JWT emitido por Supabase Auth
    */
-  static generarToken(payload: any): string {
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-    const data = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })).toString('base64url');
-    const signature = crypto
-      .createHmac('sha256', env.CORE_ADMIN_API_KEY)
-      .update(`${header}.${data}`)
-      .digest('base64url');
-    return `${header}.${data}.${signature}`;
-  }
-
-  /**
-   * Valida un token HMAC firmado
-   */
-  static validarToken(token: string): any | null {
+  static async validarToken(token: string): Promise<any | null> {
     try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      const [header, data, signature] = parts;
+      // 1. Validar directamente contra el endpoint Auth de Supabase
+      const { data, error } = await supabase.auth.getUser(token);
+      if (!error && data?.user) {
+        // Buscar el perfil de personal y tenant en la base de datos
+        const personalRes = await query(`
+          SELECT 
+            p.id, p.nombre_completo, p.email, p.rol_organizacional,
+            t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+          FROM core.personal p
+          LEFT JOIN core.tenants t ON t.id = p.tenant_id
+          WHERE p.auth_user_id = $1 OR LOWER(p.email) = $2
+          LIMIT 1;
+        `, [data.user.id, data.user.email?.toLowerCase()]);
 
-      const expectedSignature = crypto
-        .createHmac('sha256', env.CORE_ADMIN_API_KEY)
-        .update(`${header}.${data}`)
-        .digest('base64url');
+        if (personalRes.rows.length > 0) {
+          const user = personalRes.rows[0];
+          return {
+            id: user.id,
+            auth_user_id: data.user.id,
+            nombre_completo: user.nombre_completo,
+            email: data.user.email,
+            rol: user.rol_organizacional || 'admin',
+            tenant_id: user.tenant_id,
+            tenant_slug: user.tenant_slug
+          };
+        }
 
-      if (signature !== expectedSignature) return null;
+        // Si es usuario registrado en Supabase Auth pero no está en core.personal (Super-Admin)
+        return {
+          id: data.user.id,
+          auth_user_id: data.user.id,
+          nombre_completo: data.user.user_metadata?.nombre || data.user.email,
+          email: data.user.email,
+          rol: data.user.user_metadata?.role || 'super_admin',
+          tenant_id: null
+        };
+      }
 
-      const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf-8'));
-      if (payload.exp && Date.now() > payload.exp) return null; // Expirado
-
-      return payload;
+      // 2. Fallback de verificación criptográfica local con JWT_SECRET
+      const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+      return decoded;
     } catch {
       return null;
     }
   }
 
   /**
-   * Autenticación unificada: Soporta Super-Admin de plataforma y Administradores de Tenant
+   * Iniciar Sesión con Supabase Auth (Email & Password)
    */
   static async login(input: LoginInput): Promise<UserSession> {
-    const ident = input.identificador.trim().toLowerCase();
-    const rutLimpio = normalizarRut(ident);
+    const email = input.identificador.trim().toLowerCase();
 
-    // 1. Acceso Super-Admin Maestro (Plataforma Luke Core)
-    const esSuperAdmin = 
-      (ident === 'admin' || ident === 'admin@lukeapp.cl' || ident === 'cluke@eimontajes.cl') &&
-      (input.password === env.CORE_ADMIN_API_KEY || input.password === 'admin123' || input.password === 'LukeAdmin2026!');
+    // 1. Intento de autenticación oficial con Supabase GoTrue
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: input.password
+    });
 
-    if (esSuperAdmin) {
-      const payload = {
+    if (!error && data.session && data.user) {
+      // Obtener ficha en core.personal
+      const personalRes = await query(`
+        SELECT 
+          p.id, p.nombre_completo, p.email, p.rol_organizacional,
+          t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+        FROM core.personal p
+        LEFT JOIN core.tenants t ON t.id = p.tenant_id
+        WHERE p.auth_user_id = $1 OR LOWER(p.email) = $2
+        LIMIT 1;
+      `, [data.user.id, email]);
+
+      let perfil = personalRes.rows[0] || {};
+
+      return {
+        id: perfil.id || data.user.id,
+        nombre_completo: perfil.nombre_completo || data.user.user_metadata?.nombre || email,
+        email: data.user.email!,
+        rol: perfil.rol_organizacional || data.user.user_metadata?.role || 'admin',
+        tenant_id: perfil.tenant_id || null,
+        tenant_slug: perfil.tenant_slug,
+        tenant_razon_social: perfil.tenant_razon_social,
+        access_token: data.session.access_token
+      };
+    }
+
+    // 2. Super-Admin Master Login (Fallback de Plataforma si el usuario no está aún en auth.users)
+    const esSuperAdminMaster = 
+      (email === 'admin' || email === 'admin@lukeapp.cl' || email === 'cluke@eimontajes.cl') &&
+      (input.password === env.CORE_ADMIN_API_KEY || input.password === 'LukeAdmin2026!');
+
+    if (esSuperAdminMaster) {
+      // Intentar auto-crear el usuario en Supabase Auth si no existe
+      try {
+        await supabaseAdmin.auth.admin.createUser({
+          email: 'cluke@eimontajes.cl',
+          password: input.password,
+          email_confirm: true,
+          user_metadata: { nombre: 'Cristian Cabello', role: 'super_admin' }
+        });
+      } catch {}
+
+      // Generar JWT firmado compatible con Supabase
+      const token = jwt.sign(
+        {
+          sub: '00000000-0000-0000-0000-000000000000',
+          email: 'cluke@eimontajes.cl',
+          role: 'super_admin',
+          nombre_completo: 'Cristian Cabello (Super-Admin)',
+          tenant_id: null
+        },
+        env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      return {
         id: '00000000-0000-0000-0000-000000000000',
         nombre_completo: 'Cristian Cabello (Super-Admin)',
         email: 'cluke@eimontajes.cl',
-        rol: 'super_admin' as const,
-        tenant_id: null
-      };
-
-      return {
-        ...payload,
-        token: this.generarToken(payload)
+        rol: 'super_admin',
+        tenant_id: null,
+        access_token: token
       };
     }
 
-    // 2. Acceso por Base de Datos (Personal con rol 'admin' de un Tenant)
-    const personalRes = await query(`
-      SELECT 
-        p.id, p.nombre_completo, p.email, p.rut, p.rol_organizacional,
-        t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
-      FROM core.personal p
-      JOIN core.tenants t ON t.id = p.tenant_id
-      WHERE (LOWER(p.email) = $1 OR p.rut = $2)
-        AND p.activo = TRUE 
-        AND t.activo = TRUE
-      LIMIT 1;
-    `, [ident, rutLimpio]);
-
-    if (personalRes.rows.length === 0) {
-      throw new Error('Credenciales inválidas o usuario no registrado');
-    }
-
-    const user = personalRes.rows[0];
-
-    // Validación de clave para usuarios de tenant (por defecto o API key)
-    if (input.password !== env.CORE_ADMIN_API_KEY && input.password !== 'Luke2026!') {
-      throw new Error('Contraseña incorrecta');
-    }
-
-    const payload = {
-      id: user.id,
-      nombre_completo: user.nombre_completo,
-      email: user.email,
-      rol: user.rol_organizacional,
-      tenant_id: user.tenant_id,
-      tenant_slug: user.tenant_slug,
-      tenant_razon_social: user.tenant_razon_social
-    };
-
-    return {
-      ...payload,
-      token: this.generarToken(payload)
-    };
+    throw new Error(error?.message || 'Credenciales inválidas en Supabase Auth');
   }
 }
