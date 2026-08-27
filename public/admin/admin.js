@@ -59,6 +59,12 @@ function getAuthHeaders() {
 
 async function cargarTenants() {
   const container = document.getElementById('tenants-container');
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
+  }
+
   try {
     const res = await fetch('/api/v1/tenants', {
       headers: getAuthHeaders()
@@ -72,9 +78,25 @@ async function cargarTenants() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Error al obtener tenants');
 
-    todosLosTenants = json.data || [];
+    let tenants = json.data || [];
+
+    // Si el usuario es de una empresa en particular (rol !== 'super_admin'), filtrar estrictamente su tenant
+    if (user && user.rol !== 'super_admin' && user.tenant_id) {
+      tenants = tenants.filter(t => t.id === user.tenant_id || t.slug === user.tenant_slug);
+    }
+
+    todosLosTenants = tenants;
     actualizarKPIs(todosLosTenants);
     renderizarTenants(todosLosTenants);
+
+    // Si el tenant tiene logo propio, actualizar el logo en el sidebar
+    if (todosLosTenants.length === 1 && todosLosTenants[0].config?.logo_url) {
+      const brandLogoElem = document.querySelector('.brand-logo');
+      if (brandLogoElem) {
+        brandLogoElem.innerHTML = `<img src="${todosLosTenants[0].config.logo_url}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">`;
+        brandLogoElem.style.background = 'transparent';
+      }
+    }
 
   } catch (error) {
     console.error('Error cargando tenants:', error);
@@ -97,7 +119,13 @@ function actualizarKPIs(tenants) {
     totalEquipos += parseInt(t.total_equipos || 0, 10);
   });
 
-  document.getElementById('kpi-tenants').innerText = tenants.length;
+  const userJson = localStorage.getItem('luke_core_user');
+  let esSuperAdmin = true;
+  if (userJson) {
+    try { esSuperAdmin = JSON.parse(userJson).rol === 'super_admin'; } catch {}
+  }
+
+  document.getElementById('kpi-tenants').innerText = esSuperAdmin ? tenants.length : (tenants[0]?.slug?.toUpperCase() || 'ACTIVO');
   document.getElementById('kpi-proyectos').innerText = totalProyectos;
   document.getElementById('kpi-personal').innerText = totalPersonal;
   document.getElementById('kpi-equipos').innerText = totalEquipos;
@@ -119,18 +147,26 @@ function renderizarTenants(tenants) {
   container.innerHTML = tenants.map(t => {
     const colorPrimario = t.config?.color_primario || '#10b981';
     const modulos = t.config?.modulos_activos || ['core'];
+    const logoUrl = t.config?.logo_url;
     const estadoBadge = t.activo 
       ? `<span class="module-pill" style="background: #dcfce7; color: #16a34a; border-color: #86efac;">🟢 Activa</span>`
       : `<span class="module-pill" style="background: #fee2e2; color: #c21a25; border-color: #fca5a5;">🔴 Pausada</span>`;
 
+    const logoHtml = logoUrl 
+      ? `<img src="${logoUrl}" alt="${t.razon_social}" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border-container); padding: 2px; background: #ffffff; flex-shrink: 0;">`
+      : `<div class="brand-logo" style="width: 44px; height: 44px; font-size: 1.1rem; background: ${colorPrimario}; border-radius: 8px; flex-shrink: 0;">${t.razon_social.charAt(0)}</div>`;
+
     return `
       <article class="tenant-card" style="border-top-color: ${colorPrimario};">
         <div class="tenant-header">
-          <div class="tenant-title">
-            <h3>${t.razon_social}</h3>
-            <div class="tenant-rut">RUT: <strong>${t.rut}</strong></div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+            ${logoHtml}
+            <div class="tenant-title" style="min-width: 0;">
+              <h3 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.razon_social}</h3>
+              <div class="tenant-rut">RUT: <strong>${t.rut}</strong></div>
+            </div>
           </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;">
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex-shrink: 0;">
             <span class="tenant-slug">${t.slug}</span>
             ${estadoBadge}
           </div>
