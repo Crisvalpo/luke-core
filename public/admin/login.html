@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acceso Seguro — Luke Core</title>
+  <title>Acceso Seguro — LukeAPPs</title>
   <link rel="stylesheet" href="/admin/admin.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
-    if (localStorage.getItem('luke_core_token')) {
+    if (window.location.hash.includes('access_token=') && (window.location.hash.includes('type=invite') || window.location.hash.includes('type=recovery'))) {
+      window.location.replace('/admin/crear-clave.html' + window.location.hash);
+    } else if (localStorage.getItem('luke_core_token')) {
       window.location.replace('/admin/index.html');
     }
   </script>
@@ -48,15 +50,15 @@
     <div class="login-brand">
       <div class="brand-logo" style="width: 42px; height: 42px; font-size: 1.3rem;">L</div>
       <div>
-        <h1 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text);">Luke Core</h1>
-        <span style="font-size: 0.8rem; color: var(--color-text-muted);">Backbone Organizacional</span>
+        <h1 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text);">LukeAPPs</h1>
+        <span style="font-size: 0.8rem; color: var(--color-text-muted);">Gestión de Entornos</span>
       </div>
     </div>
 
     <div>
       <h2 style="font-size: 1.1rem; font-weight: 600; color: var(--color-text);">Iniciar Sesión</h2>
       <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.25rem;">
-        Panel de Administración Multi-Tenant y Gestión de Faenas
+        Panel de Administración Multi-Tenant
       </p>
     </div>
 

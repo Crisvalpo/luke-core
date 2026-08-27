@@ -141,12 +141,15 @@ function renderizarTenants(tenants) {
           ${modulos.map(m => `<span class="module-pill">${m}</span>`).join('')}
         </div>
 
-        <div class="tenant-footer">
-          <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')">
-            ✏️ Editar Empresa
+        <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+            ✏️ Editar
           </button>
-          <button class="btn btn-primary" onclick="verDetalleTenant('${t.slug}')">
-            🔍 Ver Faenas
+          <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+            📊 Cargar Excel
+          </button>
+          <button class="btn btn-primary" onclick="verDetalleTenant('${t.slug}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+            🔍 Faenas
           </button>
         </div>
       </article>
@@ -246,6 +249,12 @@ async function subirLogoModal(event, hiddenInputId, previewContainerId) {
           bucket: 'core-logos'
         })
       });
+
+      if (res.status === 401) {
+        alert('⚠️ Tu sesión ha expirado o el token es antiguo. Por favor inicia sesión nuevamente.');
+        cerrarSesion();
+        return;
+      }
 
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Error al subir imagen');
@@ -379,4 +388,104 @@ async function eliminarTenantActual() {
 
 function verDetalleTenant(slug) {
   alert(`Cargando faenas y dotación para el tenant: ${slug.toUpperCase()}`);
+}
+
+// -----------------------------------------------------------------------------
+// INGESTA MASIVA DE EXCEL / CSV
+// -----------------------------------------------------------------------------
+function abrirModalIngesta(tenantIdOpcional) {
+  const selectTenant = document.getElementById('ingesta-tenant');
+  selectTenant.innerHTML = '<option value="">Selecciona una empresa...</option>' + 
+    todosLosTenants.map(t => `<option value="${t.id}">${t.razon_social} (${t.slug})</option>`).join('');
+
+  if (tenantIdOpcional) {
+    selectTenant.value = tenantIdOpcional;
+  }
+
+  document.getElementById('ingesta-resultado').style.display = 'none';
+  document.getElementById('ingesta-resultado').innerHTML = '';
+  document.getElementById('ingesta-file').value = '';
+  document.getElementById('modal-ingesta').classList.add('active');
+}
+
+function cerrarModalIngesta() {
+  document.getElementById('modal-ingesta').classList.remove('active');
+}
+
+function descargarPlantillaActual() {
+  const tipo = document.getElementById('ingesta-tipo').value;
+  window.open(`/api/v1/ingesta/plantilla/${tipo}`, '_blank');
+}
+
+async function ejecutarIngesta(event) {
+  event.preventDefault();
+  const btn = document.getElementById('btn-submit-ingesta');
+  const resContainer = document.getElementById('ingesta-resultado');
+  const tenantId = document.getElementById('ingesta-tenant').value;
+  const tipo = document.getElementById('ingesta-tipo').value;
+  const file = document.getElementById('ingesta-file').files?.[0];
+
+  if (!file) return alert('Selecciona un archivo Excel o CSV');
+
+  btn.disabled = true;
+  btn.innerText = 'Procesando archivo...';
+  resContainer.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    const endpoint = tipo === 'equipos' ? '/api/v1/ingesta/equipos' : '/api/v1/ingesta/personal';
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ tenant_id: tenantId, base64: base64 })
+      });
+
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Error al procesar el archivo');
+
+      const data = json.data;
+      let erroresHtml = '';
+      if (data.errores && data.errores.length > 0) {
+        erroresHtml = `
+          <div style="margin-top: 0.75rem; max-height: 140px; overflow-y: auto; background: #fff; border: 1px solid #fca5a5; border-radius: 4px; padding: 0.5rem; font-size: 0.75rem;">
+            <strong style="color: #c21a25;">Filas con errores (${data.errores.length}):</strong>
+            <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0;">
+              ${data.errores.map(err => `<li>Fila ${err.fila} [${err.identificador}]: ${err.error}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      resContainer.innerHTML = `
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 0.75rem;">
+          <div style="font-weight: 600; color: #16a34a; font-size: 0.9rem;">
+            ✅ ${json.meta?.mensaje || 'Procesamiento completado'}
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.8rem;">
+            <span class="module-pill" style="background: #dcfce7; color: #16a34a;">🟢 Insertados: ${data.insertados}</span>
+            <span class="module-pill" style="background: #e0f2fe; color: #0284c7;">🔵 Actualizados: ${data.actualizados}</span>
+            <span class="module-pill" style="background: #fee2e2; color: #c21a25;">🔴 Errores: ${data.errores.length}</span>
+          </div>
+          ${erroresHtml}
+        </div>
+      `;
+      resContainer.style.display = 'block';
+      cargarTenants();
+
+    } catch (err) {
+      resContainer.innerHTML = `
+        <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; border-radius: 6px; padding: 0.75rem; font-size: 0.85rem;">
+          ❌ ${err.message}
+        </div>
+      `;
+      resContainer.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Procesar e Importar';
+    }
+  };
+  reader.readAsDataURL(file);
 }

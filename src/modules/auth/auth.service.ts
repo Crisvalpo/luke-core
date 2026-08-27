@@ -1,5 +1,7 @@
+import jwt from 'jsonwebtoken';
 import { supabase } from '../../config/supabase.js';
 import { query } from '../../config/database.js';
+import { env } from '../../config/env.js';
 import { LoginInput } from './auth.schema.js';
 
 export interface UserSession {
@@ -15,11 +17,19 @@ export interface UserSession {
 
 export class AuthService {
   /**
-   * Valida un token JWT emitido por Supabase Auth en Oracle Cloud
+   * Valida un token JWT (local de Super-Admin o emitido por Supabase GoTrue)
    */
   static async validarToken(token: string): Promise<any | null> {
     try {
-      // Validar directamente contra el endpoint Auth de Supabase en Oracle Cloud
+      // 1. Verificar si es un token local de Super-Admin
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+        if (decoded && decoded.rol === 'super_admin') {
+          return decoded;
+        }
+      } catch {}
+
+      // 2. Validar directamente contra Supabase Auth en Oracle Cloud
       const { data, error } = await supabase.auth.getUser(token);
       if (error || !data?.user) {
         return null;
@@ -67,9 +77,32 @@ export class AuthService {
    * Iniciar Sesión 100% Real contra Supabase Auth (auth.users en Oracle Cloud)
    */
   static async login(input: LoginInput): Promise<UserSession> {
-    const email = input.identificador.trim().toLowerCase();
+    const identificador = input.identificador.trim().toLowerCase();
 
-    // 1. Autenticación real con Supabase GoTrue en Oracle Cloud
+    // 1. Acceso Maestro de Super-Administrador (vía API Key o Master Password)
+    if (input.password === env.CORE_ADMIN_API_KEY || (identificador === 'admin' && input.password === env.CORE_ADMIN_API_KEY)) {
+      const superAdminPayload = {
+        id: '00000000-0000-0000-0000-000000000000',
+        nombre_completo: 'Super Administrador',
+        email: identificador.includes('@') ? identificador : 'admin@lukeapp.cl',
+        rol: 'super_admin',
+        tenant_id: null
+      };
+
+      const token = jwt.sign(superAdminPayload, env.JWT_SECRET, { expiresIn: '7d' });
+
+      return {
+        id: superAdminPayload.id,
+        nombre_completo: superAdminPayload.nombre_completo,
+        email: superAdminPayload.email,
+        rol: 'super_admin',
+        tenant_id: null,
+        access_token: token
+      };
+    }
+
+    // 2. Autenticación estándar con Supabase GoTrue en Oracle Cloud
+    const email = identificador;
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: input.password

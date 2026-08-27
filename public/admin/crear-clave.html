@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activar Cuenta — LukeAPPs</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-app);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .login-card {
+      background: var(--bg-container);
+      border: 1px solid var(--border-container);
+      border-radius: var(--border-radius-base);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-modal);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-logo" style="width: 42px; height: 42px; font-size: 1.3rem;">L</div>
+      <div>
+        <h1 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text);">LukeAPPs</h1>
+        <span style="font-size: 0.8rem; color: var(--color-text-muted);">Activación de Usuario</span>
+      </div>
+    </div>
+
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 600; color: var(--color-text);">Crea tu Contraseña</h2>
+      <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+        Define tu clave de acceso para comenzar a gestionar tu entorno.
+      </p>
+    </div>
+
+    <form id="form-crear-clave" onsubmit="guardarNuevaClave(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+      <div class="form-group">
+        <label class="form-label">Nueva Contraseña *</label>
+        <input class="form-input" type="password" id="nueva-pass" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confirmar Contraseña *</label>
+        <input class="form-input" type="password" id="confirm-pass" required minlength="6" placeholder="Repite tu contraseña" autocomplete="new-password">
+      </div>
+
+      <div id="status-error" style="display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; padding: 0.65rem; border-radius: 6px; font-size: 0.8rem; text-align: center;">
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="btn-submit" style="padding: 0.75rem; margin-top: 0.5rem; justify-content: center;">
+        Activar Cuenta y Entrar
+      </button>
+    </form>
+
+    <div style="text-align: center; font-size: 0.75rem; color: var(--color-text-muted); border-top: 1px solid var(--border-container); padding-top: 1rem;">
+      <span>Protegido por Supabase Auth • Infraestructura 24/7</span>
+    </div>
+  </div>
+
+  <script>
+    // Extraer tokens del hash de la URL (#access_token=...&type=invite)
+    function obtenerParametrosHash() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      return {
+        accessToken: params.get('access_token'),
+        refreshToken: params.get('refresh_token'),
+        type: params.get('type')
+      };
+    }
+
+    const { accessToken, refreshToken, type } = obtenerParametrosHash();
+
+    if (!accessToken) {
+      document.getElementById('status-error').innerText = '❌ Enlace de invitación inválido o expirado. Solicita una nueva invitación.';
+      document.getElementById('status-error').style.display = 'block';
+      document.getElementById('btn-submit').disabled = true;
+    }
+
+    async function guardarNuevaClave(event) {
+      event.preventDefault();
+      const pass1 = document.getElementById('nueva-pass').value;
+      const pass2 = document.getElementById('confirm-pass').value;
+      const btn = document.getElementById('btn-submit');
+      const errBox = document.getElementById('status-error');
+
+      errBox.style.display = 'none';
+
+      if (pass1 !== pass2) {
+        errBox.innerText = '❌ Las contraseñas no coinciden';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Activando cuenta...';
+
+      try {
+        // Actualizar contraseña en Supabase Auth usando el access_token del enlace
+        const res = await fetch('https://api-oracle.lukeapp.cl/auth/v1/user', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImlhdCI6MTczOTcyOTI3MiwiZXhwIjoyMDU1MDg5MjcyfQ.4wqBiO7twFOgiLPbHQi9pmTWrM1N6FjlI93mWsuyOiE'
+          },
+          body: JSON.stringify({ password: pass1 })
+        });
+
+        const userData = await res.json();
+        if (!res.ok) {
+          throw new Error(userData.msg || userData.error_description || userData.message || 'Error al actualizar contraseña');
+        }
+
+        // Guardar sesión activa en localStorage
+        localStorage.setItem('luke_core_token', accessToken);
+        localStorage.setItem('luke_core_user', JSON.stringify({
+          id: userData.id,
+          email: userData.email,
+          nombre_completo: userData.user_metadata?.nombre || userData.email,
+          rol: userData.user_metadata?.role || 'admin'
+        }));
+
+        alert('🎉 ¡Cuenta activada con éxito! Bienvenido a LukeAPPs.');
+        window.location.replace('/admin/index.html');
+
+      } catch (err) {
+        errBox.innerText = `❌ ${err.message}`;
+        errBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Activar Cuenta y Entrar';
+      }
+    }
+  </script>
+</body>
+</html>
