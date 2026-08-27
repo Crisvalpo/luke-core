@@ -350,6 +350,27 @@ function abrirModalEdicion(tenantId) {
     cb.checked = modulosActivos.includes(cb.value);
   });
 
+  // Control de permisos según el rol del usuario
+  const userJson = localStorage.getItem('luke_core_user');
+  let esSuperAdmin = true;
+  if (userJson) {
+    try { esSuperAdmin = JSON.parse(userJson).rol === 'super_admin'; } catch {}
+  }
+
+  const groupActivo = document.getElementById('group-edit-activo');
+  const groupModulos = document.getElementById('group-edit-modulos');
+  const btnEliminar = document.getElementById('btn-eliminar-tenant');
+
+  if (!esSuperAdmin) {
+    if (groupActivo) groupActivo.style.display = 'none';
+    if (groupModulos) groupModulos.style.display = 'none';
+    if (btnEliminar) btnEliminar.style.display = 'none';
+  } else {
+    if (groupActivo) groupActivo.style.display = 'block';
+    if (groupModulos) groupModulos.style.display = 'block';
+    if (btnEliminar) btnEliminar.style.display = 'inline-block';
+  }
+
   document.getElementById('modal-editar-tenant').classList.add('active');
 }
 
