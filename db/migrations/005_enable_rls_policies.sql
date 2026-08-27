@@ -112,6 +112,7 @@ CREATE POLICY rls_proveedores_tenant_isolation ON core.proveedores
     );
 
 -- Sesiones Canal
+DROP POLICY IF EXISTS rls_sesiones_canal_isolation ON core.sesiones_canal;
 DROP POLICY IF EXISTS rls_sesiones_tenant_isolation ON core.sesiones_canal;
 CREATE POLICY rls_sesiones_canal_isolation ON core.sesiones_canal
     USING (

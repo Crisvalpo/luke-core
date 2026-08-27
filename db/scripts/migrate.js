@@ -30,7 +30,24 @@ async function runMigrations() {
 
     console.log(`📁 [MIGRACIONES] Se encontraron ${files.length} archivos de migración.`);
 
+    // Crear tabla de control si no existe
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS core._migrations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    const executedRes = await client.query('SELECT name FROM core._migrations;');
+    const executedFiles = new Set(executedRes.rows.map(r => r.name));
+
     for (const file of files) {
+      if (executedFiles.has(file)) {
+        console.log(`⏩ [MIGRACIONES] ${file} ya fue aplicada previamente. Saltando.`);
+        continue;
+      }
+
       const filePath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(filePath, 'utf-8');
 
