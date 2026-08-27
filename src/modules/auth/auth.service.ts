@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { supabase } from '../../config/supabase.js';
+import { supabase, supabaseAdmin } from '../../config/supabase.js';
 import { query } from '../../config/database.js';
 import { env } from '../../config/env.js';
 import { LoginInput } from './auth.schema.js';
@@ -135,5 +135,53 @@ export class AuthService {
       tenant_razon_social: perfil.tenant_razon_social,
       access_token: data.session.access_token
     };
+  }
+
+  /**
+   * Permite activar o actualizar contraseña directamente mediante el motor de Supabase
+   */
+  static async establecerClaveDirecta(email: string, password: string): Promise<UserSession> {
+    const emailNorm = email.trim().toLowerCase();
+
+    // 1. Buscar usuario en core.personal
+    const personalRes = await query(`
+      SELECT p.id, p.auth_user_id, p.nombre_completo, p.rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+      FROM core.personal p
+      LEFT JOIN core.tenants t ON t.id = p.tenant_id
+      WHERE LOWER(p.email) = $1
+      LIMIT 1;
+    `, [emailNorm]);
+
+    let authUserId = personalRes.rows[0]?.auth_user_id;
+
+    if (!authUserId) {
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+      const authUser = usersData?.users?.find(u => u.email?.toLowerCase() === emailNorm);
+      if (authUser) {
+        authUserId = authUser.id;
+      }
+    }
+
+    if (!authUserId) {
+      const { data: createData, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email: emailNorm,
+        password,
+        email_confirm: true
+      });
+      if (createErr) throw new Error(createErr.message);
+      authUserId = createData.user.id;
+    } else {
+      const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+        password,
+        email_confirm: true
+      });
+      if (updateErr) throw new Error(updateErr.message);
+    }
+
+    if (personalRes.rows[0]?.id && !personalRes.rows[0]?.auth_user_id) {
+      await query(`UPDATE core.personal SET auth_user_id = $1 WHERE id = $2`, [authUserId, personalRes.rows[0].id]);
+    }
+
+    return this.login({ identificador: emailNorm, password });
   }
 }

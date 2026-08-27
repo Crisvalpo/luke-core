@@ -50,12 +50,17 @@
 
     <div>
       <h2 style="font-size: 1.1rem; font-weight: 600; color: var(--color-text);">Crea tu Contraseña</h2>
-      <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+      <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.25rem;" id="subtitulo-card">
         Define tu clave de acceso para comenzar a gestionar tu entorno.
       </p>
     </div>
 
     <form id="form-crear-clave" onsubmit="guardarNuevaClave(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+      <div class="form-group" id="group-email" style="display: none;">
+        <label class="form-label">Email de tu cuenta</label>
+        <input class="form-input" type="email" id="email-usuario" placeholder="correo@empresa.cl">
+      </div>
+
       <div class="form-group">
         <label class="form-label">Nueva Contraseña *</label>
         <input class="form-input" type="password" id="nueva-pass" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
@@ -75,34 +80,59 @@
     </form>
 
     <div style="text-align: center; font-size: 0.75rem; color: var(--color-text-muted); border-top: 1px solid var(--border-container); padding-top: 1rem;">
-      <span>Protegido por Supabase Auth • Infraestructura 24/7</span>
+      <a href="/admin/login.html" style="color: #10b981; text-decoration: none; font-weight: 500;">&larr; Volver al Inicio de Sesión</a>
     </div>
   </div>
 
   <script>
-    // Extraer tokens del hash de la URL (#access_token=...&type=invite)
-    function obtenerParametrosHash() {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+    // Extraer tokens de Hash (#access_token=...) o Query Params (?token_hash=... o ?code=...)
+    function obtenerParametrosAuth() {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = new URLSearchParams(window.location.search);
+
       return {
-        accessToken: params.get('access_token'),
-        refreshToken: params.get('refresh_token'),
-        type: params.get('type')
+        accessToken: hashParams.get('access_token') || queryParams.get('access_token') || hashParams.get('token') || queryParams.get('token'),
+        refreshToken: hashParams.get('refresh_token') || queryParams.get('refresh_token'),
+        tokenHash: hashParams.get('token_hash') || queryParams.get('token_hash'),
+        code: hashParams.get('code') || queryParams.get('code'),
+        type: hashParams.get('type') || queryParams.get('type') || 'invite',
+        error: hashParams.get('error_description') || queryParams.get('error_description') || hashParams.get('error')
       };
     }
 
-    const { accessToken, refreshToken, type } = obtenerParametrosHash();
+    let { accessToken, refreshToken, tokenHash, code, type, error } = obtenerParametrosAuth();
 
-    if (!accessToken) {
-      document.getElementById('status-error').innerText = '❌ Enlace de invitación inválido o expirado. Solicita una nueva invitación.';
-      document.getElementById('status-error').style.display = 'block';
-      document.getElementById('btn-submit').disabled = true;
+    // Si viene un tokenHash o code, resolver sesión primero
+    async function inicializarSesion() {
+      if (accessToken) return;
+
+      if (tokenHash) {
+        try {
+          const verifyRes = await fetch(`https://api-oracle.lukeapp.cl/auth/v1/verify?type=${type}&token_hash=${tokenHash}`, {
+            headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImlhdCI6MTczOTcyOTI3MiwiZXhwIjoyMDU1MDg5MjcyfQ.4wqBiO7twFOgiLPbHQi9pmTWrM1N6FjlI93mWsuyOiE' }
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.access_token) {
+            accessToken = verifyData.access_token;
+            return;
+          }
+        } catch {}
+      }
+
+      if (!accessToken) {
+        // Modo directo: permitir crear clave ingresando email
+        document.getElementById('group-email').style.display = 'block';
+        document.getElementById('subtitulo-card').innerText = 'Ingresa el correo de tu cuenta y la nueva contraseña que deseas establecer.';
+      }
     }
+
+    inicializarSesion();
 
     async function guardarNuevaClave(event) {
       event.preventDefault();
       const pass1 = document.getElementById('nueva-pass').value;
       const pass2 = document.getElementById('confirm-pass').value;
+      const emailInput = document.getElementById('email-usuario').value.trim();
       const btn = document.getElementById('btn-submit');
       const errBox = document.getElementById('status-error');
 
@@ -115,35 +145,50 @@
       }
 
       btn.disabled = true;
-      btn.innerText = 'Activando cuenta...';
+      btn.innerText = 'Guardando contraseña...';
 
       try {
-        // Actualizar contraseña en Supabase Auth usando el access_token del enlace
-        const res = await fetch('https://api-oracle.lukeapp.cl/auth/v1/user', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImlhdCI6MTczOTcyOTI3MiwiZXhwIjoyMDU1MDg5MjcyfQ.4wqBiO7twFOgiLPbHQi9pmTWrM1N6FjlI93mWsuyOiE'
-          },
-          body: JSON.stringify({ password: pass1 })
-        });
+        if (accessToken) {
+          // Caso A: Tenemos sesión activa vía token de invitación
+          const res = await fetch('https://api-oracle.lukeapp.cl/auth/v1/user', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImlhdCI6MTczOTcyOTI3MiwiZXhwIjoyMDU1MDg5MjcyfQ.4wqBiO7twFOgiLPbHQi9pmTWrM1N6FjlI93mWsuyOiE'
+            },
+            body: JSON.stringify({ password: pass1 })
+          });
 
-        const userData = await res.json();
-        if (!res.ok) {
-          throw new Error(userData.msg || userData.error_description || userData.message || 'Error al actualizar contraseña');
+          const userData = await res.json();
+          if (!res.ok) throw new Error(userData.msg || userData.error_description || userData.message || 'Error al actualizar contraseña');
+
+          localStorage.setItem('luke_core_token', accessToken);
+          localStorage.setItem('luke_core_user', JSON.stringify({
+            id: userData.id,
+            email: userData.email,
+            nombre_completo: userData.user_metadata?.nombre || userData.email,
+            rol: userData.user_metadata?.role || 'admin'
+          }));
+
+        } else {
+          // Caso B: Seteo directo a través de la API del Core
+          if (!emailInput) throw new Error('Por favor ingresa tu correo electrónico registrado');
+
+          const res = await fetch('/api/v1/auth/establecer-clave-directa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailInput, password: pass1 })
+          });
+
+          const json = await res.json();
+          if (!json.ok) throw new Error(json.error || 'No se pudo establecer la contraseña');
+
+          localStorage.setItem('luke_core_token', json.data.access_token);
+          localStorage.setItem('luke_core_user', JSON.stringify(json.data));
         }
 
-        // Guardar sesión activa en localStorage
-        localStorage.setItem('luke_core_token', accessToken);
-        localStorage.setItem('luke_core_user', JSON.stringify({
-          id: userData.id,
-          email: userData.email,
-          nombre_completo: userData.user_metadata?.nombre || userData.email,
-          rol: userData.user_metadata?.role || 'admin'
-        }));
-
-        alert('🎉 ¡Cuenta activada con éxito! Bienvenido a LukeAPPs.');
+        alert('🎉 ¡Contraseña establecida con éxito! Bienvenido a LukeAPPs.');
         window.location.replace('/admin/index.html');
 
       } catch (err) {

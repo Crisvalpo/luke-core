@@ -5,4 +5,5 @@ import { requireAuth } from '../../shared/middlewares/authGuard.js';
 export const authRouter = Router();
 
 authRouter.post('/login', AuthController.login);
+authRouter.post('/establecer-clave-directa', AuthController.establecerClaveDirecta);
 authRouter.get('/me', requireAuth, AuthController.me);

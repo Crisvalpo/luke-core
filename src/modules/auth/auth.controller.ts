@@ -14,6 +14,17 @@ export class AuthController {
     }
   }
 
+  static async establecerClaveDirecta(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return sendError(res, 'Email y contraseña requeridos', 400);
+      const session = await AuthService.establecerClaveDirecta(email, password);
+      return sendSuccess(res, session, 200, { mensaje: 'Contraseña establecida exitosamente' });
+    } catch (error: any) {
+      return sendError(res, error.message || 'Error al establecer contraseña', 400);
+    }
+  }
+
   static async me(req: Request, res: Response, next: NextFunction) {
     try {
       const user = (req as any).user;
