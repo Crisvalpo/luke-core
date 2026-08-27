@@ -150,12 +150,9 @@
           </div>
 
           <div class="form-group full">
-            <label class="form-label">Módulos Contratados</label>
+            <label class="form-label">Módulos Habilitados en este Entorno</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
-              <label><input type="checkbox" name="modulos" value="combustible" checked> ⛽ Combustible</label>
-              <label><input type="checkbox" name="modulos" value="partes_diarios" checked> 📋 Partes Diarios</label>
-              <label><input type="checkbox" name="modulos" value="cuadrillas"> 👷 Cuadrillas</label>
-              <label><input type="checkbox" name="modulos" value="mantenimiento"> 🔧 Mantención</label>
+              <label><input type="checkbox" name="modulos" value="combustible" checked> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
             </div>
           </div>
 
@@ -214,8 +211,9 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Slug</label>
-            <input class="form-input" type="text" id="edit-slug" required>
+            <label class="form-label">Slug (Identificador de Subdominio)</label>
+            <input class="form-input" type="text" id="edit-slug" readonly disabled style="background: #f1f5f9; cursor: not-allowed; color: #64748b; font-weight: 600;">
+            <small style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px; display: block;">🔒 El slug es inmutable una vez creada la empresa.</small>
           </div>
 
           <div class="form-group">
@@ -245,10 +243,7 @@
           <div class="form-group full">
             <label class="form-label">Módulos Habilitados</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
-              <label><input type="checkbox" name="edit-modulos" value="combustible"> ⛽ Combustible</label>
-              <label><input type="checkbox" name="edit-modulos" value="partes_diarios"> 📋 Partes Diarios</label>
-              <label><input type="checkbox" name="edit-modulos" value="cuadrillas"> 👷 Cuadrillas</label>
-              <label><input type="checkbox" name="edit-modulos" value="mantenimiento"> 🔧 Mantención</label>
+              <label><input type="checkbox" name="edit-modulos" value="combustible"> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
             </div>
           </div>
         </div>
