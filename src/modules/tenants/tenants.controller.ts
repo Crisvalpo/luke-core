@@ -27,11 +27,13 @@ export class TenantsController {
   }
 
   /**
-   * Listar todas las empresas activas
+   * Listar empresas activas (todas para super_admin, o solo la propia para admin)
    */
   static async listar(req: Request, res: Response, next: NextFunction) {
     try {
-      const tenants = await TenantsService.listarTenants();
+      const user = (req as any).user;
+      const tenantId = user?.rol === 'super_admin' ? null : (user?.tenant_id || null);
+      const tenants = await TenantsService.listarTenants(tenantId);
       return sendSuccess(res, tenants);
     } catch (error) {
       next(error);

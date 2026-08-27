@@ -59,12 +59,12 @@
     <!-- Main Content -->
     <main class="main-wrapper">
       <header class="topbar">
-        <h2>Gestión de Empresas & Marcas Blancas</h2>
+        <h2 id="topbar-titulo">Gestión de Empresas & Marcas Blancas</h2>
         <div style="display: flex; gap: 0.75rem;">
           <button class="btn btn-secondary" onclick="abrirModalIngesta()">
             📊 Ingesta Masiva (Excel)
           </button>
-          <button class="btn btn-primary" onclick="abrirModalOnboarding()">
+          <button class="btn btn-primary" id="btn-nuevo-cliente" onclick="abrirModalOnboarding()">
             ➕ Nuevo Cliente
           </button>
         </div>
@@ -74,7 +74,7 @@
         <!-- KPIs Globales -->
         <section class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-label">Empresas Activas</div>
+            <div class="kpi-label" id="kpi-label-tenants">Empresas Activas</div>
             <div class="kpi-value" id="kpi-tenants">-</div>
           </div>
           <div class="kpi-card">

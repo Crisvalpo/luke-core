@@ -25,6 +25,20 @@ function verificarAutenticacion() {
       if (displayElem) {
         displayElem.innerText = `${user.nombre_completo.split(' ')[0]} (${user.rol})`;
       }
+
+      // Si no es Super-Admin, adaptar la vista a su Entorno de Empresa
+      if (user.rol !== 'super_admin') {
+        const btnNuevo = document.getElementById('btn-nuevo-cliente');
+        if (btnNuevo) btnNuevo.style.display = 'none';
+
+        const topbarTitulo = document.getElementById('topbar-titulo');
+        if (topbarTitulo) {
+          topbarTitulo.innerText = `Mi Entorno — ${user.tenant_razon_social || 'Panel de Empresa'}`;
+        }
+
+        const kpiLabel = document.getElementById('kpi-label-tenants');
+        if (kpiLabel) kpiLabel.innerText = 'Mi Empresa';
+      }
     } catch {}
   }
 }

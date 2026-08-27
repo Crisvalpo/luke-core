@@ -182,10 +182,10 @@ export class TenantsService {
   }
 
   /**
-   * Listar todos los tenants con resumen métrico
+   * Listar todos los tenants con resumen métrico (filtrado por tenantId si no es super_admin)
    */
-  static async listarTenants() {
-    const res = await dbPool.query(`
+  static async listarTenants(tenantId?: string | null) {
+    let sql = `
       SELECT 
         t.*,
         COUNT(DISTINCT p.id) AS total_proyectos,
@@ -196,9 +196,15 @@ export class TenantsService {
       LEFT JOIN core.personal per ON per.tenant_id = t.id AND per.activo = TRUE
       LEFT JOIN core.equipos eq ON eq.tenant_id = t.id AND eq.activo = TRUE
       WHERE t.activo = TRUE
-      GROUP BY t.id
-      ORDER BY t.razon_social ASC;
-    `);
+    `;
+    const params: any[] = [];
+    if (tenantId) {
+      params.push(tenantId);
+      sql += ` AND t.id = $1`;
+    }
+    sql += ` GROUP BY t.id ORDER BY t.razon_social ASC;`;
+
+    const res = await dbPool.query(sql, params);
     return res.rows;
   }
 }
