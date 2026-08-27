@@ -30,6 +30,9 @@ app.use(tenantResolver);
 
 // Servir Panel Web Estático (Admin UI)
 app.use(express.static('public'));
+app.get('/', (req, res) => {
+  res.redirect('/admin/');
+});
 app.get('/admin', (req, res) => {
   res.redirect('/admin/index.html');
 });
