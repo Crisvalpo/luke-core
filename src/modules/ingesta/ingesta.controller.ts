@@ -6,7 +6,7 @@ export class IngestaController {
   public static async cargarPersonal(req: Request, res: Response, next: NextFunction) {
     try {
       const { tenant_id, base64 } = req.body;
-      const tenantIdFinal = tenant_id || req.tenantId;
+      const tenantIdFinal = tenant_id || req.tenant?.id || req.user?.tenant_id;
 
       if (!tenantIdFinal) {
         return sendError(res, 'El ID de la empresa (tenant_id) es obligatorio', 400);
@@ -27,7 +27,7 @@ export class IngestaController {
   public static async cargarEquipos(req: Request, res: Response, next: NextFunction) {
     try {
       const { tenant_id, base64 } = req.body;
-      const tenantIdFinal = tenant_id || req.tenantId;
+      const tenantIdFinal = tenant_id || req.tenant?.id || req.user?.tenant_id;
 
       if (!tenantIdFinal) {
         return sendError(res, 'El ID de la empresa (tenant_id) es obligatorio', 400);
