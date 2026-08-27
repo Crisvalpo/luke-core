@@ -11,9 +11,12 @@ function verificarAutenticacion() {
   const userJson = localStorage.getItem('luke_core_user');
 
   if (!token) {
-    window.location.href = '/admin/login.html';
+    window.location.replace('/admin/login.html');
     return;
   }
+
+  // Token presente: mostramos la interfaz suavemente
+  document.body.classList.add('authenticated');
 
   if (userJson) {
     try {

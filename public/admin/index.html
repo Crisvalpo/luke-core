@@ -8,6 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // Verificación inmediata antes de pintar el DOM (Previene FOUC)
+    if (!localStorage.getItem('luke_core_token')) {
+      window.location.replace('/admin/login.html');
+    }
+  </script>
+  <style>
+    body {
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+    }
+    body.authenticated {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body>
 
