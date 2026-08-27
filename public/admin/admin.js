@@ -78,11 +78,11 @@ async function cargarTenants() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Error al obtener tenants');
 
-    let tenants = json.data || [];
+    let tenants = (json.data || []).filter(t => t.activo !== false);
 
     // Si el usuario es de una empresa en particular (rol !== 'super_admin'), filtrar estrictamente su tenant
     if (user && user.rol !== 'super_admin' && user.tenant_id) {
-      tenants = tenants.filter(t => t.id === user.tenant_id || t.slug === user.tenant_slug);
+      tenants = tenants.filter(t => (t.id === user.tenant_id || t.slug === user.tenant_slug) && t.activo !== false);
     }
 
     todosLosTenants = tenants;
