@@ -3,6 +3,8 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import { tenantResolver } from './shared/middlewares/tenantResolver.js';
 import { errorHandler } from './shared/middlewares/errorHandler.js';
+import { requireAuth, requireSuperAdmin } from './shared/middlewares/authGuard.js';
+import { requireTenant } from './shared/middlewares/requireTenant.js';
 import { sendSuccess } from './shared/utils/response.js';
 
 // Módulos
@@ -15,6 +17,7 @@ import { proveedoresRouter } from './modules/proveedores/proveedores.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { storageRouter } from './modules/storage/storage.routes.js';
 import { ingestaRouter } from './modules/ingesta/ingesta.routes.js';
+import { rolesRouter } from './modules/roles/roles.routes.js';
 
 export const app = express();
 
@@ -43,23 +46,32 @@ app.get('/health', (req, res) => {
   return sendSuccess(res, {
     status: 'online',
     app: 'Luke Core',
-    version: '1.0.0',
+    version: '1.1.0',
     env: env.NODE_ENV,
     uptime_seconds: process.uptime()
   });
 });
 
-// Rutas de la API v1
+// ═══════════════════════════════════════════════════════════════════
+// Rutas de la API v1 — CON Control de Acceso por Capas
+// ═══════════════════════════════════════════════════════════════════
 const apiV1 = express.Router();
-apiV1.use('/identidad', identidadRouter);
-apiV1.use('/tenants', tenantsRouter);
-apiV1.use('/proyectos', proyectosRouter);
-apiV1.use('/personal', personalRouter);
-apiV1.use('/equipos', equiposRouter);
-apiV1.use('/proveedores', proveedoresRouter);
+
+// 🔓 Rutas Públicas (sin autenticación)
 apiV1.use('/auth', authRouter);
-apiV1.use('/storage', storageRouter);
-apiV1.use('/ingesta', ingestaRouter);
+apiV1.use('/identidad', identidadRouter);
+
+// 🔒 Capa 1: Exclusiva Equipo LukeAPP (Super-Admin)
+apiV1.use('/tenants', requireAuth, requireSuperAdmin, tenantsRouter);
+apiV1.use('/ingesta', requireAuth, requireSuperAdmin, ingestaRouter);
+
+// 🔐 Capa 2: Rutas con Auth + Tenant (Admins de Empresa y sus operaciones)
+apiV1.use('/proyectos', requireAuth, requireTenant, proyectosRouter);
+apiV1.use('/personal', requireAuth, requireTenant, personalRouter);
+apiV1.use('/equipos', requireAuth, requireTenant, equiposRouter);
+apiV1.use('/proveedores', requireAuth, requireTenant, proveedoresRouter);
+apiV1.use('/roles', requireAuth, requireTenant, rolesRouter);
+apiV1.use('/storage', requireAuth, storageRouter);
 
 app.use('/api/v1', apiV1);
 

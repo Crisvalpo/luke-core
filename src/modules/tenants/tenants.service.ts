@@ -88,10 +88,13 @@ export class TenantsService {
       const tipoIndustria = input.config?.tipo_industria || 'industrial';
       await client.query('SELECT core.clonar_roles_estandar($1, $2)', [tenant.id, tipoIndustria]);
 
-      // 4.1 Obtener el ID del Rol ADMIN_GENERAL recién creado
+      // 4.1 Clonar roles al proyecto inicial
+      await client.query('SELECT core.clonar_roles_a_proyecto($1, $2)', [tenant.id, proyecto.id]);
+
+      // 4.2 Obtener el ID del Rol ADMIN_GENERAL del proyecto (o plantilla)
       const rolAdminRes = await client.query(
-        'SELECT id FROM core.roles_empresa WHERE tenant_id = $1 AND codigo = $2 LIMIT 1',
-        [tenant.id, 'ADMIN_GENERAL']
+        'SELECT id FROM core.roles_empresa WHERE tenant_id = $1 AND codigo = $2 AND (proyecto_id = $3 OR proyecto_id IS NULL) ORDER BY proyecto_id NULLS LAST LIMIT 1',
+        [tenant.id, 'ADMIN_GENERAL', proyecto.id]
       );
       const rolAdminId = rolAdminRes.rows[0]?.id || null;
 
