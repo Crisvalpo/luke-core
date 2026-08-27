@@ -121,6 +121,7 @@ export class TenantsService {
       try {
         const emailAdmin = input.administrador_inicial.email.toLowerCase();
         const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailAdmin, {
+          redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html',
           data: {
             nombre: input.administrador_inicial.nombre_completo,
             role: 'admin',
