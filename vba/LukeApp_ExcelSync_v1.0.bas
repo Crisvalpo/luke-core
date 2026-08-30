@@ -134,7 +134,7 @@ Public Sub IrASpoolsRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,TAG,ESTADO,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,SOLDADOR,AVANCE,ESTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 ' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
@@ -491,21 +491,13 @@ ManejoError:
 End Sub
 
 Private Function SincronizarJuntasDesdeNube(ByVal idProyecto As String) As Long
-    Dim http As Object
-    Dim respuestaJson As String
-    
-    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-    http.Open "GET", API_BASE_URL & "/api/piping/lista-juntas?id_proyecto=" & EscaparJson(idProyecto), False
-    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
-    http.send
-    
-    If http.Status = 200 Then
-        respuestaJson = http.responseText
-        SincronizarJuntasDesdeNube = FusionarJuntasEnTabla(respuestaJson)
-    Else
-        SincronizarJuntasDesdeNube = 0
-    End If
-    Set http = Nothing
+    SincronizarJuntasDesdeNube = DescargarYFusionarLista( _
+        "/api/piping/lista-juntas", _
+        "LIST_JUNTAS", _
+        "tbl_juntas", _
+        "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,SOLDADOR,AVANCE,ESTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", _
+        "id_junta", _
+        idProyecto)
 End Function
 
 Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreHoja As String, ByVal nombreTabla As String, ByVal columnasCsv As String, ByVal clavePrincipalJson As String, ByVal idProyecto As String) As Long
