@@ -53,6 +53,8 @@ app.get('/health', (req, res) => {
   });
 });
 
+import { accessRouter } from './modules/access/access.routes.js';
+
 // ═══════════════════════════════════════════════════════════════════
 // Rutas de la API v1 — CON Control de Acceso por Capas
 // ═══════════════════════════════════════════════════════════════════
@@ -61,6 +63,7 @@ const apiV1 = express.Router();
 // 🔓 Rutas Públicas (sin autenticación requerida previa)
 apiV1.use('/auth', authRouter);
 apiV1.use('/identidad', identidadRouter);
+apiV1.use('/access', accessRouter);
 
 // 🔒 Capa 1: Exclusiva Equipo LukeAPP (Super-Admin) y Gestión Multi-Tenant
 apiV1.use('/tenants', requireAuth, tenantsRouter);
@@ -79,9 +82,10 @@ apiV1.use('/piping', pipingRouter);
 
 app.use('/api/v1', apiV1);
 
-// Alias directo para clientes legacy / macros Excel (/api/auth y /api/piping)
+// Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access)
 app.use('/api/auth', authRouter);
 app.use('/api/piping', pipingRouter);
+app.use('/api/access', accessRouter);
 
 // Middleware Global de Errores
 app.use(errorHandler);

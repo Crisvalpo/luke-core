@@ -1,5 +1,6 @@
 ' ==============================================================================
 ' LUKEAPP EXCEL SYNC v1.0 — MÓDULO OFICIAL DE SINCRONIZACIÓN PIPING
+' Incluye: Ribbon de Seguridad (Solicitar Acceso, Iniciar Sesión, Cerrar Sesión)
 ' ==============================================================================
 Option Explicit
 
@@ -9,7 +10,110 @@ Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
 Private m_JwtToken As String
 
 ' ------------------------------------------------------------------------------
-' MACRO PRINCIPAL: Publicar Lista de Juntas a LukeApp
+' 1. BOTÓN RIBBON: Solicitar Acceso (Onboarding Zero-Touch vía WhatsApp)
+' ------------------------------------------------------------------------------
+Public Sub SolicitarAcceso()
+    Dim usuarioWindows As String
+    Dim nombreEquipo As String
+    Dim nombre As String
+    Dim telefono As String
+    Dim tenantSlug As String
+    Dim jsonPayload As String
+    Dim http As Object
+    
+    On Error GoTo ManejoError
+    
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    nombreEquipo = Trim(Environ("COMPUTERNAME"))
+    tenantSlug = LeerConfiguracion("EMPRESA")
+    If tenantSlug = "" Then tenantSlug = "dem"
+    
+    ' Solicitar Nombre Completo
+    nombre = InputBox( _
+        "Por favor ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
+        "Usuario Windows: " & usuarioWindows, _
+        "LukeApp — Solicitar Acceso")
+    nombre = Trim(nombre)
+    If nombre = "" Then Exit Sub
+    
+    ' Solicitar Teléfono WhatsApp
+    telefono = InputBox( _
+        "Ingresa tu número de WhatsApp con código de país (ejemplo: +56912345678):" & vbCrLf & vbCrLf & _
+        "A este número recibirás los códigos PIN de verificación y notificaciones.", _
+        "LukeApp — Teléfono WhatsApp", "+569")
+    telefono = Trim(telefono)
+    If telefono = "" Or telefono = "+569" Then Exit Sub
+    
+    Application.StatusBar = "Enviando solicitud de acceso al administrador..."
+    
+    jsonPayload = "{" & _
+        """usuario_windows"": """ & EscaparJson(usuarioWindows) & """," & _
+        """telefono"": """ & EscaparJson(telefono) & """," & _
+        """nombre"": """ & EscaparJson(nombre) & """," & _
+        """equipo"": """ & EscaparJson(nombreEquipo) & """," & _
+        """tenant"": """ & EscaparJson(tenantSlug) & """" & _
+    "}"
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "POST", API_BASE_URL & "/api/access/request", False
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send jsonPayload
+    
+    Application.StatusBar = False
+    
+    If http.Status = 200 Or http.Status = 201 Then
+        MsgBox "¡Solicitud Enviada con Éxito!" & vbCrLf & vbCrLf & _
+               "Se ha notificado al Administrador vía WhatsApp." & vbCrLf & _
+               "En cuanto tu acceso sea aprobado, recibirás un mensaje en WhatsApp (" & telefono & ") para que puedas iniciar sesión.", _
+               vbInformation, "LukeApp Onboarding"
+    Else
+        MsgBox "No se pudo registrar la solicitud (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error al Solicitar Acceso"
+    End If
+    
+    Set http = Nothing
+    Exit Sub
+
+ManejoError:
+    Application.StatusBar = False
+    MsgBox "Ocurrió un error al solicitar acceso:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+End Sub
+
+' ------------------------------------------------------------------------------
+' 2. BOTÓN RIBBON: Iniciar Sesión (Solicita OTP y precarga JWT 4h)
+' ------------------------------------------------------------------------------
+Public Sub IniciarSesion()
+    Dim usuarioWindows As String
+    
+    On Error GoTo ManejoError
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    
+    ' Forzar solicitud de token fresco
+    m_JwtToken = ""
+    
+    If AsegurarTokenValido(usuarioWindows) Then
+        MsgBox "¡Sesión Iniciada Exitosamente!" & vbCrLf & vbCrLf & _
+               "• Usuario: " & usuarioWindows & vbCrLf & _
+               "• Vigencia: 4 horas" & vbCrLf & _
+               "• Estado: Listo para publicar datos.", _
+               vbInformation, "LukeApp Seguridad"
+    End If
+    Exit Sub
+
+ManejoError:
+    MsgBox "Ocurrió un error al iniciar sesión:" & vbCrLf & Err.Description, vbCritical, "Error de Sesión"
+End Sub
+
+' ------------------------------------------------------------------------------
+' 3. BOTÓN RIBBON: Cerrar Sesión (Destruye JWT en memoria)
+' ------------------------------------------------------------------------------
+Public Sub CerrarSesion()
+    m_JwtToken = ""
+    MsgBox "Tu sesión ha sido cerrada correctamente." & vbCrLf & _
+           "El token en memoria fue eliminado.", vbInformation, "LukeApp Seguridad"
+End Sub
+
+' ------------------------------------------------------------------------------
+' 4. BOTÓN RIBBON: Publicar Lista de Juntas a LukeApp
 ' ------------------------------------------------------------------------------
 Public Sub PublicarListaJuntas()
     Dim usuarioWindows As String
@@ -108,7 +212,8 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """}"
     
     If http.Status <> 200 Then
-        MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error Autenticación"
+        MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText & vbCrLf & vbCrLf & _
+               "Si eres un usuario nuevo, haz clic en 'Solicitar Acceso' en el Ribbon.", vbCritical, "Error Autenticación"
         Set http = Nothing
         Exit Function
     End If
@@ -242,7 +347,6 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     Set dictUuids = CreateObject("Scripting.Dictionary")
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
-    ' Parser tolerante a espacios para la sección de registros
     posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
     If posReg > 0 Then
         posReg = InStr(posReg, respuestaJson, "[")
