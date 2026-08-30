@@ -465,18 +465,40 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
     If colClaveIdx = 0 And UBound(cols) >= 1 Then colClaveIdx = 2
     
     ' Indexar filas existentes por UUID y por Código
-    For i = 1 To tbl.ListRows.Count
-        If colUuidIdx > 0 Then
-            Dim valUuid As String
-            valUuid = UCase(Trim(CStr(tbl.DataBodyRange(i, colUuidIdx).Value)))
-            If valUuid <> "" And Not dictFilas.Exists(valUuid) Then dictFilas.Add valUuid, i
+    Dim primeraFilaVacia As Boolean
+    primeraFilaVacia = False
+    
+    If tbl.ListRows.Count > 1 Then
+        Dim v1Test As String, v2Test As String
+        If colUuidIdx > 0 Then v1Test = Trim(CStr(tbl.DataBodyRange(1, colUuidIdx).Value))
+        If colClaveIdx > 0 Then v2Test = Trim(CStr(tbl.DataBodyRange(1, colClaveIdx).Value))
+        If v1Test = "" And v2Test = "" Then
+            ' Eliminar fila en blanco residual
+            tbl.ListRows(1).Delete
         End If
-        If colClaveIdx > 0 Then
-            Dim valKey As String
-            valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, colClaveIdx).Value)))
-            If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
-        End If
-    Next i
+    End If
+    
+    If tbl.ListRows.Count = 1 Then
+        Dim v1 As String, v2 As String
+        If colUuidIdx > 0 Then v1 = Trim(CStr(tbl.DataBodyRange(1, colUuidIdx).Value))
+        If colClaveIdx > 0 Then v2 = Trim(CStr(tbl.DataBodyRange(1, colClaveIdx).Value))
+        If v1 = "" And v2 = "" Then primeraFilaVacia = True
+    End If
+    
+    If Not primeraFilaVacia Then
+        For i = 1 To tbl.ListRows.Count
+            If colUuidIdx > 0 Then
+                Dim valUuid As String
+                valUuid = UCase(Trim(CStr(tbl.DataBodyRange(i, colUuidIdx).Value)))
+                If valUuid <> "" And Not dictFilas.Exists(valUuid) Then dictFilas.Add valUuid, i
+            End If
+            If colClaveIdx > 0 Then
+                Dim valKey As String
+                valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, colClaveIdx).Value)))
+                If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
+            End If
+        Next i
+    End If
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.Open "GET", API_BASE_URL & endpoint & "?id_proyecto=" & EscaparJson(idProyecto), False
@@ -514,6 +536,9 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
                         filaNum = dictFilas(idBuscar)
                     ElseIf kVal <> "" And dictFilas.Exists(UCase(Trim(kVal))) Then
                         filaNum = dictFilas(UCase(Trim(kVal)))
+                    ElseIf primeraFilaVacia And totalProcesados = 0 Then
+                        filaNum = 1
+                        dictFilas.Add idBuscar, filaNum
                     Else
                         Dim nFila As ListRow
                         Set nFila = tbl.ListRows.Add
