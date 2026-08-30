@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { PipingService } from './piping.service.js';
-import { sincronizarListaJuntasSchema } from './piping.schema.js';
+import { payloadSyncJuntasSchema } from './piping.schema.js';
 import { requireSyncAuth } from '../../shared/middlewares/authGuard.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
 
@@ -12,12 +12,12 @@ export const pipingRouter = Router();
 pipingRouter.post('/lista-juntas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
-    const body = sincronizarListaJuntasSchema.parse(req.body);
+    const body = payloadSyncJuntasSchema.parse(req.body);
 
     const resultado = await PipingService.sincronizarJuntas(usuarioWindows, body);
 
     return sendSuccess(res, resultado, 200, {
-      mensaje: `Sincronización exitosa: ${resultado.total_procesados} juntas procesadas en el proyecto ${resultado.proyecto_id}.`
+      mensaje: `Sincronización exitosa: ${resultado.procesados} juntas procesadas en el proyecto ${resultado.proyecto_id}.`
     });
   } catch (error: any) {
     if (error.name === 'ZodError') {

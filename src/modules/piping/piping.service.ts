@@ -1,49 +1,68 @@
 import { dbPool } from '../../config/database.js';
-import { JuntaItemInput } from './piping.schema.js';
+import { PayloadSyncJuntasInput } from './piping.schema.js';
 
-export interface SincronizacionResult {
-  ok: boolean;
-  total_procesados: number;
-  proyecto_id: string;
-  usuario: string;
-  fecha: string;
+export interface JuntaSincronizadaOutput {
+  id_junta: string;
+  uuid: string;
+}
+
+export interface RespuestaSincronizacionJuntas {
+  procesados: number;
+  registros: JuntaSincronizadaOutput[];
+  proyecto_id?: string;
+  fecha?: string;
 }
 
 export class PipingService {
   /**
-   * Procesa la sincronización / upsert masivo de lista de juntas desde Excel / VBA
+   * Sincronización atómica de lista de juntas desde Excel Sync v1.0
+   * Realiza Upsert masivo y retorna los UUIDs generados/existentes para retroalimentar el Excel.
    */
   static async sincronizarJuntas(
     usuarioWindows: string,
-    juntas: JuntaItemInput[]
-  ): Promise<SincronizacionResult> {
+    payload: PayloadSyncJuntasInput
+  ): Promise<RespuestaSincronizacionJuntas> {
     const client = await dbPool.connect();
 
     try {
       await client.query('BEGIN');
 
-      const primerProyecto = juntas[0]?.id_proyecto || 'GENERAL';
+      const idProyecto = payload.id_proyecto;
+      const registros = payload.registros;
+      const usuarioFinal = payload.usuario_windows || usuarioWindows;
+      const resultadoJuntas: JuntaSincronizadaOutput[] = [];
 
-      // 1. Ejecutar Upsert masivo para cada junta
-      for (const junta of juntas) {
-        await client.query(`
+      // 1. Ejecutar Upsert masivo para cada junta obteniendo su UUID definitivo
+      for (const junta of registros) {
+        const res = await client.query(`
           INSERT INTO core.lista_juntas (
-            id_proyecto, id_junta, tag, estado, vigente, fecha_sync, updated_at
+            uuid, id_proyecto, id_junta, tag, estado, vigente, fecha_sync, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+          VALUES (
+            COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
+            $2, $3, $4, $5, TRUE, NOW(), NOW()
+          )
           ON CONFLICT (id_proyecto, id_junta) DO UPDATE SET
             tag = EXCLUDED.tag,
             estado = EXCLUDED.estado,
-            vigente = EXCLUDED.vigente,
+            vigente = TRUE,
             fecha_sync = NOW(),
-            updated_at = NOW();
+            updated_at = NOW()
+          RETURNING id_junta, uuid::text;
         `, [
-          junta.id_proyecto,
+          junta.uuid || null,
+          idProyecto,
           junta.id_junta,
           junta.tag || null,
-          junta.estado || 'ACTIVO',
-          junta.vigente !== undefined ? junta.vigente : true
+          junta.estado || 'ACTIVO'
         ]);
+
+        if (res.rows[0]) {
+          resultadoJuntas.push({
+            id_junta: res.rows[0].id_junta,
+            uuid: res.rows[0].uuid
+          });
+        }
       }
 
       // 2. Registrar en la tabla de auditoría (core.audit_sync)
@@ -53,13 +72,12 @@ export class PipingService {
         )
         VALUES ($1, $2, $3, $4, $5, NOW());
       `, [
-        usuarioWindows,
-        primerProyecto,
+        usuarioFinal,
+        idProyecto,
         'lista_juntas',
-        juntas.length,
+        registros.length,
         JSON.stringify({
-          primera_junta: juntas[0]?.id_junta,
-          ultima_junta: juntas[juntas.length - 1]?.id_junta,
+          total: registros.length,
           timestamp: new Date().toISOString()
         })
       ]);
@@ -67,10 +85,9 @@ export class PipingService {
       await client.query('COMMIT');
 
       return {
-        ok: true,
-        total_procesados: juntas.length,
-        proyecto_id: primerProyecto,
-        usuario: usuarioWindows,
+        procesados: resultadoJuntas.length,
+        registros: resultadoJuntas,
+        proyecto_id: idProyecto,
         fecha: new Date().toISOString()
       };
     } catch (error) {

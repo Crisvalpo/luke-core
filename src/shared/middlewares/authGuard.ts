@@ -75,7 +75,7 @@ export async function requireSyncAuth(req: Request, res: Response, next: NextFun
     const { env } = await import('../../config/env.js');
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
 
-    if (decoded && (decoded.perm === 'sync' || decoded.rol === 'super_admin' || decoded.rol === 'admin')) {
+    if (decoded && (decoded.scope === 'excel_sync' || decoded.perm === 'sync' || decoded.rol === 'super_admin' || decoded.rol === 'admin')) {
       req.user = decoded;
       return next();
     }

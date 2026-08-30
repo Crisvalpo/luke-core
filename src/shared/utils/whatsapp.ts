@@ -54,7 +54,7 @@ export class WhatsAppService {
    * Envía un OTP formateado de 6 dígitos para autenticación Excel
    */
   static async enviarOtpExcel(telefono: string, usuarioWindows: string, otp: string): Promise<boolean> {
-    const mensaje = `🔐 *LukeApp — Autenticación Excel*\n\nHola *${usuarioWindows}*,\nTu código de verificación para sincronizar datos es:\n\n👉 *${otp}*\n\n⏳ Válido por 5 minutos.\n_No compartas este código con nadie._`;
+    const mensaje = `LukeApp\n\nCódigo de acceso:\n\n*${otp}*\n\nExpira en 5 minutos.`;
     return this.enviarMensaje({ to: telefono, text: mensaje });
   }
 }
