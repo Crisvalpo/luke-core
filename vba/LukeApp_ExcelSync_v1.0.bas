@@ -1,0 +1,362 @@
+' ==============================================================================
+' LUKEAPP EXCEL SYNC v1.0 — MÓDULO OFICIAL DE SINCRONIZACIÓN PIPING
+' ==============================================================================
+Option Explicit
+
+Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
+
+' Token volátil en memoria (destruido automáticamente al cerrar Excel)
+Private m_JwtToken As String
+
+' ------------------------------------------------------------------------------
+' MACRO PRINCIPAL: Publicar Lista de Juntas a LukeApp
+' ------------------------------------------------------------------------------
+Public Sub PublicarListaJuntas()
+    Dim usuarioWindows As String
+    Dim idProyecto As String
+    Dim jsonPayload As String
+    Dim http As Object
+    Dim respuestaJson As String
+    Dim totalFilas As Long
+    Dim tInicio As Double
+    
+    On Error GoTo ManejoError
+    tInicio = Timer
+    
+    ' 1. Obtener usuario de Windows con Dominio
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    
+    ' 2. Leer ID_PROYECTO desde la tabla tbl_config en hoja CONFIG
+    idProyecto = LeerConfiguracion("ID_PROYECTO")
+    If idProyecto = "" Then
+        MsgBox "No se encontró el parámetro 'ID_PROYECTO' en la tabla 'tbl_config' de la hoja CONFIG.", vbCritical, "Error de Configuración"
+        Exit Sub
+    End If
+    
+    ' 3. Asegurar Token JWT válido (4 horas) vía WhatsApp OTP
+    If Not AsegurarTokenValido(usuarioWindows) Then
+        Exit Sub
+    End If
+    
+    ' 4. Construir Payload JSON desde tbl_juntas
+    jsonPayload = ConstruirPayloadV1(idProyecto, usuarioWindows, totalFilas)
+    If totalFilas = 0 Then
+        MsgBox "No se encontraron juntas con 'ID_JUNTA' en la tabla 'tbl_juntas'.", vbExclamation, "LukeApp Sync"
+        Exit Sub
+    End If
+    
+    Application.StatusBar = "Sincronizando " & totalFilas & " juntas con Luke Core..."
+    
+    ' 5. Enviar Petición HTTP a Luke Core API
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "POST", API_BASE_URL & "/api/piping/lista-juntas", False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send jsonPayload
+    
+    ' 6. Procesar Respuesta del Servidor
+    If http.Status = 200 Or http.Status = 201 Then
+        respuestaJson = http.responseText
+        
+        ' Escribir los UUIDs y fecha de sincronización de vuelta en la tabla
+        ActualizarUuidsEnTabla respuestaJson
+        
+        Application.StatusBar = False
+        MsgBox "Sincronización Exitosa:" & vbCrLf & vbCrLf & _
+               "• Proyecto: " & idProyecto & vbCrLf & _
+               "• Juntas procesadas: " & totalFilas & vbCrLf & _
+               "• Usuario autenticado: " & usuarioWindows & vbCrLf & _
+               "• Tiempo: " & Format(Timer - tInicio, "0.00") & " seg", _
+               vbInformation, "LukeApp Sync v1.0"
+               
+    ElseIf http.Status = 401 Then
+        m_JwtToken = ""
+        Application.StatusBar = False
+        MsgBox "La sesión expiró o el token fue rechazado." & vbCrLf & _
+               "Presiona nuevamente PUBLICAR para solicitar un PIN nuevo.", _
+               vbExclamation, "Sesión Expirada"
+    Else
+        Application.StatusBar = False
+        MsgBox "Error del Servidor (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error de Sincronización"
+    End If
+    
+    Set http = Nothing
+    Exit Sub
+
+ManejoError:
+    Application.StatusBar = False
+    MsgBox "Ocurrió un error en la ejecución:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+End Sub
+
+' ------------------------------------------------------------------------------
+' AUTENTICACIÓN OTP + JWT (4 HORAS EN MEMORIA)
+' ------------------------------------------------------------------------------
+Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
+    Dim http As Object
+    Dim pinIngresado As String
+    Dim jsonResp As String
+    
+    If Len(m_JwtToken) > 20 Then
+        AsegurarTokenValido = True
+        Exit Function
+    End If
+    
+    ' PASO 1: Solicitar OTP a Luke Core
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "POST", API_BASE_URL & "/api/auth/request-otp", False
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """}"
+    
+    If http.Status <> 200 Then
+        MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error Autenticación"
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    ' PASO 2: Solicitar PIN al usuario mediante InputBox
+    pinIngresado = InputBox( _
+        "Se ha enviado un código de acceso de 6 dígitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
+        "Usuario: " & usuarioWindows & vbCrLf & _
+        "Vigencia: 5 minutos" & vbCrLf & vbCrLf & _
+        "Ingresa el código PIN recibido:", _
+        "LukeApp — Verificación de Acceso OTP")
+        
+    pinIngresado = Trim(pinIngresado)
+    If pinIngresado = "" Then
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    If Len(pinIngresado) <> 6 Or Not IsNumeric(pinIngresado) Then
+        MsgBox "El PIN debe contener exactamente 6 dígitos numéricos.", vbExclamation, "PIN Inválido"
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    ' PASO 3: Verificar PIN y obtener JWT (4 horas)
+    http.Open "POST", API_BASE_URL & "/api/auth/verify-otp", False
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""otp"": """ & pinIngresado & """}"
+    
+    If http.Status = 200 Then
+        jsonResp = http.responseText
+        m_JwtToken = ExtraerValorJson(jsonResp, "token")
+        
+        If Len(m_JwtToken) <= 20 Then
+            MsgBox "Luke Core respondió, pero no entregó un token válido." & vbCrLf & vbCrLf & jsonResp, vbCritical, "Respuesta Inválida"
+            m_JwtToken = ""
+            AsegurarTokenValido = False
+        Else
+            AsegurarTokenValido = True
+        End If
+    Else
+        MsgBox "Código PIN incorrecto o expirado:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Validación Fallida"
+        AsegurarTokenValido = False
+    End If
+    
+    Set http = Nothing
+End Function
+
+' ------------------------------------------------------------------------------
+' CONSTRUCTOR DE PAYLOAD V1.0 DESDE tbl_juntas
+' ------------------------------------------------------------------------------
+Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String, ByRef totalOut As Long) As String
+    Dim tbl As ListObject
+    Dim i As Long
+    Dim jsonItems As String
+    Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long
+    Dim vUuid As String, vJunta As String, vTag As String, vEstado As String
+    
+    On Error Resume Next
+    Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        MsgBox "No se encontró la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
+        totalOut = 0
+        Exit Function
+    End If
+    
+    colUuid = ObtenerIndiceColumna(tbl, "UUID")
+    colJunta = ObtenerIndiceColumna(tbl, "ID_JUNTA")
+    colTag = ObtenerIndiceColumna(tbl, "TAG")
+    colEstado = ObtenerIndiceColumna(tbl, "ESTADO")
+    
+    If colJunta = 0 Then
+        MsgBox "La columna 'ID_JUNTA' no existe en 'tbl_juntas'.", vbCritical, "Error de Estructura"
+        Exit Function
+    End If
+    
+    totalOut = 0
+    For i = 1 To tbl.ListRows.Count
+        vJunta = Trim(CStr(tbl.DataBodyRange(i, colJunta).Value))
+        
+        If vJunta <> "" Then
+            vUuid = ""
+            If colUuid > 0 Then vUuid = Trim(CStr(tbl.DataBodyRange(i, colUuid).Value))
+            
+            vTag = ""
+            If colTag > 0 Then vTag = Trim(CStr(tbl.DataBodyRange(i, colTag).Value))
+            
+            vEstado = "ACTIVO"
+            If colEstado > 0 Then
+                vEstado = Trim(CStr(tbl.DataBodyRange(i, colEstado).Value))
+                If vEstado = "" Then vEstado = "ACTIVO"
+            End If
+            
+            If totalOut > 0 Then jsonItems = jsonItems & ","
+            
+            jsonItems = jsonItems & "{"
+            If vUuid <> "" Then
+                jsonItems = jsonItems & """uuid"":""" & EscaparJson(vUuid) & ""","
+            End If
+            jsonItems = jsonItems & _
+                """id_junta"":""" & EscaparJson(vJunta) & """," & _
+                """tag"":""" & EscaparJson(vTag) & """," & _
+                """estado"":""" & EscaparJson(vEstado) & """," & _
+                """vigente"":true" & _
+            "}"
+            
+            totalOut = totalOut + 1
+        End If
+    Next i
+    
+    ConstruirPayloadV1 = "{" & _
+        """id_proyecto"": """ & EscaparJson(idProyecto) & """," & _
+        """usuario_windows"": """ & EscaparJson(usuarioWindows) & """," & _
+        """registros"": [" & jsonItems & "]" & _
+    "}"
+End Function
+
+' ------------------------------------------------------------------------------
+' ACTUALIZAR UUIDs Y FECHA_SYNC DE VUELTA EN tbl_juntas
+' ------------------------------------------------------------------------------
+Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
+    Dim tbl As ListObject
+    Dim colUuid As Long, colJunta As Long, colFecha As Long
+    Dim i As Long, posReg As Long, posItem As Long, posFin As Long
+    Dim idJunta As String, uuidValor As String
+    Dim fechaActual As String
+    Dim dictUuids As Object
+    
+    Set dictUuids = CreateObject("Scripting.Dictionary")
+    fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
+    
+    ' Parser tolerante a espacios para la sección de registros
+    posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
+    If posReg > 0 Then
+        posReg = InStr(posReg, respuestaJson, "[")
+    End If
+    
+    If posReg > 0 Then
+        posItem = InStr(posReg, respuestaJson, "{")
+        Do While posItem > 0
+            posFin = InStr(posItem, respuestaJson, "}")
+            If posFin = 0 Then Exit Do
+            
+            idJunta = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "id_junta")
+            uuidValor = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "uuid")
+            
+            If idJunta <> "" And uuidValor <> "" Then
+                dictUuids(idJunta) = uuidValor
+            End If
+            
+            posItem = InStr(posFin, respuestaJson, "{")
+        Loop
+    End If
+    
+    On Error Resume Next
+    Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
+    On Error GoTo 0
+    If tbl Is Nothing Then Exit Sub
+    
+    colUuid = ObtenerIndiceColumna(tbl, "UUID")
+    colJunta = ObtenerIndiceColumna(tbl, "ID_JUNTA")
+    colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+    
+    If colJunta = 0 Then Exit Sub
+    
+    Application.ScreenUpdating = False
+    For i = 1 To tbl.ListRows.Count
+        idJunta = Trim(CStr(tbl.DataBodyRange(i, colJunta).Value))
+        If dictUuids.Exists(idJunta) Then
+            If colUuid > 0 Then tbl.DataBodyRange(i, colUuid).Value = dictUuids(idJunta)
+            If colFecha > 0 Then tbl.DataBodyRange(i, colFecha).Value = fechaActual
+        End If
+    Next i
+    Application.ScreenUpdating = True
+End Sub
+
+' ------------------------------------------------------------------------------
+' FUNCIONES AUXILIARES
+' ------------------------------------------------------------------------------
+Private Function ObtenerUsuarioWindowsCompleto() As String
+    Dim dominio As String
+    Dim usuario As String
+    
+    dominio = Trim(Environ("USERDOMAIN"))
+    usuario = Trim(Environ("USERNAME"))
+    
+    If dominio <> "" Then
+        ObtenerUsuarioWindowsCompleto = dominio & "\" & usuario
+    Else
+        ObtenerUsuarioWindowsCompleto = usuario
+    End If
+End Function
+
+Private Function LeerConfiguracion(ByVal parametro As String) As String
+    Dim tbl As ListObject
+    Dim i As Long
+    
+    On Error Resume Next
+    Set tbl = ThisWorkbook.Sheets("CONFIG").ListObjects("tbl_config")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then Exit Function
+    
+    For i = 1 To tbl.ListRows.Count
+        If UCase(Trim(CStr(tbl.DataBodyRange(i, 1).Value))) = UCase(Trim(parametro)) Then
+            LeerConfiguracion = Trim(CStr(tbl.DataBodyRange(i, 2).Value))
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ObtenerIndiceColumna(tbl As ListObject, nombreCol As String) As Long
+    Dim c As Long
+    For c = 1 To tbl.ListColumns.Count
+        If UCase(Trim(tbl.ListColumns(c).Name)) = UCase(Trim(nombreCol)) Then
+            ObtenerIndiceColumna = c
+            Exit Function
+        End If
+    Next c
+    ObtenerIndiceColumna = 0
+End Function
+
+Private Function EscaparJson(ByVal texto As String) As String
+    texto = Replace(texto, "\", "\\")
+    texto = Replace(texto, """", "\""")
+    texto = Replace(texto, vbCr, "\r")
+    texto = Replace(texto, vbLf, "\n")
+    texto = Replace(texto, vbTab, "\t")
+    EscaparJson = texto
+End Function
+
+Private Function ExtraerValorJson(ByVal json As String, ByVal clave As String) As String
+    Dim regex As Object
+    Dim coincidencias As Object
+    
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Global = False
+    regex.IgnoreCase = True
+    regex.Pattern = """" & clave & """\s*:\s*""([^""]+)"""
+    
+    If regex.Test(json) Then
+        Set coincidencias = regex.Execute(json)
+        ExtraerValorJson = coincidencias(0).SubMatches(0)
+    Else
+        ExtraerValorJson = ""
+    End If
+    
+    Set regex = Nothing
+End Function
