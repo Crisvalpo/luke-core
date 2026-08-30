@@ -724,6 +724,7 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
     Dim cols() As String
     Dim i As Long
     Dim r As Long
+    Dim colFaltante As Boolean
     
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets(nombreHoja)
@@ -750,20 +751,32 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
         If tbl Is Nothing And ws.ListObjects.Count > 0 Then Set tbl = ws.ListObjects(1)
         On Error GoTo 0
         
-        ' Asegurar columnas faltantes en tablas que ya existían previamente
         If Not tbl Is Nothing Then
             Application.ScreenUpdating = False
+            
+            ' Verificar si faltan columnas de la definición canónica
+            colFaltante = False
             For i = 0 To UBound(cols)
-                Dim nomCol As String
-                nomCol = Trim(cols(i))
-                If ObtenerIndiceColumna(tbl, nomCol) = 0 Then
-                    If nomCol = "UUID" Then
-                        tbl.ListColumns.Add(1).Name = "UUID"
-                    Else
-                        tbl.ListColumns.Add.Name = nomCol
-                    End If
+                If ObtenerIndiceColumna(tbl, Trim(cols(i))) = 0 Then
+                    colFaltante = True
+                    Exit For
                 End If
             Next i
+            
+            If colFaltante Then
+                ' Reestructurar encabezados de la tabla de forma limpia
+                tbl.Unlist
+                ws.Cells.Clear
+                
+                For i = 0 To UBound(cols)
+                    ws.Cells(1, i + 1).Value = cols(i)
+                Next i
+                
+                r = UBound(cols) + 1
+                Set tbl = ws.ListObjects.Add(xlSrcRange, ws.Range(ws.Cells(1, 1), ws.Cells(2, r)), , xlYes)
+                tbl.Name = nombreTabla
+            End If
+            
             Application.ScreenUpdating = True
         End If
     End If
@@ -938,67 +951,63 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     
     If http.Status <> 200 Then
         MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText & vbCrLf & vbCrLf & _
-               "Si eres un usuario nuevo, haz clic en 'Solicitar Acceso' en el Ribbon.", vbCritical, "Error Autenticacion"
+               "Verifica que tu usuario este registrado en el sistema.", vbCritical, "Error de Autenticacion"
+        AsegurarTokenValido = False
         Set http = Nothing
         Exit Function
     End If
     
     pinIngresado = InputBox( _
-        "Se ha enviado un codigo de acceso de 6 digitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
-        "Usuario: " & usuarioWindows & vbCrLf & _
-        "Vigencia: 5 minutos" & vbCrLf & vbCrLf & _
-        "Ingresa el codigo PIN recibido:", _
-        "LukeApp - Verificacion de Acceso OTP")
-        
+        "Se ha enviado un codigo PIN de 6 digitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
+        "Usuario: " & usuarioWindows & vbCrLf & vbCrLf & _
+        "Ingresa el PIN para validar tu identidad:", _
+        "LukeApp Seguridad - Autenticacion OTP")
+    
     pinIngresado = Trim(pinIngresado)
     If pinIngresado = "" Then
+        AsegurarTokenValido = False
         Set http = Nothing
         Exit Function
     End If
     
-    If Len(pinIngresado) <> 6 Or Not IsNumeric(pinIngresado) Then
-        MsgBox "El PIN debe contener exactamente 6 digitos numericos.", vbExclamation, "PIN Invalido"
-        Set http = Nothing
-        Exit Function
-    End If
-    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.Open "POST", API_BASE_URL & "/api/auth/verify-otp", False
     http.setRequestHeader "Content-Type", "application/json"
-    http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""otp"": """ & pinIngresado & """}"
+    http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""otp"": """ & EscaparJson(pinIngresado) & """}"
     
     If http.Status = 200 Then
         jsonResp = http.responseText
         m_JwtToken = ExtraerValorJson(jsonResp, "token")
         
-        If Len(m_JwtToken) <= 20 Then
-            MsgBox "Luke Core respondio, pero no entrego un token valido." & vbCrLf & vbCrLf & jsonResp, vbCritical, "Respuesta Invalida"
-            m_JwtToken = ""
-            AsegurarTokenValido = False
-        Else
+        If m_JwtToken <> "" Then
             AsegurarTokenValido = True
+        Else
+            MsgBox "No se pudo obtener el token de sesion de la respuesta.", vbCritical, "Error de Autenticacion"
+            AsegurarTokenValido = False
         End If
     Else
-        MsgBox "Codigo PIN incorrecto o expirado:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Validacion Fallida"
+        MsgBox "El PIN ingresado es invalido o ya expiro (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "PIN Invalido"
         AsegurarTokenValido = False
     End If
     
     Set http = Nothing
 End Function
 
-Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String, ByRef totalOut As Long) As String
+Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String) As String
+    Dim ws As Worksheet
     Dim tbl As ListObject
-    Dim i As Long
-    Dim jsonItems As String
     Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long
+    Dim i As Long, totalOut As Long
     Dim vUuid As String, vJunta As String, vTag As String, vEstado As String
+    Dim jsonItems As String
     
     On Error Resume Next
-    Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
+    Set ws = ThisWorkbook.Sheets("LIST_JUNTAS")
+    Set tbl = ws.ListObjects("tbl_juntas")
     On Error GoTo 0
     
     If tbl Is Nothing Then
-        MsgBox "No se encontro la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
-        totalOut = 0
+        MsgBox "No se encontro la tabla tbl_juntas en la hoja LIST_JUNTAS.", vbCritical, "Error de Datos"
         Exit Function
     End If
     
@@ -1007,26 +1016,31 @@ Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWin
     colTag = ObtenerIndiceColumna(tbl, "TAG")
     colEstado = ObtenerIndiceColumna(tbl, "ESTADO")
     
-    If colJunta = 0 Then
-        MsgBox "La columna 'ID_JUNTA' no existe en 'tbl_juntas'.", vbCritical, "Error de Estructura"
+    If colJunta = 0 Or colTag = 0 Or colEstado = 0 Then
+        MsgBox "La tabla tbl_juntas debe contener al menos las columnas ID_JUNTA, TAG y ESTADO.", vbCritical, "Error de Estructura"
         Exit Function
     End If
     
     totalOut = 0
+    jsonItems = ""
+    
     For i = 1 To tbl.ListRows.Count
         vJunta = Trim(CStr(tbl.DataBodyRange(i, colJunta).Value))
+        vTag = Trim(CStr(tbl.DataBodyRange(i, colTag).Value))
+        vEstado = Trim(CStr(tbl.DataBodyRange(i, colEstado).Value))
+        
+        If colUuid > 0 Then
+            vUuid = Trim(CStr(tbl.DataBodyRange(i, colUuid).Value))
+        Else
+            vUuid = ""
+        End If
         
         If vJunta <> "" Then
-            vUuid = ""
-            If colUuid > 0 Then vUuid = Trim(CStr(tbl.DataBodyRange(i, colUuid).Value))
+            If vEstado = "" Then vEstado = "ACTIVO"
+            If vTag = "" Then vTag = "TAG-" & vJunta
             
-            vTag = ""
-            If colTag > 0 Then vTag = Trim(CStr(tbl.DataBodyRange(i, colTag).Value))
-            
-            vEstado = "ACTIVO"
-            If colEstado > 0 Then
-                vEstado = Trim(CStr(tbl.DataBodyRange(i, colEstado).Value))
-                If vEstado = "" Then vEstado = "ACTIVO"
+            If vUuid = "" And Left(vJunta, 4) = "550e" Then
+                vUuid = vJunta
             End If
             
             If totalOut > 0 Then jsonItems = jsonItems & ","
@@ -1109,37 +1123,35 @@ End Sub
 Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
     Dim tbl As ListObject
     Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long, colFecha As Long
+    Dim colCreacion As Long, colCreadoPor As Long, colEditadoPor As Long
     Dim i As Long, posReg As Long, posItem As Long, posFin As Long
-    Dim idJunta As String, uuidVal As String, tagVal As String, estVal As String, fechaVal As String
-    Dim dictFilas As Object
     Dim totalProcesadas As Long
-    Dim nuevaFila As ListRow
+    Dim dictFilas As Object
+    Dim idJunta As String, uuidVal As String, tagVal As String, estVal As String, fechaVal As String
+    Dim fCreacion As String, cPor As String, ePor As String
     Dim fechaActual As String
+    Dim nuevaFila As ListRow
     
     Set dictFilas = CreateObject("Scripting.Dictionary")
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
+    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,TAG,ESTADO,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    
     On Error Resume Next
     Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
     On Error GoTo 0
-    
-    If tbl Is Nothing Then
-        MsgBox "No se encontro la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
-        FusionarJuntasEnTabla = 0
-        Exit Function
-    End If
+    If tbl Is Nothing Then Exit Function
     
     colUuid = ObtenerIndiceColumna(tbl, "UUID")
     colJunta = ObtenerIndiceColumna(tbl, "ID_JUNTA")
     colTag = ObtenerIndiceColumna(tbl, "TAG")
     colEstado = ObtenerIndiceColumna(tbl, "ESTADO")
     colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+    colCreacion = ObtenerIndiceColumna(tbl, "FECHA_CREACION")
+    colCreadoPor = ObtenerIndiceColumna(tbl, "CREADO_POR")
+    colEditadoPor = ObtenerIndiceColumna(tbl, "EDITADO_POR")
     
-    If colJunta = 0 Then
-        MsgBox "La columna 'ID_JUNTA' no existe en 'tbl_juntas'.", vbCritical, "Error de Estructura"
-        FusionarJuntasEnTabla = 0
-        Exit Function
-    End If
+    If colJunta = 0 Then Exit Function
     
     For i = 1 To tbl.ListRows.Count
         idJunta = UCase(Trim(CStr(tbl.DataBodyRange(i, colJunta).Value)))
@@ -1148,11 +1160,11 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
         End If
     Next i
     
-    Application.ScreenUpdating = False
     totalProcesadas = 0
-    
     posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
     If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
+    
+    Application.ScreenUpdating = False
     
     If posReg > 0 Then
         posItem = InStr(posReg, respuestaJson, "{")
@@ -1168,7 +1180,14 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
             tagVal = ExtraerValorJson(bloque, "tag")
             estVal = ExtraerValorJson(bloque, "estado")
             fechaVal = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
+            fCreacion = LimpiarFechaChile(ExtraerValorJson(bloque, "created_at"))
+            cPor = ExtraerValorJson(bloque, "creado_por")
+            ePor = ExtraerValorJson(bloque, "editado_por")
+            
             If fechaVal = "" Then fechaVal = fechaActual
+            If fCreacion = "" Then fCreacion = fechaActual
+            If cPor = "" Then cPor = "Sistema"
+            If ePor = "" Then ePor = "Sistema"
             
             If idJunta <> "" Then
                 Dim idClave As String
@@ -1181,6 +1200,9 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
                     If colTag > 0 Then tbl.DataBodyRange(filaNum, colTag).Value = tagVal
                     If colEstado > 0 Then tbl.DataBodyRange(filaNum, colEstado).Value = estVal
                     If colFecha > 0 Then tbl.DataBodyRange(filaNum, colFecha).Value = fechaVal
+                    If colCreacion > 0 Then tbl.DataBodyRange(filaNum, colCreacion).Value = fCreacion
+                    If colCreadoPor > 0 Then tbl.DataBodyRange(filaNum, colCreadoPor).Value = cPor
+                    If colEditadoPor > 0 Then tbl.DataBodyRange(filaNum, colEditadoPor).Value = ePor
                 Else
                     Set nuevaFila = tbl.ListRows.Add
                     Dim nRow As Long
@@ -1191,6 +1213,9 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
                     If colTag > 0 Then tbl.DataBodyRange(nRow, colTag).Value = tagVal
                     If colEstado > 0 Then tbl.DataBodyRange(nRow, colEstado).Value = estVal
                     If colFecha > 0 Then tbl.DataBodyRange(nRow, colFecha).Value = fechaVal
+                    If colCreacion > 0 Then tbl.DataBodyRange(nRow, colCreacion).Value = fCreacion
+                    If colCreadoPor > 0 Then tbl.DataBodyRange(nRow, colCreadoPor).Value = cPor
+                    If colEditadoPor > 0 Then tbl.DataBodyRange(nRow, colEditadoPor).Value = ePor
                     
                     dictFilas.Add idClave, nRow
                 End If
@@ -1248,17 +1273,33 @@ End Function
 Private Function ExtraerValorJson(ByVal json As String, ByVal clave As String) As String
     Dim regex As Object
     Dim coincidencias As Object
+    Dim valExtraido As String
     
     Set regex = CreateObject("VBScript.RegExp")
     regex.Global = False
     regex.IgnoreCase = True
-    regex.Pattern = """" & clave & """\s*:\s*""([^""]+)"""
+    
+    ' Soporta strings con comillas escapadas: "clave": "valor \"con comillas\""
+    regex.Pattern = """" & clave & """\s*:\s*""((?:\\.|[^""\\])*)"""
     
     If regex.Test(json) Then
         Set coincidencias = regex.Execute(json)
-        ExtraerValorJson = coincidencias(0).SubMatches(0)
+        valExtraido = coincidencias(0).SubMatches(0)
+        valExtraido = Replace(valExtraido, "\""", """")
+        valExtraido = Replace(valExtraido, "\\", "\")
+        valExtraido = Replace(valExtraido, "\/", "/")
+        valExtraido = Replace(valExtraido, "\n", " ")
+        valExtraido = Replace(valExtraido, "\r", "")
+        ExtraerValorJson = Trim(valExtraido)
     Else
-        ExtraerValorJson = ""
+        ' Soporta números o booleanos: "metros": 194.35 o "vigente": true
+        regex.Pattern = """" & clave & """\s*:\s*([0-9.-]+|true|false)"
+        If regex.Test(json) Then
+            Set coincidencias = regex.Execute(json)
+            ExtraerValorJson = Trim(coincidencias(0).SubMatches(0))
+        Else
+            ExtraerValorJson = ""
+        End If
     End If
     
     Set regex = Nothing
