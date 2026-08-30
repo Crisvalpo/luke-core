@@ -114,19 +114,19 @@ End Sub
 
 ' --- GRUPO 3: INGENIERIA (NAVEGACION DE HOJAS MAESTRAS) ---
 Public Sub IrAPIDRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC"
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA,FLUIDO,CLASE,NPS,ORIGEN,DESTINO,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_SYNC"
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_SYNC"
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC"
 End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
@@ -389,17 +389,17 @@ Public Sub ActualizarPlanillaDesdeNube()
     
     Application.StatusBar = "Sincronizando listas maestras de faena desde Luke Core..."
     
-    ' 1. Sincronizar P&IDs
-    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC", "codigo_pid", idProyecto)
+    ' 1. Sincronizar P&IDs (con UUID, archivo y responsable)
+    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC", "codigo_pid", idProyecto)
     
-    ' 2. Sincronizar Líneas
-    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA,FLUIDO,CLASE,NPS,ORIGEN,DESTINO,FECHA_SYNC", "codigo_linea", idProyecto)
+    ' 2. Sincronizar Líneas (17 columnas reales de Andina + UUID)
+    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_SYNC", "codigo_linea", idProyecto)
     
     ' 3. Sincronizar Isométricos
-    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,FECHA_SYNC", "codigo_iso", idProyecto)
+    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_SYNC", "codigo_iso", idProyecto)
     
     ' 4. Sincronizar Spools
-    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC", "codigo_spool", idProyecto)
+    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC", "codigo_spool", idProyecto)
     
     ' 5. Sincronizar Juntas
     totalJuntas = SincronizarJuntasDesdeNube(idProyecto)
@@ -413,7 +413,7 @@ Public Sub ActualizarPlanillaDesdeNube()
            "- Isometricos  : " & totalIsos & " registros en LIST_ISOMETRICOS" & vbCrLf & _
            "- Spools       : " & totalSpools & " registros en LIST_SPOOLS" & vbCrLf & _
            "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & vbCrLf & _
-           "Estado: Todas las hojas de ingenieria actualizadas.", _
+           "Estado: Todas las hojas de ingenieria actualizadas con UUIDs de servidor.", _
            vbInformation, "Actualizar Planilla - LukeApp"
     Exit Sub
 
@@ -450,6 +450,7 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
     Dim fechaActual As String
     Dim cols() As String
     Dim cIdx As Long, i As Long
+    Dim colUuidIdx As Long, colClaveIdx As Long
     
     Set dictFilas = CreateObject("Scripting.Dictionary")
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
@@ -459,12 +460,22 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
     If tbl Is Nothing Then Exit Function
     
     cols = Split(columnasCsv, ",")
+    colUuidIdx = ObtenerIndiceColumna(tbl, "UUID")
+    colClaveIdx = ObtenerIndiceColumna(tbl, UCase(clavePrincipalJson))
+    If colClaveIdx = 0 And UBound(cols) >= 1 Then colClaveIdx = 2
     
-    ' Indexar filas existentes por primera columna
+    ' Indexar filas existentes por UUID y por Código
     For i = 1 To tbl.ListRows.Count
-        Dim valKey As String
-        valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, 1).Value)))
-        If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
+        If colUuidIdx > 0 Then
+            Dim valUuid As String
+            valUuid = UCase(Trim(CStr(tbl.DataBodyRange(i, colUuidIdx).Value)))
+            If valUuid <> "" And Not dictFilas.Exists(valUuid) Then dictFilas.Add valUuid, i
+        End If
+        If colClaveIdx > 0 Then
+            Dim valKey As String
+            valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, colClaveIdx).Value)))
+            If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
+        End If
     Next i
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
@@ -486,21 +497,28 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
                 Dim bloque As String
                 bloque = Mid(respJson, posItem, posFin - posItem + 1)
                 
-                Dim kVal As String
+                Dim uuidVal As String, kVal As String
+                uuidVal = ExtraerValorJson(bloque, "uuid")
                 kVal = ExtraerValorJson(bloque, clavePrincipalJson)
                 
-                If kVal <> "" Then
+                Dim idBuscar As String
+                If uuidVal <> "" Then
+                    idBuscar = UCase(Trim(uuidVal))
+                Else
+                    idBuscar = UCase(Trim(kVal))
+                End If
+                
+                If idBuscar <> "" Then
                     Dim filaNum As Long
-                    Dim kUpper As String
-                    kUpper = UCase(Trim(kVal))
-                    
-                    If dictFilas.Exists(kUpper) Then
-                        filaNum = dictFilas(kUpper)
+                    If dictFilas.Exists(idBuscar) Then
+                        filaNum = dictFilas(idBuscar)
+                    ElseIf kVal <> "" And dictFilas.Exists(UCase(Trim(kVal))) Then
+                        filaNum = dictFilas(UCase(Trim(kVal)))
                     Else
                         Dim nFila As ListRow
                         Set nFila = tbl.ListRows.Add
                         filaNum = nFila.Index
-                        dictFilas.Add kUpper, filaNum
+                        dictFilas.Add idBuscar, filaNum
                     End If
                     
                     For cIdx = 0 To UBound(cols)
