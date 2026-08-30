@@ -21,13 +21,13 @@ authRouter.get('/wa-qr', async (_req, res) => {
       <meta charset="UTF-8">
       <title>Vincular WhatsApp Bot — LukeApp</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 420px; width: 90%; }
         h1 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #38bdf8; }
         p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
-        #canvas-container { background: white; padding: 1rem; border-radius: 0.5rem; display: inline-block; min-height: 256px; min-width: 256px; }
+        #canvas-container { background: white; padding: 1rem; border-radius: 0.5rem; display: inline-flex; align-items: center; justify-content: center; min-height: 256px; min-width: 256px; }
+        #qr-img { width: 256px; height: 256px; display: block; }
         .status { margin-top: 1.5rem; font-weight: bold; font-size: 0.95rem; }
         .connected { color: #4ade80; }
         .connecting { color: #fbbf24; }
@@ -37,33 +37,38 @@ authRouter.get('/wa-qr', async (_req, res) => {
       <div class="card">
         <h1>📲 Vincular WhatsApp Bot</h1>
         <p>Abre WhatsApp en el celular emisor &gt; <b>Dispositivos vinculados</b> &gt; <b>Vincular un dispositivo</b></p>
-        <div id="canvas-container"><canvas id="qr-canvas"></canvas></div>
-        <div id="status-text" class="status connecting">Consultando estado...</div>
+        <div id="canvas-container">
+          <img id="qr-img" style="display:none;" alt="Código QR" />
+          <div id="loading-spinner" style="color: #64748b;">Generando código QR...</div>
+        </div>
+        <div id="status-text" class="status connecting">Consultando estado del servidor...</div>
       </div>
       <script>
         async function checkQr() {
           try {
-            const resp = await fetch('http://127.0.0.1:4000/subastas/qr').catch(() => null);
-            const statusResp = await fetch('http://127.0.0.1:4000/subastas/status').catch(() => null);
+            const resp = await fetch('/api/auth/wa-status');
+            const data = await resp.json();
             
-            // Si el backend consulta localmente
-            const data = await fetch('/api/auth/wa-status').then(r => r.json()).catch(() => null);
             if (data && data.connected) {
-              document.getElementById('canvas-container').innerHTML = '<div style="color:#16a34a; padding: 40px; font-size: 3rem;">✅</div>';
-              document.getElementById('status-text').innerHTML = '<span class="connected">¡WhatsApp Conectado Exitosamente!</span><br><small style="color:#64748b">Número: ' + (data.botNumber || '') + '</small>';
+              document.getElementById('canvas-container').innerHTML = '<div style="color:#16a34a; font-size: 4rem;">✅</div>';
+              document.getElementById('status-text').innerHTML = '<span class="connected">¡WhatsApp Conectado Exitosamente!</span><br><small style="color:#94a3b8">Número: ' + (data.botNumber || '') + '</small>';
               return;
             }
-            if (data && data.qr) {
-              QRCode.toCanvas(document.getElementById('qr-canvas'), data.qr, { width: 256 }, function (error) {
-                if (error) console.error(error);
-              });
-              document.getElementById('status-text').innerHTML = '<span class="connecting">Escanea el código QR antes de que expire</span>';
+            
+            if (data && data.qrImage) {
+              const img = document.getElementById('qr-img');
+              const spinner = document.getElementById('loading-spinner');
+              if (spinner) spinner.style.display = 'none';
+              img.src = data.qrImage;
+              img.style.display = 'block';
+              document.getElementById('status-text').innerHTML = '<span class="connecting">Escanea el código QR desde tu celular</span>';
             }
           } catch(e) {
             console.error(e);
+            document.getElementById('status-text').innerText = 'Error al consultar estado: ' + e.message;
           }
         }
-        setInterval(checkQr, 3000);
+        setInterval(checkQr, 2500);
         checkQr();
       </script>
     </body>
@@ -71,7 +76,7 @@ authRouter.get('/wa-qr', async (_req, res) => {
   `);
 });
 
-// Endpoint proxy para el estado de WhatsApp
+// Endpoint proxy para el estado de WhatsApp y generación de imagen QR en servidor
 authRouter.get('/wa-status', async (_req, res) => {
   try {
     const { env } = await import('../../config/env.js');
@@ -85,7 +90,18 @@ authRouter.get('/wa-status', async (_req, res) => {
     
     const qrResp = await fetch(env.WA_BRIDGE_URL + '/' + sessionId + '/qr');
     const qrData = (await qrResp.json()) as any;
-    return res.json({ connected: false, qr: qrData.qr, status: qrData.status });
+    
+    let qrImage = null;
+    if (qrData && qrData.qr) {
+      const QRCode = (await import('qrcode')).default;
+      qrImage = await QRCode.toDataURL(qrData.qr, { width: 256, margin: 1 });
+    }
+    
+    return res.json({
+      connected: false,
+      qrImage,
+      status: qrData.status
+    });
   } catch (error: any) {
     return res.status(500).json({ connected: false, error: error.message });
   }
