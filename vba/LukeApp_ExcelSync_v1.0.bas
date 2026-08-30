@@ -993,7 +993,7 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     Set http = Nothing
 End Function
 
-Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String) As String
+Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String, ByRef totalOut As Long) As String
     Dim ws As Worksheet
     Dim tbl As ListObject
     Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long

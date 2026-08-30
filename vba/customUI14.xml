@@ -8,18 +8,21 @@
           <button
             id="btnProyectoActivo"
             label="Proyecto Activo"
+            image="ProyectoActivo"
             imageMso="Properties"
             size="large"
             onAction="VerProyectoRibbon"/>
           <button
             id="btnActualizarProyecto"
             label="Actualizar Proyecto"
+            image="ActualizarProyecto"
             imageMso="RefreshAll"
             size="normal"
             onAction="ActualizarProyectoRibbon"/>
           <button
             id="btnCambiarProyecto"
             label="Cambiar Proyecto"
+            image="CambiarProyecto"
             imageMso="ProjectTask"
             size="normal"
             onAction="CambiarProyectoRibbon"/>
@@ -30,30 +33,35 @@
           <button
             id="btnPublicarCambios"
             label="Publicar Cambios"
+            image="PublicarCambios"
             imageMso="FileSave"
             size="large"
             onAction="PublicarListaJuntasRibbon"/>
           <button
             id="btnActualizarNube"
             label="Actualizar desde Nube"
+            image="ActualizarNube"
             imageMso="DataRefreshAll"
             size="large"
             onAction="ActualizarDesdeNubeRibbon"/>
           <button
             id="btnEstadoSync"
             label="Estado Sincronizacion"
+            image="EstadoSync"
             imageMso="ServerProperties"
             size="normal"
             onAction="VerEstadoSyncRibbon"/>
           <button
             id="btnHistorialSync"
             label="Historial"
+            image="Historial"
             imageMso="History"
             size="normal"
             onAction="VerHistorialSyncRibbon"/>
           <button
             id="btnAuditoriaColumnas"
             label="Auditoria Columnas"
+            image="AuditoriaColumnas"
             imageMso="ViewDetails"
             size="normal"
             onAction="AlternarColumnasAuditoriaRibbon"/>
@@ -64,30 +72,35 @@
           <button
             id="btnIrPID"
             label="P&amp;ID"
+            image="PID"
             imageMso="Drafts"
             size="normal"
             onAction="IrAPIDRibbon"/>
           <button
             id="btnIrLineas"
             label="Lineas"
+            image="Lineas"
             imageMso="TableColumnsInsert"
             size="normal"
             onAction="IrALineasRibbon"/>
           <button
             id="btnIrIsometricos"
             label="Isometricos"
+            image="Isometricos"
             imageMso="ShapesMoreShapes"
             size="normal"
             onAction="IrAIsometricosRibbon"/>
           <button
             id="btnIrSpools"
             label="Spools"
+            image="Spools"
             imageMso="GroupItems"
             size="normal"
             onAction="IrASpoolsRibbon"/>
           <button
             id="btnIrJuntas"
             label="Juntas"
+            image="Juntas"
             imageMso="TableProperties"
             size="large"
             onAction="IrAJuntasRibbon"/>
@@ -98,24 +111,28 @@
           <button
             id="btnAvanceProyecto"
             label="Avance Proyecto"
+            image="AvanceProyecto"
             imageMso="ChartInsert"
             size="normal"
             onAction="VerAvanceRibbon"/>
           <button
             id="btnCalidad"
             label="Calidad"
+            image="Calidad"
             imageMso="AcceptTask"
             size="normal"
             onAction="VerCalidadRibbon"/>
           <button
             id="btnLogistica"
             label="Logistica"
+            image="Logistica"
             imageMso="DistributionList"
             size="normal"
             onAction="VerLogisticaRibbon"/>
           <button
             id="btnSDI"
             label="SDI / RFI"
+            image="SDI"
             imageMso="DocumentProperties"
             size="normal"
             onAction="VerSdiRibbon"/>
@@ -126,18 +143,21 @@
           <button
             id="btnDashboard"
             label="Dashboard"
+            image="Dashboard"
             imageMso="BlogHomePage"
             size="large"
             onAction="AbrirDashboardRibbon"/>
           <button
             id="btnBIMViewer"
             label="BIM Viewer"
+            image="BIMViewer"
             imageMso="WebPage"
             size="normal"
             onAction="AbrirBimViewerRibbon"/>
           <button
             id="btnBotsIA"
             label="Bots IA"
+            image="BotsIA"
             imageMso="ControlsGallery"
             size="normal"
             onAction="AbrirBotsIaRibbon"/>
@@ -148,19 +168,22 @@
           <button
             id="btnIniciarSesion"
             label="Iniciar Sesion"
+            image="IniciarSesion"
             imageMso="Key"
             size="large"
             onAction="IniciarSesionRibbon"/>
           <button
             id="btnCerrarSesion"
             label="Cerrar Sesion"
+            image="CerrarSesion"
             imageMso="Close"
             size="normal"
             onAction="CerrarSesionLukeAppRibbon"/>
           <button
             id="btnSolicitarAcceso"
             label="Solicitar Acceso"
-            imageMso="AddInManager"
+            image="SolicitarAcceso"
+            imageMso="ContactCard"
             size="normal"
             onAction="SolicitarAccesoRibbon"/>
         </group>
