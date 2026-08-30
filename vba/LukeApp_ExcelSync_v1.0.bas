@@ -1,11 +1,12 @@
 ' ==============================================================================
 ' LUKEAPP EXCEL SYNC v1.0 - MODULO OFICIAL UNIFICADO PIPING
-' Gobierno Centralizado de Proyectos (Sin dependencia de CONFIG)
+' Gobierno 100% Centralizado en Luke Core (Cero dependencia de hoja CONFIG)
 ' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
 
 Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
+Private Const VERSION_PLANTILLA As String = "1.0"
 
 ' Token volatil en memoria (destruido automaticamente al cerrar Excel)
 Private m_JwtToken As String
@@ -42,8 +43,11 @@ Public Sub ActualizarProyectoRibbon(control As IRibbonControl)
     If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
     
     If ActualizarProyectosAutorizados(False) Then
-        MsgBox "Proyectos sincronizados con éxito." & vbCrLf & vbCrLf & _
-               "Proyecto Activo: " & LeerDeSistema("PROYECTO_CODIGO") & " - " & LeerDeSistema("PROYECTO_NOMBRE"), _
+        MsgBox "Proyectos sincronizados con exito desde Luke Core." & vbCrLf & vbCrLf & _
+               "- Proyecto: " & LeerDeSistema("PROYECTO_CODIGO") & vbCrLf & _
+               "- Nombre: " & LeerDeSistema("PROYECTO_NOMBRE") & vbCrLf & _
+               "- Estado: " & LeerDeSistema("PROYECTO_ESTADO") & vbCrLf & _
+               "- Centro de Costo: " & LeerDeSistema("CENTRO_COSTO"), _
                vbInformation, "LukeApp Proyectos"
     End If
 End Sub
@@ -58,13 +62,16 @@ Public Sub CambiarProyectoRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub VerProyectoRibbon(control As IRibbonControl)
-    Dim proyCodigo As String, proyNombre As String, proyUuid As String, userWin As String, ultSync As String
+    Dim proyCodigo As String, proyNombre As String, proyEstado As String
+    Dim centroCosto As String, userWin As String, ultSync As String, proyUuid As String
     
     proyCodigo = LeerDeSistema("PROYECTO_CODIGO")
     proyNombre = LeerDeSistema("PROYECTO_NOMBRE")
-    proyUuid = LeerDeSistema("PROYECTO_UUID")
+    proyEstado = LeerDeSistema("PROYECTO_ESTADO")
+    centroCosto = LeerDeSistema("CENTRO_COSTO")
     userWin = LeerDeSistema("USUARIO_WINDOWS")
     ultSync = LeerDeSistema("ULTIMA_SYNC")
+    proyUuid = LeerDeSistema("PROYECTO_UUID")
     
     If proyCodigo = "" Then
         MsgBox "No hay ningun proyecto activo seleccionado." & vbCrLf & vbCrLf & _
@@ -73,20 +80,23 @@ Public Sub VerProyectoRibbon(control As IRibbonControl)
         Exit Sub
     End If
     
-    MsgBox "Parametros del Proyecto Activo (Fuente: Luke Core):" & vbCrLf & vbCrLf & _
-           "- Codigo Faena: " & proyCodigo & vbCrLf & _
+    MsgBox "Proyecto Activo (Fuente: Luke Core):" & vbCrLf & vbCrLf & _
+           "- Proyecto: " & proyCodigo & vbCrLf & _
            "- Nombre: " & proyNombre & vbCrLf & _
-           "- UUID Proyecto: " & proyUuid & vbCrLf & _
-           "- Usuario Asignado: " & userWin & vbCrLf & _
-           "- Ultima Sincronizacion: " & IIf(ultSync = "", "Nunca", ultSync), _
+           "- Estado: " & proyEstado & vbCrLf & _
+           "- Centro de Costo: " & IIf(centroCosto = "", "N/A", centroCosto) & vbCrLf & _
+           "- Usuario: " & userWin & vbCrLf & _
+           "- Ultima Sincronizacion: " & IIf(ultSync = "", "Nunca", ultSync) & vbCrLf & _
+           "- UUID: " & proyUuid, _
            vbInformation, "Proyecto Activo - LukeApp"
 End Sub
 
 Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
     MsgBox "LukeApp Excel Client - Piping Management" & vbCrLf & _
-           "Version: 1.0 (Zero-Touch WhatsApp & Centralized Project Governance)" & vbCrLf & _
+           "Version: " & VERSION_PLANTILLA & vbCrLf & _
+           "Gobierno de Proyectos: Centralizado via Luke Core" & vbCrLf & _
            "API: " & API_BASE_URL & vbCrLf & _
-           "Seguridad: JWT 4 Horas (Volatil en Memoria)", _
+           "Seguridad: JWT 4 Horas (Memoria Volatil)", _
            vbInformation, "Acerca de LukeApp"
 End Sub
 
@@ -102,7 +112,6 @@ Public Sub SolicitarAcceso()
     Dim nombreEquipo As String
     Dim nombre As String
     Dim telefono As String
-    Dim tenantSlug As String
     Dim jsonPayload As String
     Dim http As Object
     
@@ -110,7 +119,6 @@ Public Sub SolicitarAcceso()
     
     usuarioWindows = ObtenerUsuarioWindowsCompleto()
     nombreEquipo = Trim(Environ("COMPUTERNAME"))
-    tenantSlug = "eisa"
     
     nombre = InputBox( _
         "Ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
@@ -132,8 +140,7 @@ Public Sub SolicitarAcceso()
         """usuario_windows"": """ & EscaparJson(usuarioWindows) & """," & _
         """telefono"": """ & EscaparJson(telefono) & """," & _
         """nombre"": """ & EscaparJson(nombre) & """," & _
-        """equipo"": """ & EscaparJson(nombreEquipo) & """," & _
-        """tenant"": """ & EscaparJson(tenantSlug) & """" & _
+        """equipo"": """ & EscaparJson(nombreEquipo) & """" & _
     "}"
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
@@ -217,7 +224,7 @@ Public Sub PublicarListaJuntas()
     ' 2. Asegurar Token JWT valido (4 horas)
     If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
     
-    ' 3. Asegurar que haya un proyecto activo seleccionado desde Luke Core
+    ' 3. Asegurar que haya un proyecto activo seleccionado exclusivamente desde _SISTEMA
     idProyecto = LeerDeSistema("PROYECTO_CODIGO")
     If idProyecto = "" Then
         If Not ActualizarProyectosAutorizados(False) Then Exit Sub
@@ -287,8 +294,8 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     Dim http As Object
     Dim respuestaJson As String
     Dim posProy As Long, posItem As Long, posFin As Long
-    Dim pId As String, pCod As String, pNom As String
-    Dim arrCod() As String, arrNom() As String, arrId() As String
+    Dim pId As String, pCod As String, pNom As String, pEst As String, pCc As String
+    Dim arrId() As String, arrCod() As String, arrNom() As String, arrEst() As String, arrCc() As String
     Dim totalProy As Long, i As Long
     Dim menuTexto As String, opcStr As String, opcNum As Long
     Dim codActual As String
@@ -308,6 +315,7 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     respuestaJson = http.responseText
     GuardarEnSistema "PERSONAL_ID", ExtraerValorJson(respuestaJson, "personal_id")
     GuardarEnSistema "USUARIO_WINDOWS", ExtraerValorJson(respuestaJson, "usuario_windows")
+    GuardarEnSistema "VERSION_PLANTILLA", VERSION_PLANTILLA
     
     ' Parsear proyectos del array JSON
     totalProy = 0
@@ -323,15 +331,21 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
             pId = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "id")
             pCod = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "codigo")
             pNom = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "nombre")
+            pEst = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "estado")
+            pCc = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "centro_costo")
             
             If pCod <> "" Then
                 totalProy = totalProy + 1
                 ReDim Preserve arrId(1 To totalProy)
                 ReDim Preserve arrCod(1 To totalProy)
                 ReDim Preserve arrNom(1 To totalProy)
+                ReDim Preserve arrEst(1 To totalProy)
+                ReDim Preserve arrCc(1 To totalProy)
                 arrId(totalProy) = pId
                 arrCod(totalProy) = pCod
                 arrNom(totalProy) = pNom
+                arrEst(totalProy) = IIf(pEst = "", "ACTIVO", UCase(pEst))
+                arrCc(totalProy) = pCc
             End If
             
             posItem = InStr(posFin, respuestaJson, "{")
@@ -353,6 +367,8 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
         GuardarEnSistema "PROYECTO_UUID", arrId(1)
         GuardarEnSistema "PROYECTO_CODIGO", arrCod(1)
         GuardarEnSistema "PROYECTO_NOMBRE", arrNom(1)
+        GuardarEnSistema "PROYECTO_ESTADO", arrEst(1)
+        GuardarEnSistema "CENTRO_COSTO", arrCc(1)
         ActualizarProyectosAutorizados = True
         Set http = Nothing
         Exit Function
@@ -365,6 +381,8 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
             If arrCod(i) = codActual Then
                 GuardarEnSistema "PROYECTO_UUID", arrId(i)
                 GuardarEnSistema "PROYECTO_NOMBRE", arrNom(i)
+                GuardarEnSistema "PROYECTO_ESTADO", arrEst(i)
+                GuardarEnSistema "CENTRO_COSTO", arrCc(i)
                 ActualizarProyectosAutorizados = True
                 Set http = Nothing
                 Exit Function
@@ -397,10 +415,13 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     GuardarEnSistema "PROYECTO_UUID", arrId(opcNum)
     GuardarEnSistema "PROYECTO_CODIGO", arrCod(opcNum)
     GuardarEnSistema "PROYECTO_NOMBRE", arrNom(opcNum)
+    GuardarEnSistema "PROYECTO_ESTADO", arrEst(opcNum)
+    GuardarEnSistema "CENTRO_COSTO", arrCc(opcNum)
     
     MsgBox "Proyecto Activo Cambiado con Exito:" & vbCrLf & vbCrLf & _
            "- Codigo: " & arrCod(opcNum) & vbCrLf & _
-           "- Nombre: " & arrNom(opcNum), vbInformation, "Proyecto Seleccionado"
+           "- Nombre: " & arrNom(opcNum) & vbCrLf & _
+           "- Estado: " & arrEst(opcNum), vbInformation, "Proyecto Seleccionado"
            
     ActualizarProyectosAutorizados = True
     Set http = Nothing
@@ -613,7 +634,9 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
     posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
-    If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
+    If posReg > 0 Then
+        posReg = InStr(posReg, respuestaJson, "[")
+    End If
     
     If posReg > 0 Then
         posItem = InStr(posReg, respuestaJson, "{")
