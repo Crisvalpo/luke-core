@@ -826,7 +826,7 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
             uuidVal = ExtraerValorJson(bloque, "uuid")
             tagVal = ExtraerValorJson(bloque, "tag")
             estVal = ExtraerValorJson(bloque, "estado")
-            fechaVal = ExtraerValorJson(bloque, "fecha_sync")
+            fechaVal = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
             If fechaVal = "" Then fechaVal = fechaActual
             
             If idJunta <> "" Then
@@ -923,4 +923,16 @@ Private Function ExtraerValorJson(ByVal json As String, ByVal clave As String) A
     End If
     
     Set regex = Nothing
+End Function
+
+Private Function LimpiarFechaChile(ByVal f As String) As String
+    If f = "" Then
+        LimpiarFechaChile = Format(Now, "yyyy-mm-dd hh:nn:ss")
+        Exit Function
+    End If
+    
+    f = Replace(f, "T", " ")
+    If InStr(f, ".") > 0 Then f = Left(f, InStr(f, ".") - 1)
+    If InStr(f, "Z") > 0 Then f = Replace(f, "Z", "")
+    LimpiarFechaChile = Trim(f)
 End Function

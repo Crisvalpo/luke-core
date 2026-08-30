@@ -134,11 +134,13 @@ export class PipingService {
 
       await client.query('COMMIT');
 
+      const fechaChile = new Date().toLocaleString('sv-SE', { timeZone: 'America/Santiago' }).replace('T', ' ');
+
       return {
         id_proyecto: idProyecto,
         procesados: resultadoJuntas.length,
         registros: resultadoJuntas,
-        fecha: new Date().toISOString()
+        fecha: fechaChile
       };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -175,8 +177,8 @@ export class PipingService {
         tag,
         estado,
         vigente,
-        fecha_sync,
-        created_at,
+        to_char(fecha_sync AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        to_char(created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS created_at,
         metadata
       FROM piping.lista_juntas
       WHERE (id_proyecto = $1 OR id_proyecto IN (SELECT codigo FROM core.proyectos WHERE id::text = $1))
