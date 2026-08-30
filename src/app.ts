@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { env } from './config/env.js';
 import { tenantResolver } from './shared/middlewares/tenantResolver.js';
 import { errorHandler } from './shared/middlewares/errorHandler.js';
-import { requireAuth, requireSuperAdmin } from './shared/middlewares/authGuard.js';
+import { requireAuth, requireSuperAdmin, requireSyncAuth } from './shared/middlewares/authGuard.js';
 import { requireTenant } from './shared/middlewares/requireTenant.js';
-import { sendSuccess } from './shared/utils/response.js';
+import { sendSuccess, sendError } from './shared/utils/response.js';
 
 // Módulos
 import { identidadRouter } from './modules/identidad/identidad.routes.js';
