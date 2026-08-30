@@ -171,19 +171,36 @@ export class PipingService {
     const proyNorm = idProyecto.trim();
     const result = await dbPool.query(`
       SELECT 
-        uuid,
-        id_proyecto,
-        id_junta,
-        tag,
-        estado,
-        vigente,
-        to_char(fecha_sync AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        to_char(created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS created_at,
-        metadata
-      FROM piping.lista_juntas
-      WHERE (id_proyecto = $1 OR id_proyecto IN (SELECT codigo FROM core.proyectos WHERE id::text = $1))
-        AND vigente = TRUE
-      ORDER BY id_junta ASC;
+        j.id AS uuid,
+        j.codigo AS id_junta,
+        COALESCE(s.codigo, '') AS codigo_spool,
+        COALESCE(i.codigo, '') AS codigo_iso,
+        COALESCE(j.numero_junta, '') AS tag,
+        j.tipo_union_codigo AS tipo_union,
+        j.destination,
+        j.nps_codigo AS nps,
+        j.sch,
+        j.clase,
+        j.material,
+        j.metros,
+        j.servicio,
+        j.soldador,
+        j.porc_total AS avance,
+        j.estado_actual AS estado,
+        j.observaciones,
+        to_char(j.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.juntas j
+      JOIN core.proyectos pr ON pr.id = j.proyecto_id
+      LEFT JOIN piping.spools s ON s.id = j.spool_id
+      LEFT JOIN piping.isometricos i ON i.id = j.isometrico_id
+      LEFT JOIN core.personal uc ON uc.id = j.created_by
+      LEFT JOIN core.personal uu ON uu.id = j.updated_by
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+        AND j.vigente = TRUE
+      ORDER BY j.codigo ASC;
     `, [proyNorm]);
 
     return result.rows;
