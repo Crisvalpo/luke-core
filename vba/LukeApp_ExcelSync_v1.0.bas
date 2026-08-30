@@ -126,7 +126,7 @@ Public Sub IrAIsometricosRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
@@ -371,6 +371,70 @@ ManejoError:
     MsgBox "Ocurrio un error en la ejecucion:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
+Public Sub ActualizarHojaActivaRibbon(control As IRibbonControl)
+    ActualizarHojaActiva
+End Sub
+
+Public Sub ActualizarHojaActiva()
+    Dim usuarioWindows As String
+    Dim idProyecto As String
+    Dim nombreHoja As String
+    Dim totalProcesados As Long
+    
+    On Error GoTo ManejoError
+    
+    nombreHoja = UCase(Trim(ActiveSheet.Name))
+    
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    idProyecto = LeerDeSistema("PROYECTO_CODIGO")
+    If idProyecto = "" Then
+        If Not ActualizarProyectosAutorizados(False) Then Exit Sub
+        idProyecto = LeerDeSistema("PROYECTO_CODIGO")
+    End If
+    
+    Select Case nombreHoja
+        Case "LIST_PID"
+            Application.StatusBar = "Sincronizando únicamente P&IDs..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_pid", idProyecto)
+            MsgBox "Tabla LIST_PID actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_LINEAS"
+            Application.StatusBar = "Sincronizando únicamente Líneas..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
+            MsgBox "Tabla LIST_LINEAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_ISOMETRICOS"
+            Application.StatusBar = "Sincronizando únicamente Isométricos..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
+            MsgBox "Tabla LIST_ISOMETRICOS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_SPOOLS"
+            Application.StatusBar = "Sincronizando únicamente Spools..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
+            MsgBox "Tabla LIST_SPOOLS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_JUNTAS"
+            Application.StatusBar = "Sincronizando únicamente Juntas..."
+            totalProcesados = SincronizarJuntasDesdeNube(idProyecto)
+            MsgBox "Tabla LIST_JUNTAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case Else
+            ' Si no está en una lista conocida, actualizar todo
+            ActualizarPlanillaDesdeNube
+            Exit Sub
+    End Select
+    
+    GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
+    Application.StatusBar = False
+    Exit Sub
+
+ManejoError:
+    Application.StatusBar = False
+    MsgBox "Ocurrio un error al sincronizar la hoja actual:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+End Sub
+
 Public Sub ActualizarPlanillaDesdeNube()
     Dim usuarioWindows As String
     Dim idProyecto As String
@@ -398,8 +462,8 @@ Public Sub ActualizarPlanillaDesdeNube()
     ' 3. Sincronizar Isométricos (19 columnas reales de faena + auditoría)
     totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
     
-    ' 4. Sincronizar Spools
-    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
+    ' 4. Sincronizar Spools (19 columnas reales de faena + auditoría)
+    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
     
     ' 5. Sincronizar Juntas
     totalJuntas = SincronizarJuntasDesdeNube(idProyecto)

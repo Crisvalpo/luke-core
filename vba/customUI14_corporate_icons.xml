@@ -34,10 +34,16 @@
             size="large"
             onAction="PublicarListaJuntasRibbon"/>
           <button
-            id="btnActualizarNube"
-            label="Actualizar desde Nube"
-            image="ActualizarNube"
+            id="btnActualizarHoja"
+            label="Actualizar Hoja Actual"
+            image="ActualizarProyecto"
             size="large"
+            onAction="ActualizarHojaActivaRibbon"/>
+          <button
+            id="btnActualizarNube"
+            label="Actualizar Todo (Nube)"
+            image="ActualizarNube"
+            size="normal"
             onAction="ActualizarDesdeNubeRibbon"/>
           <button
             id="btnEstadoSync"
