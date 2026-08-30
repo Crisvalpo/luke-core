@@ -190,21 +190,26 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de P&IDs de un proyecto
+   * Obtiene la lista de P&IDs de un proyecto con auditoría completa
    */
   static async obtenerPidProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
-        p.id,
+        p.id AS uuid,
         p.codigo AS codigo_pid,
         p.titulo,
         p.revision_vigente AS revision,
         p.estado_documental AS estado,
         p.metadata->>'archivo_pdf' AS archivo_pdf,
-        p.metadata->>'responsable' AS responsable,
-        to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+        COALESCE(p.metadata->>'responsable', uc.nombre_completo, 'Sistema') AS responsable,
+        to_char(p.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.pid p
       JOIN core.proyectos pr ON pr.id = p.proyecto_id
+      LEFT JOIN core.personal uc ON uc.id = p.created_by
+      LEFT JOIN core.personal uu ON uu.id = p.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
         AND p.vigente = TRUE
       ORDER BY p.codigo ASC;
@@ -213,23 +218,39 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de Líneas de un proyecto
+   * Obtiene la lista completa de Líneas con auditoría (17 columnas + auditoría)
    */
   static async obtenerLineasProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
-        l.id,
+        l.id AS uuid,
         l.codigo AS codigo_linea,
-        f.codigo AS fluido,
         c.codigo AS clase,
         l.nps_codigo AS nps,
+        f.codigo AS servicio,
+        l.material,
+        l.plano_codelco,
+        l.metros,
         l.origen,
         l.destino,
-        to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+        l.temperatura_diseno AS temp_diseno,
+        l.presion_diseno,
+        l.tipo_prueba,
+        l.esquema_pintura,
+        l.ral,
+        l.revestimiento_interior,
+        l.aislacion,
+        l.observaciones,
+        to_char(l.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.lineas l
       JOIN core.proyectos pr ON pr.id = l.proyecto_id
       LEFT JOIN piping.cat_fluidos_proyecto f ON f.id = l.fluido_proyecto_id
       LEFT JOIN piping.cat_clases_proyecto c ON c.id = l.clase_proyecto_id
+      LEFT JOIN core.personal uc ON uc.id = l.created_by
+      LEFT JOIN core.personal uu ON uu.id = l.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
         AND l.vigente = TRUE
       ORDER BY l.codigo ASC;
@@ -238,21 +259,27 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de Isométricos de un proyecto
+   * Obtiene la lista de Isométricos con auditoría
    */
   static async obtenerIsometricosProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
-        i.id,
+        i.id AS uuid,
         i.codigo AS codigo_iso,
         i.hoja,
         i.revision_vigente AS revision,
         l.codigo AS codigo_linea,
         i.estado_documental AS estado,
-        to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+        i.observacion,
+        to_char(i.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.isometricos i
       JOIN core.proyectos pr ON pr.id = i.proyecto_id
       LEFT JOIN piping.lineas l ON l.id = i.linea_id
+      LEFT JOIN core.personal uc ON uc.id = i.created_by
+      LEFT JOIN core.personal uu ON uu.id = i.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
         AND i.vigente = TRUE
       ORDER BY i.codigo ASC, i.hoja ASC;
@@ -261,21 +288,26 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de Spools de un proyecto
+   * Obtiene la lista de Spools con auditoría
    */
   static async obtenerSpoolsProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
-        s.id,
+        s.id AS uuid,
         s.codigo AS codigo_spool,
         i.codigo AS codigo_iso,
         s.tag,
         s.estado_actual AS estado,
         s.ubicacion_actual AS ubicacion,
-        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+        to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.spools s
       JOIN core.proyectos pr ON pr.id = s.proyecto_id
       LEFT JOIN piping.isometricos i ON i.id = s.isometrico_id
+      LEFT JOIN core.personal uc ON uc.id = s.created_by
+      LEFT JOIN core.personal uu ON uu.id = s.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
         AND s.vigente = TRUE
       ORDER BY s.codigo ASC;
