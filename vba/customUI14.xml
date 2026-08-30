@@ -51,6 +51,12 @@
             imageMso="History"
             size="normal"
             onAction="VerHistorialSyncRibbon"/>
+          <button
+            id="btnAuditoriaColumnas"
+            label="Auditoria Columnas"
+            imageMso="ViewDetails"
+            size="normal"
+            onAction="AlternarColumnasAuditoriaRibbon"/>
         </group>
 
         <!-- GRUPO 3: INGENIERIA (LISTAS MAESTRAS DE FAENA) -->

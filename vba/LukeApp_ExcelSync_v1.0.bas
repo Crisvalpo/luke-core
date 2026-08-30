@@ -114,23 +114,23 @@ End Sub
 
 ' --- GRUPO 3: INGENIERIA (NAVEGACION DE HOJAS MAESTRAS) ---
 Public Sub IrAPIDRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,TAG,ESTADO,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,TAG,ESTADO,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 ' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
@@ -389,17 +389,17 @@ Public Sub ActualizarPlanillaDesdeNube()
     
     Application.StatusBar = "Sincronizando listas maestras de faena desde Luke Core..."
     
-    ' 1. Sincronizar P&IDs (con UUID, archivo y responsable)
-    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC", "codigo_pid", idProyecto)
+    ' 1. Sincronizar P&IDs (con UUID, archivo, responsable y auditoría)
+    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_pid", idProyecto)
     
-    ' 2. Sincronizar Líneas (17 columnas reales de Andina + UUID)
-    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_SYNC", "codigo_linea", idProyecto)
+    ' 2. Sincronizar Líneas (17 columnas reales de Andina + auditoría)
+    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
     
     ' 3. Sincronizar Isométricos
-    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_SYNC", "codigo_iso", idProyecto)
+    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
     
     ' 4. Sincronizar Spools
-    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC", "codigo_spool", idProyecto)
+    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
     
     ' 5. Sincronizar Juntas
     totalJuntas = SincronizarJuntasDesdeNube(idProyecto)
@@ -413,7 +413,7 @@ Public Sub ActualizarPlanillaDesdeNube()
            "- Isometricos  : " & totalIsos & " registros en LIST_ISOMETRICOS" & vbCrLf & _
            "- Spools       : " & totalSpools & " registros en LIST_SPOOLS" & vbCrLf & _
            "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & vbCrLf & _
-           "Estado: Todas las hojas de ingenieria actualizadas con UUIDs de servidor.", _
+           "Auditoria: Quien creo, edito y fechas sincronizadas correctamente.", _
            vbInformation, "Actualizar Planilla - LukeApp"
     Exit Sub
 
@@ -768,8 +768,65 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
         End If
     End If
     
+    If Not tbl Is Nothing Then OcultarColumnasTecnicas tbl
+    
     ws.Visible = xlSheetVisible
     ws.Select
+End Sub
+
+Private Sub OcultarColumnasTecnicas(tbl As ListObject)
+    On Error Resume Next
+    Dim col As ListColumn
+    For Each col In tbl.ListColumns
+        Select Case UCase(Trim(col.Name))
+            Case "UUID", "FECHA_CREACION", "CREADO_POR", "EDITADO_POR"
+                col.Range.EntireColumn.Hidden = True
+        End Select
+    Next col
+    On Error GoTo 0
+End Sub
+
+Public Sub AlternarColumnasAuditoriaRibbon(control As IRibbonControl)
+    AlternarColumnasAuditoria
+End Sub
+
+Public Sub AlternarColumnasAuditoria()
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim col As ListColumn
+    Dim estadoActualOculto As Boolean
+    
+    Set ws = ActiveSheet
+    If ws.ListObjects.Count = 0 Then
+        MsgBox "No hay una tabla de ingenieria activa en esta hoja.", vbExclamation, "Auditoria LukeApp"
+        Exit Sub
+    End If
+    
+    Set tbl = ws.ListObjects(1)
+    
+    On Error Resume Next
+    estadoActualOculto = tbl.ListColumns("UUID").Range.EntireColumn.Hidden
+    On Error GoTo 0
+    
+    Application.ScreenUpdating = False
+    For Each col In tbl.ListColumns
+        Select Case UCase(Trim(col.Name))
+            Case "UUID", "FECHA_CREACION", "CREADO_POR", "EDITADO_POR"
+                col.Range.EntireColumn.Hidden = Not estadoActualOculto
+        End Select
+    Next col
+    Application.ScreenUpdating = True
+    
+    If estadoActualOculto Then
+        MsgBox "Columnas de Auditoria y Trazabilidad VISIBLES:" & vbCrLf & vbCrLf & _
+               "- [UUID] : Identificador inmutable" & vbCrLf & _
+               "- [FECHA_CREACION] : Fecha de registro en faena" & vbCrLf & _
+               "- [CREADO_POR] : Responsable de creacion" & vbCrLf & _
+               "- [EDITADO_POR] : Ultimo usuario que modifico", _
+               vbInformation, "Auditoria LukeApp"
+    Else
+        MsgBox "Columnas de Auditoria OCULTADAS para mantener la vista limpia de faena.", vbInformation, "Auditoria LukeApp"
+    End If
 End Sub
 
 ' ------------------------------------------------------------------------------
