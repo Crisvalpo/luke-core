@@ -82,11 +82,25 @@ apiV1.use('/piping', pipingRouter);
 
 app.use('/api/v1', apiV1);
 
-// Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access, /api/me)
+// Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access, /api/me/projects)
 app.use('/api/auth', authRouter);
 app.use('/api/piping', pipingRouter);
 app.use('/api/access', accessRouter);
-app.use('/api/me', accessRouter); // Permite /api/me/projects
+
+// Endpoint directo /api/me/projects para resolución de proyectos desde Excel
+app.get('/api/me/projects', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { AccessService } = await import('./modules/access/access.service.js');
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const personalId = req.user?.personal_id;
+    const tenantId = req.user?.tenant_id;
+
+    const data = await AccessService.obtenerMisProyectos(usuarioWindows, personalId, tenantId);
+    return sendSuccess(res, data, 200);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Error al obtener proyectos autorizados', 400);
+  }
+});
 
 // Middleware Global de Errores
 app.use(errorHandler);
