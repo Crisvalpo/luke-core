@@ -114,7 +114,7 @@ End Sub
 
 ' --- GRUPO 3: INGENIERIA (NAVEGACION DE HOJAS MAESTRAS) ---
 Public Sub IrAPIDRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,FECHA_SYNC"
+    NavegarOCrearHoja "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC"
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
@@ -390,7 +390,7 @@ Public Sub ActualizarPlanillaDesdeNube()
     Application.StatusBar = "Sincronizando listas maestras de faena desde Luke Core..."
     
     ' 1. Sincronizar P&IDs
-    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,FECHA_SYNC", "codigo_pid", idProyecto)
+    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,FECHA_SYNC", "codigo_pid", idProyecto)
     
     ' 2. Sincronizar Líneas
     totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA,FLUIDO,CLASE,NPS,ORIGEN,DESTINO,FECHA_SYNC", "codigo_linea", idProyecto)
