@@ -53,6 +53,10 @@ Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
+    ActualizarHojaActiva
+End Sub
+
+Public Sub ActualizarTodoElProyectoRibbon(control As IRibbonControl)
     ActualizarPlanillaDesdeNube
 End Sub
 
