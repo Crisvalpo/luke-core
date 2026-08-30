@@ -2,9 +2,26 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AccessService } from './access.service.js';
 import { solicitudAccesoSchema, webhookBaileysSchema } from './access.schema.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
+import { requireSyncAuth } from '../../shared/middlewares/authGuard.js';
 import { query } from '../../config/database.js';
 
 export const accessRouter = Router();
+
+/**
+ * GET /api/access/me/projects o /api/me/projects — Proyectos autorizados para el usuario autenticado
+ */
+accessRouter.get('/me/projects', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const personalId = req.user?.personal_id;
+    const tenantId = req.user?.tenant_id;
+
+    const data = await AccessService.obtenerMisProyectos(usuarioWindows, personalId, tenantId);
+    return sendSuccess(res, data, 200);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Error al obtener proyectos autorizados', 400);
+  }
+});
 
 /**
  * POST /api/access/request — Enviar solicitud de acceso desde Excel

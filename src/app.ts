@@ -82,10 +82,11 @@ apiV1.use('/piping', pipingRouter);
 
 app.use('/api/v1', apiV1);
 
-// Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access)
+// Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access, /api/me)
 app.use('/api/auth', authRouter);
 app.use('/api/piping', pipingRouter);
 app.use('/api/access', accessRouter);
+app.use('/api/me', accessRouter); // Permite /api/me/projects
 
 // Middleware Global de Errores
 app.use(errorHandler);

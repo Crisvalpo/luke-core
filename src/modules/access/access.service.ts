@@ -293,4 +293,70 @@ export class AccessService {
       }
     }
   }
+
+  /**
+   * Obtiene los proyectos autorizados para el usuario autenticado (JWT)
+   */
+  static async obtenerMisProyectos(usuarioWindows: string, personalId?: string, tenantId?: string) {
+    const usuarioNorm = usuarioWindows.trim();
+    const soloUser = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
+
+    // 1. Resolver usuario en core.personal
+    let personal: any = null;
+    if (personalId) {
+      const pRes = await query('SELECT id, tenant_id, nombre_completo, usuario_windows, rol_organizacional FROM core.personal WHERE id = $1', [personalId]);
+      personal = pRes.rows[0];
+    }
+
+    if (!personal) {
+      const pRes = await query(`
+        SELECT id, tenant_id, nombre_completo, usuario_windows, rol_organizacional 
+        FROM core.personal 
+        WHERE UPPER(usuario_windows) = UPPER($1) OR UPPER(usuario_windows) = UPPER($2) 
+        LIMIT 1;
+      `, [usuarioNorm, soloUser]);
+      personal = pRes.rows[0];
+    }
+
+    if (!personal) {
+      throw new Error(`Personal no encontrado para el usuario ${usuarioWindows}`);
+    }
+
+    let proyectos: any[] = [];
+
+    // 2. Si es super_admin o admin, tiene acceso a todos los proyectos del tenant
+    if (personal.rol_organizacional === 'super_admin' || personal.rol_organizacional === 'admin') {
+      const proyRes = await query(`
+        SELECT id, codigo, nombre, centro_costo, activo, TRUE AS puede_sincronizar
+        FROM core.proyectos
+        WHERE tenant_id = $1 AND activo = TRUE
+        ORDER BY codigo ASC;
+      `, [personal.tenant_id]);
+      proyectos = proyRes.rows;
+    } else {
+      // 3. Si es operario/cubicador, buscar en core.personal_proyectos
+      const proyRes = await query(`
+        SELECT DISTINCT pr.id, pr.codigo, pr.nombre, pr.centro_costo, pr.activo, pp.puede_sincronizar
+        FROM core.proyectos pr
+        JOIN core.personal_proyectos pp ON pp.proyecto_id = pr.id
+        WHERE pp.personal_id = $1 AND pr.activo = TRUE AND pp.puede_sincronizar = TRUE
+        ORDER BY pr.codigo ASC;
+      `, [personal.id]);
+      proyectos = proyRes.rows;
+    }
+
+    return {
+      personal_id: personal.id,
+      usuario_windows: personal.usuario_windows || usuarioNorm,
+      nombre: personal.nombre_completo,
+      proyectos: proyectos.map(p => ({
+        id: p.id,
+        codigo: p.codigo,
+        nombre: p.nombre,
+        centro_costo: p.centro_costo,
+        estado: p.activo ? 'activo' : 'inactivo',
+        puede_sincronizar: p.puede_sincronizar === true
+      }))
+    };
+  }
 }
