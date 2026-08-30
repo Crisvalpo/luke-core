@@ -12,29 +12,29 @@
             size="large"
             onAction="SolicitarAccesoRibbon"
             screentip="Solicitar Acceso a Faena"
-            supertip="Envía una solicitud al Administrador vía WhatsApp para habilitar tu usuario en este proyecto." />
+            supertip="Envia una solicitud al Administrador via WhatsApp para habilitar tu usuario en este proyecto." />
 
           <button
             id="btnIniciarSesion"
-            label="Iniciar Sesión"
+            label="Iniciar Sesion"
             imageMso="Key"
             size="normal"
             onAction="IniciarSesionRibbon"
-            screentip="Iniciar Sesión (OTP)"
-            supertip="Solicita un código PIN a tu WhatsApp y obtiene un token de 4 horas para publicar." />
+            screentip="Iniciar Sesion (OTP)"
+            supertip="Solicita un codigo PIN a tu WhatsApp y obtiene un token de 4 horas para publicar." />
 
           <button
             id="btnCerrarSesion"
-            label="Cerrar Sesión"
+            label="Cerrar Sesion"
             imageMso="CancelRequest"
             size="normal"
             onAction="CerrarSesionLukeAppRibbon"
-            screentip="Cerrar Sesión Activa"
-            supertip="Elimina el token de sesión de la memoria." />
+            screentip="Cerrar Sesion Activa"
+            supertip="Elimina el token de sesion de la memoria volatil." />
         </group>
 
         <!-- GRUPO 2: OPERACIONES DE PIPING -->
-        <group id="grpSync" label="Sincronización">
+        <group id="grpSync" label="Sincronizacion">
           <button
             id="btnPublicarJuntas"
             label="Publicar Juntas"
@@ -42,7 +42,7 @@
             size="large"
             onAction="PublicarListaJuntasRibbon"
             screentip="Publicar Lista de Juntas"
-            supertip="Sube y sincroniza las juntas de esta hoja con Luke Core / Base de Datos." />
+            supertip="Sube y sincroniza las juntas de esta hoja directamente con piping.lista_juntas en la Base de Datos." />
 
           <button
             id="btnActualizarNube"
@@ -62,8 +62,8 @@
             imageMso="Properties"
             size="normal"
             onAction="VerProyectoRibbon"
-            screentip="Configuración del Proyecto"
-            supertip="Muestra los parámetros del proyecto actual definidos en la hoja CONFIG." />
+            screentip="Configuracion del Proyecto"
+            supertip="Muestra los parametros del proyecto activo definidos en la hoja CONFIG." />
 
           <button
             id="btnAcercaDe"
@@ -72,7 +72,7 @@
             size="normal"
             onAction="AcercaDeLukeAppRibbon"
             screentip="Acerca de LukeApp"
-            supertip="Información de versión, API conectada y arquitectura." />
+            supertip="Informacion de version, API conectada y arquitectura." />
         </group>
 
       </tab>
