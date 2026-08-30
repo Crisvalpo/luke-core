@@ -122,7 +122,7 @@ Public Sub IrALineasRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
@@ -395,8 +395,8 @@ Public Sub ActualizarPlanillaDesdeNube()
     ' 2. Sincronizar Líneas (17 columnas reales de Andina + auditoría)
     totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
     
-    ' 3. Sincronizar Isométricos
-    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,OBSERVACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
+    ' 3. Sincronizar Isométricos (19 columnas reales de faena + auditoría)
+    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
     
     ' 4. Sincronizar Spools
     totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
