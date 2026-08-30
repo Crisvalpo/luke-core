@@ -1,6 +1,6 @@
 ' ==============================================================================
 ' LUKEAPP EXCEL SYNC v1.0 - MODULO OFICIAL UNIFICADO PIPING
-' Gobierno 100% Centralizado en Luke Core (Cero dependencia de hoja CONFIG)
+' Gobierno 100% Centralizado en Luke Core (Tabla Horizontal en hoja _SISTEMA)
 ' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
@@ -428,59 +428,83 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
 End Function
 
 ' ------------------------------------------------------------------------------
-' HOJA TECNICA _SISTEMA (VeryHidden)
+' HOJA TECNICA _SISTEMA (Estructura Horizontal por Columnas)
 ' ------------------------------------------------------------------------------
-Private Function AsegurarHojaSistema() As Worksheet
+Private Function ObtenerTablaSistema() As ListObject
     Dim ws As Worksheet
+    Dim tbl As ListObject
+    
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets("_SISTEMA")
     On Error GoTo 0
     
+    ' Si la hoja _SISTEMA no existe, crearla
     If ws Is Nothing Then
         Application.ScreenUpdating = False
         Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
         ws.Name = "_SISTEMA"
-        ws.Range("A1").Value = "PARAMETRO"
-        ws.Range("B1").Value = "VALOR"
+        
+        ' Crear encabezados horizontales
+        ws.Range("A1").Value = "PERSONAL_ID"
+        ws.Range("B1").Value = "USUARIO_WINDOWS"
+        ws.Range("C1").Value = "PROYECTO_UUID"
+        ws.Range("D1").Value = "PROYECTO_CODIGO"
+        ws.Range("E1").Value = "PROYECTO_NOMBRE"
+        ws.Range("F1").Value = "PROYECTO_ESTADO"
+        ws.Range("G1").Value = "CENTRO_COSTO"
+        ws.Range("H1").Value = "ULTIMA_SYNC"
+        ws.Range("I1").Value = "VERSION_PLANTILLA"
+        
+        Set tbl = ws.ListObjects.Add(xlSrcRange, ws.Range("A1:I2"), , xlYes)
+        tbl.Name = "tbl_sistema"
         ws.Visible = xlSheetVeryHidden
         Application.ScreenUpdating = True
-    ElseIf ws.Visible <> xlSheetVeryHidden Then
-        ws.Visible = xlSheetVeryHidden
+    Else
+        ' Buscar tabla en la hoja _SISTEMA (soporta tbl_sistema o tbl_config)
+        On Error Resume Next
+        Set tbl = ws.ListObjects("tbl_sistema")
+        If tbl Is Nothing Then Set tbl = ws.ListObjects("tbl_config")
+        If tbl Is Nothing And ws.ListObjects.Count > 0 Then Set tbl = ws.ListObjects(1)
+        On Error GoTo 0
     End If
     
-    Set AsegurarHojaSistema = ws
+    Set ObtenerTablaSistema = tbl
 End Function
 
-Public Sub GuardarEnSistema(ByVal parametro As String, ByVal valor As String)
-    Dim ws As Worksheet
-    Dim celda As Range
+Public Sub GuardarEnSistema(ByVal columnaParametro As String, ByVal valor As String)
+    Dim tbl As ListObject
+    Dim colIdx As Long
     
-    Set ws = AsegurarHojaSistema()
-    Set celda = ws.Range("A:A").Find(What:=parametro, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=False)
+    Set tbl = ObtenerTablaSistema()
+    If tbl Is Nothing Then Exit Sub
     
-    If celda Is Nothing Then
-        Dim proxFila As Long
-        proxFila = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
-        ws.Cells(proxFila, 1).Value = parametro
-        ws.Cells(proxFila, 2).Value = valor
-    Else
-        celda.Offset(0, 1).Value = valor
+    colIdx = ObtenerIndiceColumna(tbl, columnaParametro)
+    
+    ' Si la columna no existe, agregarla
+    If colIdx = 0 Then
+        tbl.ListColumns.Add.Name = columnaParametro
+        colIdx = tbl.ListColumns.Count
     End If
+    
+    ' Asegurar al menos una fila de datos
+    If tbl.ListRows.Count = 0 Then
+        tbl.ListRows.Add
+    End If
+    
+    tbl.DataBodyRange(1, colIdx).Value = valor
 End Sub
 
-Public Function LeerDeSistema(ByVal parametro As String) As String
-    Dim ws As Worksheet
-    Dim celda As Range
+Public Function LeerDeSistema(ByVal columnaParametro As String) As String
+    Dim tbl As ListObject
+    Dim colIdx As Long
     
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets("_SISTEMA")
-    On Error GoTo 0
-    If ws Is Nothing Then Exit Function
+    Set tbl = ObtenerTablaSistema()
+    If tbl Is Nothing Then Exit Function
     
-    Set celda = ws.Range("A:A").Find(What:=parametro, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=False)
-    If Not celda Is Nothing Then
-        LeerDeSistema = Trim(CStr(celda.Offset(0, 1).Value))
-    End If
+    colIdx = ObtenerIndiceColumna(tbl, columnaParametro)
+    If colIdx = 0 Or tbl.ListRows.Count = 0 Then Exit Function
+    
+    LeerDeSistema = Trim(CStr(tbl.DataBodyRange(1, colIdx).Value))
 End Function
 
 ' ==============================================================================
