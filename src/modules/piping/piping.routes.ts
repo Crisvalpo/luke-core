@@ -45,6 +45,58 @@ pipingRouter.get('/lista-juntas', requireSyncAuth, async (req: Request, res: Res
 });
 
 /**
+ * GET /api/v1/piping/pid — Obtener P&IDs vigentes
+ */
+pipingRouter.get('/pid', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const pids = await PipingService.obtenerPidProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: pids.length, registros: pids });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/piping/lineas — Obtener Líneas de piping vigentes
+ */
+pipingRouter.get('/lineas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const lineas = await PipingService.obtenerLineasProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: lineas.length, registros: lineas });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/piping/isometricos — Obtener Isométricos vigentes
+ */
+pipingRouter.get('/isometricos', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const isos = await PipingService.obtenerIsometricosProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: isos.length, registros: isos });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/piping/spools — Obtener Spools vigentes
+ */
+pipingRouter.get('/spools', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const spools = await PipingService.obtenerSpoolsProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: spools.length, registros: spools });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/piping/auditoria — Historial de sincronizaciones
  */
 pipingRouter.get('/auditoria', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {

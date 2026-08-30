@@ -188,4 +188,96 @@ export class PipingService {
 
     return result.rows;
   }
+
+  /**
+   * Obtiene la lista de P&IDs de un proyecto
+   */
+  static async obtenerPidProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        p.id,
+        p.codigo AS codigo_pid,
+        p.titulo,
+        p.revision_vigente AS revision,
+        p.estado_documental AS estado,
+        to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+      FROM piping.pid p
+      JOIN core.proyectos pr ON pr.id = p.proyecto_id
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+        AND p.vigente = TRUE
+      ORDER BY p.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
+
+  /**
+   * Obtiene la lista de Líneas de un proyecto
+   */
+  static async obtenerLineasProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        l.id,
+        l.codigo AS codigo_linea,
+        f.codigo AS fluido,
+        c.codigo AS clase,
+        l.nps_codigo AS nps,
+        l.origen,
+        l.destino,
+        to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+      FROM piping.lineas l
+      JOIN core.proyectos pr ON pr.id = l.proyecto_id
+      LEFT JOIN piping.cat_fluidos_proyecto f ON f.id = l.fluido_proyecto_id
+      LEFT JOIN piping.cat_clases_proyecto c ON c.id = l.clase_proyecto_id
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+        AND l.vigente = TRUE
+      ORDER BY l.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
+
+  /**
+   * Obtiene la lista de Isométricos de un proyecto
+   */
+  static async obtenerIsometricosProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        i.id,
+        i.codigo AS codigo_iso,
+        i.hoja,
+        i.revision_vigente AS revision,
+        l.codigo AS codigo_linea,
+        i.estado_documental AS estado,
+        to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+      FROM piping.isometricos i
+      JOIN core.proyectos pr ON pr.id = i.proyecto_id
+      LEFT JOIN piping.lineas l ON l.id = i.linea_id
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+        AND i.vigente = TRUE
+      ORDER BY i.codigo ASC, i.hoja ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
+
+  /**
+   * Obtiene la lista de Spools de un proyecto
+   */
+  static async obtenerSpoolsProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        s.id,
+        s.codigo AS codigo_spool,
+        i.codigo AS codigo_iso,
+        s.tag,
+        s.estado_actual AS estado,
+        s.ubicacion_actual AS ubicacion,
+        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
+      FROM piping.spools s
+      JOIN core.proyectos pr ON pr.id = s.proyecto_id
+      LEFT JOIN piping.isometricos i ON i.id = s.isometrico_id
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+        AND s.vigente = TRUE
+      ORDER BY s.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
 }
