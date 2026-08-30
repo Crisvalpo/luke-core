@@ -149,14 +149,41 @@ export class PipingService {
   }
 
   /**
-   * Listar historial de auditoría de sincronización
+   * Obtiene el historial de auditoría de sincronizaciones
    */
-  static async obtenerAuditoria(limite = 50) {
+  static async obtenerAuditoria(limite: number = 50) {
     const result = await dbPool.query(`
-      SELECT * FROM core.audit_sync
+      SELECT id, usuario_windows, proyecto_id, tabla, registros, fecha
+      FROM core.audit_sync
       ORDER BY fecha DESC
       LIMIT $1;
     `, [limite]);
+
+    return result.rows;
+  }
+
+  /**
+   * Obtiene la lista completa de juntas vigentes de un proyecto (Para Actualizar Planilla)
+   */
+  static async obtenerJuntasProyecto(idProyecto: string) {
+    const proyNorm = idProyecto.trim();
+    const result = await dbPool.query(`
+      SELECT 
+        uuid,
+        id_proyecto,
+        id_junta,
+        tag,
+        estado,
+        vigente,
+        fecha_sync,
+        created_at,
+        metadata
+      FROM piping.lista_juntas
+      WHERE (id_proyecto = $1 OR id_proyecto IN (SELECT codigo FROM core.proyectos WHERE id::text = $1))
+        AND vigente = TRUE
+      ORDER BY id_junta ASC;
+    `, [proyNorm]);
+
     return result.rows;
   }
 }

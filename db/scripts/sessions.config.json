@@ -1,0 +1,11 @@
+{
+  "sessions": [
+    {
+      "id": "subastas",
+      "webhookUrl": "http://localhost:3080/api/access/wa-webhook",
+      "authDir": "./auth/subastas",
+      "filterGroups": true,
+      "debounce": false
+    }
+  ]
+}

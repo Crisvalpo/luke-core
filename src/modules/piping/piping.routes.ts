@@ -28,6 +28,23 @@ pipingRouter.post('/lista-juntas', requireSyncAuth, async (req: Request, res: Re
 });
 
 /**
+ * GET /api/v1/piping/lista-juntas — Obtener todas las juntas vigentes de un proyecto
+ */
+pipingRouter.get('/lista-juntas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const juntas = await PipingService.obtenerJuntasProyecto(idProyecto);
+    return sendSuccess(res, {
+      id_proyecto: idProyecto,
+      total: juntas.length,
+      registros: juntas
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/piping/auditoria — Historial de sincronizaciones
  */
 pipingRouter.get('/auditoria', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
