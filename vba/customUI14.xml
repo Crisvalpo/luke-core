@@ -3,37 +3,37 @@
     <tabs>
       <tab id="tabLukeApp" label="LUKEAPP">
 
-        <!-- GRUPO 1: SEGURIDAD Y ACCESO -->
-        <group id="grpSeguridad" label="Seguridad y Acceso">
+        <!-- GRUPO 1: PROYECTO (GOBIERNO CENTRALIZADO) -->
+        <group id="grpProyecto" label="Proyecto">
           <button
-            id="btnSolicitarAcceso"
-            label="Solicitar Acceso"
-            imageMso="AddAccount"
+            id="btnActualizarProyecto"
+            label="Actualizar Proyecto"
+            imageMso="Refresh"
+            size="normal"
+            onAction="ActualizarProyectoRibbon"
+            screentip="Actualizar Proyectos Autorizados"
+            supertip="Consulta en Luke Core los proyectos que tienes asignados y actualiza la faena activa." />
+
+          <button
+            id="btnCambiarProyecto"
+            label="Cambiar Proyecto"
+            imageMso="ProjectTask"
             size="large"
-            onAction="SolicitarAccesoRibbon"
-            screentip="Solicitar Acceso a Faena"
-            supertip="Envia una solicitud al Administrador via WhatsApp para habilitar tu usuario en este proyecto." />
+            onAction="CambiarProyectoRibbon"
+            screentip="Cambiar de Proyecto"
+            supertip="Permite seleccionar entre tus faenas autorizadas en Luke Core." />
 
           <button
-            id="btnIniciarSesion"
-            label="Iniciar Sesion"
-            imageMso="Key"
+            id="btnVerProyecto"
+            label="Ver Proyecto"
+            imageMso="Properties"
             size="normal"
-            onAction="IniciarSesionRibbon"
-            screentip="Iniciar Sesion (OTP)"
-            supertip="Solicita un codigo PIN a tu WhatsApp y obtiene un token de 4 horas para publicar." />
-
-          <button
-            id="btnCerrarSesion"
-            label="Cerrar Sesion"
-            imageMso="CancelRequest"
-            size="normal"
-            onAction="CerrarSesionLukeAppRibbon"
-            screentip="Cerrar Sesion Activa"
-            supertip="Elimina el token de sesion de la memoria volatil." />
+            onAction="VerProyectoRibbon"
+            screentip="Detalle del Proyecto Activo"
+            supertip="Muestra el codigo, nombre y UUID de la faena activa resuelta desde el servidor." />
         </group>
 
-        <!-- GRUPO 2: OPERACIONES DE PIPING -->
+        <!-- GRUPO 2: SINCRONIZACION PIPING -->
         <group id="grpSync" label="Sincronizacion">
           <button
             id="btnPublicarJuntas"
@@ -42,7 +42,7 @@
             size="large"
             onAction="PublicarListaJuntasRibbon"
             screentip="Publicar Lista de Juntas"
-            supertip="Sube y sincroniza las juntas de esta hoja directamente con piping.lista_juntas en la Base de Datos." />
+            supertip="Sube y sincroniza las juntas de esta planilla con piping.lista_juntas en la Base de Datos." />
 
           <button
             id="btnActualizarNube"
@@ -54,17 +54,38 @@
             supertip="Refresca las tablas y conexiones locales de la planilla." />
         </group>
 
-        <!-- GRUPO 3: PROYECTO Y AYUDA -->
-        <group id="grpProyecto" label="Proyecto">
+        <!-- GRUPO 3: SEGURIDAD Y ACCESO -->
+        <group id="grpSeguridad" label="Seguridad y Acceso">
           <button
-            id="btnVerProyecto"
-            label="Ver Proyecto"
-            imageMso="Properties"
-            size="normal"
-            onAction="VerProyectoRibbon"
-            screentip="Configuracion del Proyecto"
-            supertip="Muestra los parametros del proyecto activo definidos en la hoja CONFIG." />
+            id="btnSolicitarAcceso"
+            label="Solicitar Acceso"
+            imageMso="AddAccount"
+            size="large"
+            onAction="SolicitarAccesoRibbon"
+            screentip="Solicitar Acceso a Faena"
+            supertip="Envia una solicitud al Administrador via WhatsApp para habilitar tu usuario." />
 
+          <button
+            id="btnIniciarSesion"
+            label="Iniciar Sesion"
+            imageMso="Key"
+            size="normal"
+            onAction="IniciarSesionRibbon"
+            screentip="Iniciar Sesion (OTP WhatsApp)"
+            supertip="Solicita un codigo PIN a tu WhatsApp y precarga el token JWT de 4 horas." />
+
+          <button
+            id="btnCerrarSesion"
+            label="Cerrar Sesion"
+            imageMso="CancelRequest"
+            size="normal"
+            onAction="CerrarSesionLukeAppRibbon"
+            screentip="Cerrar Sesion Activa"
+            supertip="Elimina el token de sesion de la memoria volatil." />
+        </group>
+
+        <!-- GRUPO 4: AYUDA -->
+        <group id="grpAyuda" label="Ayuda">
           <button
             id="btnAcercaDe"
             label="Acerca de"

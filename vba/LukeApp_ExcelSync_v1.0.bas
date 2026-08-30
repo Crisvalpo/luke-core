@@ -1,5 +1,6 @@
 ' ==============================================================================
-' LUKEAPP EXCEL SYNC v1.0 - MODULO UNIFICADO PIPING
+' LUKEAPP EXCEL SYNC v1.0 - MODULO OFICIAL UNIFICADO PIPING
+' Gobierno Centralizado de Proyectos (Sin dependencia de CONFIG)
 ' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
@@ -34,25 +35,56 @@ Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
     MsgBox "Planilla actualizada desde los origenes de datos locales.", vbInformation, "LukeApp"
 End Sub
 
-Public Sub VerProyectoRibbon(control As IRibbonControl)
-    Dim idProy As String, nomProy As String, emp As String, disc As String
-    idProy = LeerConfiguracion("ID_PROYECTO")
-    nomProy = LeerConfiguracion("NOMBRE_PROYECTO")
-    emp = LeerConfiguracion("EMPRESA")
-    disc = LeerConfiguracion("DISCIPLINA")
+Public Sub ActualizarProyectoRibbon(control As IRibbonControl)
+    Dim usuarioWindows As String
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
     
-    MsgBox "Parametros del Proyecto Activo:" & vbCrLf & vbCrLf & _
-           "- ID Proyecto: " & idProy & vbCrLf & _
-           "- Nombre: " & nomProy & vbCrLf & _
-           "- Empresa (Tenant): " & emp & vbCrLf & _
-           "- Disciplina: " & disc & vbCrLf & vbCrLf & _
-           "Usuario Windows: " & ObtenerUsuarioWindowsCompleto(), _
-           vbInformation, "Configuracion del Proyecto"
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    If ActualizarProyectosAutorizados(False) Then
+        MsgBox "Proyectos sincronizados con éxito." & vbCrLf & vbCrLf & _
+               "Proyecto Activo: " & LeerDeSistema("PROYECTO_CODIGO") & " - " & LeerDeSistema("PROYECTO_NOMBRE"), _
+               vbInformation, "LukeApp Proyectos"
+    End If
+End Sub
+
+Public Sub CambiarProyectoRibbon(control As IRibbonControl)
+    Dim usuarioWindows As String
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    ActualizarProyectosAutorizados True
+End Sub
+
+Public Sub VerProyectoRibbon(control As IRibbonControl)
+    Dim proyCodigo As String, proyNombre As String, proyUuid As String, userWin As String, ultSync As String
+    
+    proyCodigo = LeerDeSistema("PROYECTO_CODIGO")
+    proyNombre = LeerDeSistema("PROYECTO_NOMBRE")
+    proyUuid = LeerDeSistema("PROYECTO_UUID")
+    userWin = LeerDeSistema("USUARIO_WINDOWS")
+    ultSync = LeerDeSistema("ULTIMA_SYNC")
+    
+    If proyCodigo = "" Then
+        MsgBox "No hay ningun proyecto activo seleccionado." & vbCrLf & vbCrLf & _
+               "Haz clic en 'Iniciar Sesion' o 'Actualizar Proyecto' para cargar tus proyectos autorizados.", _
+               vbExclamation, "Sin Proyecto Activo"
+        Exit Sub
+    End If
+    
+    MsgBox "Parametros del Proyecto Activo (Fuente: Luke Core):" & vbCrLf & vbCrLf & _
+           "- Codigo Faena: " & proyCodigo & vbCrLf & _
+           "- Nombre: " & proyNombre & vbCrLf & _
+           "- UUID Proyecto: " & proyUuid & vbCrLf & _
+           "- Usuario Asignado: " & userWin & vbCrLf & _
+           "- Ultima Sincronizacion: " & IIf(ultSync = "", "Nunca", ultSync), _
+           vbInformation, "Proyecto Activo - LukeApp"
 End Sub
 
 Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
     MsgBox "LukeApp Excel Client - Piping Management" & vbCrLf & _
-           "Version: 1.0 (Zero-Touch WhatsApp Onboarding)" & vbCrLf & _
+           "Version: 1.0 (Zero-Touch WhatsApp & Centralized Project Governance)" & vbCrLf & _
            "API: " & API_BASE_URL & vbCrLf & _
            "Seguridad: JWT 4 Horas (Volatil en Memoria)", _
            vbInformation, "Acerca de LukeApp"
@@ -78,8 +110,7 @@ Public Sub SolicitarAcceso()
     
     usuarioWindows = ObtenerUsuarioWindowsCompleto()
     nombreEquipo = Trim(Environ("COMPUTERNAME"))
-    tenantSlug = LeerConfiguracion("EMPRESA")
-    If tenantSlug = "" Then tenantSlug = "dem"
+    tenantSlug = "eisa"
     
     nombre = InputBox( _
         "Ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
@@ -130,7 +161,7 @@ ManejoError:
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 2. INICIAR SESION (Solicita OTP y precarga JWT 4h)
+' 2. INICIAR SESION (Solicita OTP, precarga JWT 4h y resuelve proyectos)
 ' ------------------------------------------------------------------------------
 Public Sub IniciarSesion()
     Dim usuarioWindows As String
@@ -141,10 +172,13 @@ Public Sub IniciarSesion()
     m_JwtToken = ""
     
     If AsegurarTokenValido(usuarioWindows) Then
+        ' Resolver proyectos autorizados automáticamente desde Luke Core
+        ActualizarProyectosAutorizados False
+        
         MsgBox "Sesion Iniciada Exitosamente." & vbCrLf & vbCrLf & _
                "- Usuario: " & usuarioWindows & vbCrLf & _
-               "- Vigencia: 4 horas" & vbCrLf & _
-               "- Estado: Listo para publicar datos.", _
+               "- Proyecto Activo: " & LeerDeSistema("PROYECTO_CODIGO") & " (" & LeerDeSistema("PROYECTO_NOMBRE") & ")" & vbCrLf & _
+               "- Vigencia: 4 horas", _
                vbInformation, "LukeApp Seguridad"
     End If
     Exit Sub
@@ -177,18 +211,21 @@ Public Sub PublicarListaJuntas()
     On Error GoTo ManejoError
     tInicio = Timer
     
-    ' 1. Obtener usuario de Windows con Dominio
+    ' 1. Obtener usuario de Windows
     usuarioWindows = ObtenerUsuarioWindowsCompleto()
     
-    ' 2. Leer ID_PROYECTO desde la tabla tbl_config en hoja CONFIG
-    idProyecto = LeerConfiguracion("ID_PROYECTO")
+    ' 2. Asegurar Token JWT valido (4 horas)
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    ' 3. Asegurar que haya un proyecto activo seleccionado desde Luke Core
+    idProyecto = LeerDeSistema("PROYECTO_CODIGO")
     If idProyecto = "" Then
-        MsgBox "No se encontro el parametro 'ID_PROYECTO' en la tabla 'tbl_config' de la hoja CONFIG.", vbCritical, "Error de Configuracion"
-        Exit Sub
+        If Not ActualizarProyectosAutorizados(False) Then Exit Sub
+        idProyecto = LeerDeSistema("PROYECTO_CODIGO")
     End If
     
-    ' 3. Asegurar Token JWT valido (4 horas) via WhatsApp OTP
-    If Not AsegurarTokenValido(usuarioWindows) Then
+    If idProyecto = "" Then
+        MsgBox "No hay ningun proyecto asignado a tu usuario para sincronizar.", vbCritical, "Error de Autorizacion"
         Exit Sub
     End If
     
@@ -199,7 +236,7 @@ Public Sub PublicarListaJuntas()
         Exit Sub
     End If
     
-    Application.StatusBar = "Sincronizando " & totalFilas & " juntas con Luke Core..."
+    Application.StatusBar = "Sincronizando " & totalFilas & " juntas en proyecto " & idProyecto & "..."
     
     ' 5. Enviar Peticion HTTP a Luke Core API
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
@@ -212,12 +249,12 @@ Public Sub PublicarListaJuntas()
     If http.Status = 200 Or http.Status = 201 Then
         respuestaJson = http.responseText
         
-        ' Escribir los UUIDs y fecha de sincronizacion de vuelta en la tabla
         ActualizarUuidsEnTabla respuestaJson
+        GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
         
         Application.StatusBar = False
         MsgBox "Sincronizacion Exitosa:" & vbCrLf & vbCrLf & _
-               "- Proyecto: " & idProyecto & vbCrLf & _
+               "- Proyecto: " & idProyecto & " (" & LeerDeSistema("PROYECTO_NOMBRE") & ")" & vbCrLf & _
                "- Juntas procesadas: " & totalFilas & vbCrLf & _
                "- Usuario autenticado: " & usuarioWindows & vbCrLf & _
                "- Tiempo: " & Format(Timer - tInicio, "0.00") & " seg", _
@@ -243,7 +280,190 @@ ManejoError:
 End Sub
 
 ' ==============================================================================
-' SECCION 3: AUTENTICACION Y CONSTRUCTORES INTERNOS
+' SECCION 3: RESOLUCION CENTRALIZADA DE PROYECTOS Y GESTION DE _SISTEMA
+' ==============================================================================
+
+Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean) As Boolean
+    Dim http As Object
+    Dim respuestaJson As String
+    Dim posProy As Long, posItem As Long, posFin As Long
+    Dim pId As String, pCod As String, pNom As String
+    Dim arrCod() As String, arrNom() As String, arrId() As String
+    Dim totalProy As Long, i As Long
+    Dim menuTexto As String, opcStr As String, opcNum As Long
+    Dim codActual As String
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", API_BASE_URL & "/api/me/projects", False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    If http.Status <> 200 Then
+        MsgBox "No fue posible obtener la lista de proyectos autorizados (" & http.Status & "):" & vbCrLf & http.responseText, vbCritical, "Error Proyectos"
+        ActualizarProyectosAutorizados = False
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    respuestaJson = http.responseText
+    GuardarEnSistema "PERSONAL_ID", ExtraerValorJson(respuestaJson, "personal_id")
+    GuardarEnSistema "USUARIO_WINDOWS", ExtraerValorJson(respuestaJson, "usuario_windows")
+    
+    ' Parsear proyectos del array JSON
+    totalProy = 0
+    posProy = InStr(1, respuestaJson, """proyectos""", vbTextCompare)
+    If posProy > 0 Then posProy = InStr(posProy, respuestaJson, "[")
+    
+    If posProy > 0 Then
+        posItem = InStr(posProy, respuestaJson, "{")
+        Do While posItem > 0
+            posFin = InStr(posItem, respuestaJson, "}")
+            If posFin = 0 Then Exit Do
+            
+            pId = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "id")
+            pCod = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "codigo")
+            pNom = ExtraerValorJson(Mid(respuestaJson, posItem, posFin - posItem + 1), "nombre")
+            
+            If pCod <> "" Then
+                totalProy = totalProy + 1
+                ReDim Preserve arrId(1 To totalProy)
+                ReDim Preserve arrCod(1 To totalProy)
+                ReDim Preserve arrNom(1 To totalProy)
+                arrId(totalProy) = pId
+                arrCod(totalProy) = pCod
+                arrNom(totalProy) = pNom
+            End If
+            
+            posItem = InStr(posFin, respuestaJson, "{")
+        Loop
+    End If
+    
+    If totalProy = 0 Then
+        MsgBox "Tu usuario no tiene proyectos autorizados en Luke Core." & vbCrLf & vbCrLf & _
+               "Solicita acceso a tu administrador de faena via WhatsApp.", vbExclamation, "Sin Proyectos"
+        ActualizarProyectosAutorizados = False
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    codActual = LeerDeSistema("PROYECTO_CODIGO")
+    
+    ' CASO 1: Solo 1 proyecto asignado -> Auto-seleccion silenciosa
+    If totalProy = 1 Then
+        GuardarEnSistema "PROYECTO_UUID", arrId(1)
+        GuardarEnSistema "PROYECTO_CODIGO", arrCod(1)
+        GuardarEnSistema "PROYECTO_NOMBRE", arrNom(1)
+        ActualizarProyectosAutorizados = True
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    ' CASO 2: Multiples proyectos
+    ' Si ya tiene uno seleccionado y no forzamos seleccion, verificar que siga valido
+    If Not forzarSeleccion And codActual <> "" Then
+        For i = 1 To totalProy
+            If arrCod(i) = codActual Then
+                GuardarEnSistema "PROYECTO_UUID", arrId(i)
+                GuardarEnSistema "PROYECTO_NOMBRE", arrNom(i)
+                ActualizarProyectosAutorizados = True
+                Set http = Nothing
+                Exit Function
+            End If
+        Next i
+    End If
+    
+    ' Desplegar selector de proyectos
+    menuTexto = "Tienes multiples proyectos autorizados. Elige el numero del proyecto activo:" & vbCrLf & vbCrLf
+    For i = 1 To totalProy
+        menuTexto = menuTexto & i & ". [" & arrCod(i) & "] " & arrNom(i) & vbCrLf
+    Next i
+    
+    opcStr = InputBox(menuTexto, "LukeApp - Cambiar Proyecto", "1")
+    opcStr = Trim(opcStr)
+    If opcStr = "" Or Not IsNumeric(opcStr) Then
+        ActualizarProyectosAutorizados = False
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    opcNum = CLng(opcStr)
+    If opcNum < 1 Or opcNum > totalProy Then
+        MsgBox "Numero de opcion invalido.", vbExclamation, "Seleccion Cancelada"
+        ActualizarProyectosAutorizados = False
+        Set http = Nothing
+        Exit Function
+    End If
+    
+    GuardarEnSistema "PROYECTO_UUID", arrId(opcNum)
+    GuardarEnSistema "PROYECTO_CODIGO", arrCod(opcNum)
+    GuardarEnSistema "PROYECTO_NOMBRE", arrNom(opcNum)
+    
+    MsgBox "Proyecto Activo Cambiado con Exito:" & vbCrLf & vbCrLf & _
+           "- Codigo: " & arrCod(opcNum) & vbCrLf & _
+           "- Nombre: " & arrNom(opcNum), vbInformation, "Proyecto Seleccionado"
+           
+    ActualizarProyectosAutorizados = True
+    Set http = Nothing
+End Function
+
+' ------------------------------------------------------------------------------
+' HOJA TECNICA _SISTEMA (VeryHidden)
+' ------------------------------------------------------------------------------
+Private Function AsegurarHojaSistema() As Worksheet
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("_SISTEMA")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        Application.ScreenUpdating = False
+        Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+        ws.Name = "_SISTEMA"
+        ws.Range("A1").Value = "PARAMETRO"
+        ws.Range("B1").Value = "VALOR"
+        ws.Visible = xlSheetVeryHidden
+        Application.ScreenUpdating = True
+    ElseIf ws.Visible <> xlSheetVeryHidden Then
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    Set AsegurarHojaSistema = ws
+End Function
+
+Public Sub GuardarEnSistema(ByVal parametro As String, ByVal valor As String)
+    Dim ws As Worksheet
+    Dim celda As Range
+    
+    Set ws = AsegurarHojaSistema()
+    Set celda = ws.Range("A:A").Find(What:=parametro, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=False)
+    
+    If celda Is Nothing Then
+        Dim proxFila As Long
+        proxFila = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
+        ws.Cells(proxFila, 1).Value = parametro
+        ws.Cells(proxFila, 2).Value = valor
+    Else
+        celda.Offset(0, 1).Value = valor
+    End If
+End Sub
+
+Public Function LeerDeSistema(ByVal parametro As String) As String
+    Dim ws As Worksheet
+    Dim celda As Range
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("_SISTEMA")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    
+    Set celda = ws.Range("A:A").Find(What:=parametro, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=False)
+    If Not celda Is Nothing Then
+        LeerDeSistema = Trim(CStr(celda.Offset(0, 1).Value))
+    End If
+End Function
+
+' ==============================================================================
+' SECCION 4: AUTENTICACION Y CONSTRUCTORES INTERNOS
 ' ==============================================================================
 
 Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
@@ -393,9 +613,7 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
     posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
-    If posReg > 0 Then
-        posReg = InStr(posReg, respuestaJson, "[")
-    End If
+    If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
     
     If posReg > 0 Then
         posItem = InStr(posReg, respuestaJson, "{")
@@ -437,7 +655,7 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
 End Sub
 
 ' ==============================================================================
-' SECCION 4: FUNCIONES AUXILIARES
+' SECCION 5: FUNCIONES AUXILIARES
 ' ==============================================================================
 
 Private Function ObtenerUsuarioWindowsCompleto() As String
@@ -452,24 +670,6 @@ Private Function ObtenerUsuarioWindowsCompleto() As String
     Else
         ObtenerUsuarioWindowsCompleto = usuario
     End If
-End Function
-
-Private Function LeerConfiguracion(ByVal parametro As String) As String
-    Dim tbl As ListObject
-    Dim i As Long
-    
-    On Error Resume Next
-    Set tbl = ThisWorkbook.Sheets("CONFIG").ListObjects("tbl_config")
-    On Error GoTo 0
-    
-    If tbl Is Nothing Then Exit Function
-    
-    For i = 1 To tbl.ListRows.Count
-        If UCase(Trim(CStr(tbl.DataBodyRange(i, 1).Value))) = UCase(Trim(parametro)) Then
-            LeerConfiguracion = Trim(CStr(tbl.DataBodyRange(i, 2).Value))
-            Exit Function
-        End If
-    Next i
 End Function
 
 Private Function ObtenerIndiceColumna(tbl As ListObject, nombreCol As String) As Long
