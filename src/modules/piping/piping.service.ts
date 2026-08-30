@@ -7,19 +7,19 @@ export interface JuntaSincronizadaOutput {
 }
 
 export interface RespuestaSincronizacionJuntas {
+  id_proyecto: string;
   procesados: number;
   registros: JuntaSincronizadaOutput[];
-  proyecto_id?: string;
   fecha?: string;
 }
 
 export class PipingService {
   /**
    * Sincronización atómica de lista de juntas desde Excel Sync v1.0
-   * Realiza Upsert masivo y retorna los UUIDs generados/existentes para retroalimentar el Excel.
+   * Realiza validación de identidad (JWT vs Payload), chequeo de permisos en proyecto y Upsert masivo.
    */
   static async sincronizarJuntas(
-    usuarioWindows: string,
+    usuarioWindowsJwt: string,
     payload: PayloadSyncJuntasInput
   ): Promise<RespuestaSincronizacionJuntas> {
     const client = await dbPool.connect();
@@ -27,12 +27,50 @@ export class PipingService {
     try {
       await client.query('BEGIN');
 
-      const idProyecto = payload.id_proyecto;
+      const idProyecto = payload.id_proyecto.trim();
       const registros = payload.registros;
-      const usuarioFinal = payload.usuario_windows || usuarioWindows;
+
+      // 1. Validar identidad: Comparar JWT.sub con body.usuario_windows si fue provisto
+      if (payload.usuario_windows) {
+        const bodyUserNorm = payload.usuario_windows.trim().toUpperCase();
+        const jwtUserNorm = usuarioWindowsJwt.trim().toUpperCase();
+        const bodySoloUser = bodyUserNorm.includes('\\') ? bodyUserNorm.split('\\')[1] : bodyUserNorm;
+        const jwtSoloUser = jwtUserNorm.includes('\\') ? jwtUserNorm.split('\\')[1] : jwtUserNorm;
+
+        if (bodySoloUser !== jwtSoloUser && bodyUserNorm !== jwtUserNorm && jwtUserNorm !== 'ADMIN_KEY') {
+          throw new Error(`Inconsistencia de identidad: El usuario en el cuerpo (${payload.usuario_windows}) no coincide con el token autenticado (${usuarioWindowsJwt}).`);
+        }
+      }
+
+      // 2. Validar autorización de usuario en el proyecto (core.usuarios_excel_proyectos)
+      if (usuarioWindowsJwt !== 'ADMIN_KEY') {
+        const authUserQuery = await client.query(`
+          SELECT u.id, u.usuario_windows, p.puede_publicar
+          FROM core.usuarios_excel u
+          LEFT JOIN core.usuarios_excel_proyectos p 
+            ON p.usuario_id = u.id AND p.proyecto_id = $2
+          WHERE (
+            UPPER(u.usuario_windows) = UPPER($1)
+            OR UPPER(u.usuario_windows) = UPPER(SPLIT_PART($1, '\\', 2))
+            OR UPPER(SPLIT_PART(u.usuario_windows, '\\', 2)) = UPPER(SPLIT_PART($1, '\\', 2))
+          )
+          AND u.activo = TRUE
+          LIMIT 1;
+        `, [usuarioWindowsJwt, idProyecto]);
+
+        if (authUserQuery.rows.length === 0) {
+          throw new Error(`Usuario '${usuarioWindowsJwt}' no registrado o inactivo.`);
+        }
+
+        const authData = authUserQuery.rows[0];
+        if (!authData.puede_publicar) {
+          throw new Error(`Permiso denegado: El usuario '${usuarioWindowsJwt}' no está autorizado para sincronizar o publicar datos en el proyecto '${idProyecto}'.`);
+        }
+      }
+
       const resultadoJuntas: JuntaSincronizadaOutput[] = [];
 
-      // 1. Ejecutar Upsert masivo para cada junta obteniendo su UUID definitivo
+      // 3. Ejecutar Upsert masivo para cada junta obteniendo su UUID definitivo
       for (const junta of registros) {
         const res = await client.query(`
           INSERT INTO core.lista_juntas (
@@ -65,14 +103,14 @@ export class PipingService {
         }
       }
 
-      // 2. Registrar en la tabla de auditoría (core.audit_sync)
+      // 4. Registrar en la tabla de auditoría (core.audit_sync) con la identidad REAL del JWT
       await client.query(`
         INSERT INTO core.audit_sync (
           usuario_windows, proyecto_id, tabla, registros, detalles, fecha
         )
         VALUES ($1, $2, $3, $4, $5, NOW());
       `, [
-        usuarioFinal,
+        usuarioWindowsJwt,
         idProyecto,
         'lista_juntas',
         registros.length,
@@ -85,9 +123,9 @@ export class PipingService {
       await client.query('COMMIT');
 
       return {
+        id_proyecto: idProyecto,
         procesados: resultadoJuntas.length,
         registros: resultadoJuntas,
-        proyecto_id: idProyecto,
         fecha: new Date().toISOString()
       };
     } catch (error) {

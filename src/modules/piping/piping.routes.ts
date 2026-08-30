@@ -17,7 +17,7 @@ pipingRouter.post('/lista-juntas', requireSyncAuth, async (req: Request, res: Re
     const resultado = await PipingService.sincronizarJuntas(usuarioWindows, body);
 
     return sendSuccess(res, resultado, 200, {
-      mensaje: `Sincronización exitosa: ${resultado.procesados} juntas procesadas en el proyecto ${resultado.proyecto_id}.`
+      mensaje: `Sincronización exitosa: ${resultado.procesados} juntas procesadas en el proyecto ${resultado.id_proyecto}.`
     });
   } catch (error: any) {
     if (error.name === 'ZodError') {
