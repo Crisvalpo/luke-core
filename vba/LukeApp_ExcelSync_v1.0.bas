@@ -374,9 +374,7 @@ End Sub
 Public Sub ActualizarPlanillaDesdeNube()
     Dim usuarioWindows As String
     Dim idProyecto As String
-    Dim http As Object
-    Dim respuestaJson As String
-    Dim totalJuntas As Long
+    Dim totalJuntas As Long, totalPid As Long, totalLineas As Long, totalIsos As Long, totalSpools As Long
     
     On Error GoTo ManejoError
     
@@ -389,37 +387,152 @@ Public Sub ActualizarPlanillaDesdeNube()
         idProyecto = LeerDeSistema("PROYECTO_CODIGO")
     End If
     
-    Application.StatusBar = "Descargando lista maestra de juntas desde Luke Core..."
+    Application.StatusBar = "Sincronizando listas maestras de faena desde Luke Core..."
     
-    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-    http.Open "GET", API_BASE_URL & "/api/piping/lista-juntas?id_proyecto=" & EscaparJson(idProyecto), False
-    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
-    http.send
+    ' 1. Sincronizar P&IDs
+    totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,FECHA_SYNC", "codigo_pid", idProyecto)
     
+    ' 2. Sincronizar Líneas
+    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA,FLUIDO,CLASE,NPS,ORIGEN,DESTINO,FECHA_SYNC", "codigo_linea", idProyecto)
+    
+    ' 3. Sincronizar Isométricos
+    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,FECHA_SYNC", "codigo_iso", idProyecto)
+    
+    ' 4. Sincronizar Spools
+    totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC", "codigo_spool", idProyecto)
+    
+    ' 5. Sincronizar Juntas
+    totalJuntas = SincronizarJuntasDesdeNube(idProyecto)
+    
+    GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
     Application.StatusBar = False
     
-    If http.Status = 200 Then
-        respuestaJson = http.responseText
-        totalJuntas = FusionarJuntasEnTabla(respuestaJson)
-        
-        GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
-        
-        MsgBox "Planilla Sincronizada con Exito desde la Nube:" & vbCrLf & vbCrLf & _
-               "- Proyecto: " & idProyecto & " (" & LeerDeSistema("PROYECTO_NOMBRE") & ")" & vbCrLf & _
-               "- Juntas Sincronizadas: " & totalJuntas & vbCrLf & _
-               "- Estado: Planilla actualizada con la ultima verdad de faena.", _
-               vbInformation, "Actualizar Planilla - LukeApp"
-    Else
-        MsgBox "No fue posible descargar las juntas (" & http.Status & "):" & vbCrLf & http.responseText, vbCritical, "Error al Actualizar Planilla"
-    End If
-    
-    Set http = Nothing
+    MsgBox "Sincronizacion Completa desde la Nube (Proyecto " & idProyecto & "):" & vbCrLf & vbCrLf & _
+           "- P&IDs        : " & totalPid & " registros en LIST_PID" & vbCrLf & _
+           "- Lineas       : " & totalLineas & " registros en LIST_LINEAS" & vbCrLf & _
+           "- Isometricos  : " & totalIsos & " registros en LIST_ISOMETRICOS" & vbCrLf & _
+           "- Spools       : " & totalSpools & " registros en LIST_SPOOLS" & vbCrLf & _
+           "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & vbCrLf & _
+           "Estado: Todas las hojas de ingenieria actualizadas.", _
+           vbInformation, "Actualizar Planilla - LukeApp"
     Exit Sub
 
 ManejoError:
     Application.StatusBar = False
     MsgBox "Ocurrio un error al actualizar la planilla:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
+
+Private Function SincronizarJuntasDesdeNube(ByVal idProyecto As String) As Long
+    Dim http As Object
+    Dim respuestaJson As String
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", API_BASE_URL & "/api/piping/lista-juntas?id_proyecto=" & EscaparJson(idProyecto), False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    If http.Status = 200 Then
+        respuestaJson = http.responseText
+        SincronizarJuntasDesdeNube = FusionarJuntasEnTabla(respuestaJson)
+    Else
+        SincronizarJuntasDesdeNube = 0
+    End If
+    Set http = Nothing
+End Function
+
+Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreHoja As String, ByVal nombreTabla As String, ByVal columnasCsv As String, ByVal clavePrincipalJson As String, ByVal idProyecto As String) As Long
+    Dim http As Object
+    Dim respJson As String
+    Dim tbl As ListObject
+    Dim posReg As Long, posItem As Long, posFin As Long
+    Dim totalProcesados As Long
+    Dim dictFilas As Object
+    Dim fechaActual As String
+    Dim cols() As String
+    Dim cIdx As Long, i As Long
+    
+    Set dictFilas = CreateObject("Scripting.Dictionary")
+    fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
+    
+    NavegarOCrearHoja nombreHoja, nombreTabla, columnasCsv
+    Set tbl = ThisWorkbook.Sheets(nombreHoja).ListObjects(nombreTabla)
+    If tbl Is Nothing Then Exit Function
+    
+    cols = Split(columnasCsv, ",")
+    
+    ' Indexar filas existentes por primera columna
+    For i = 1 To tbl.ListRows.Count
+        Dim valKey As String
+        valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, 1).Value)))
+        If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
+    Next i
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", API_BASE_URL & endpoint & "?id_proyecto=" & EscaparJson(idProyecto), False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    If http.Status = 200 Then
+        respJson = http.responseText
+        posReg = InStr(1, respJson, """registros""", vbTextCompare)
+        If posReg > 0 Then posReg = InStr(posReg, respJson, "[")
+        
+        If posReg > 0 Then
+            posItem = InStr(posReg, respJson, "{")
+            Do While posItem > 0
+                posFin = InStr(posItem, respJson, "}")
+                If posFin = 0 Then Exit Do
+                
+                Dim bloque As String
+                bloque = Mid(respJson, posItem, posFin - posItem + 1)
+                
+                Dim kVal As String
+                kVal = ExtraerValorJson(bloque, clavePrincipalJson)
+                
+                If kVal <> "" Then
+                    Dim filaNum As Long
+                    Dim kUpper As String
+                    kUpper = UCase(Trim(kVal))
+                    
+                    If dictFilas.Exists(kUpper) Then
+                        filaNum = dictFilas(kUpper)
+                    Else
+                        Dim nFila As ListRow
+                        Set nFila = tbl.ListRows.Add
+                        filaNum = nFila.Index
+                        dictFilas.Add kUpper, filaNum
+                    End If
+                    
+                    For cIdx = 0 To UBound(cols)
+                        Dim nomCol As String, colKeyLower As String, colValor As String
+                        nomCol = Trim(cols(cIdx))
+                        colKeyLower = LCase(nomCol)
+                        colValor = ExtraerValorJson(bloque, colKeyLower)
+                        
+                        If nomCol = "FECHA_SYNC" Then
+                            colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
+                            If colValor = "" Then colValor = fechaActual
+                        End If
+                        
+                        If colValor <> "" Then
+                            Dim colIndexTbl As Long
+                            colIndexTbl = ObtenerIndiceColumna(tbl, nomCol)
+                            If colIndexTbl > 0 Then tbl.DataBodyRange(filaNum, colIndexTbl).Value = colValor
+                        End If
+                    Next cIdx
+                    
+                    totalProcesados = totalProcesados + 1
+                End If
+                
+                posItem = InStr(posFin, respJson, "{")
+            Loop
+        End If
+    End If
+    
+    Set http = Nothing
+    Set dictFilas = Nothing
+    DescargarYFusionarLista = totalProcesados
+End Function
 
 Public Sub VerProyectoActivo()
     Dim proyCodigo As String, proyNombre As String, proyEstado As String
