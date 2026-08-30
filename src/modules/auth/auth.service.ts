@@ -188,29 +188,35 @@ export class AuthService {
   /**
    * Genera y envía un OTP de 6 dígitos por WhatsApp al usuario de Excel / Windows
    * Aplica Rate Limiting: Máximo 3 solicitudes cada 10 minutos
+   * Consulta directamente la tabla de Personal del Tenant (core.personal)
    */
   static async solicitarOtpExcel(usuarioWindows: string, ipOrigen?: string) {
     const usuarioNorm = usuarioWindows.trim();
     const soloUsername = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
 
-    // 1. Buscar usuario autorizado (por dominio\usuario o usuario simple)
+    // 1. Buscar usuario autorizado en core.personal
     const userRes = await query(`
-      SELECT id, usuario_windows, nombre, telefono, activo 
-      FROM core.usuarios_excel 
+      SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+      FROM core.personal p
       WHERE (
-        UPPER(usuario_windows) = UPPER($1) 
-        OR UPPER(usuario_windows) = UPPER($2)
-        OR UPPER(SPLIT_PART(usuario_windows, '\\', 2)) = UPPER($2)
+        UPPER(p.usuario_windows) = UPPER($1) 
+        OR UPPER(p.usuario_windows) = UPPER($2)
+        OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER($2)
       ) 
-      AND activo = TRUE 
+      AND p.activo = TRUE 
+      AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
       LIMIT 1;
     `, [usuarioNorm, soloUsername]);
 
     if (userRes.rows.length === 0) {
-      throw new Error(`El usuario de Windows '${usuarioNorm}' no está registrado o habilitado para sincronizar datos.`);
+      throw new Error(`El usuario de Windows '${usuarioNorm}' no está registrado o habilitado como personal de la empresa.`);
     }
 
     const usuario = userRes.rows[0];
+
+    if (!usuario.telefono_whatsapp) {
+      throw new Error(`El usuario '${usuario.nombre_completo}' no tiene un teléfono de WhatsApp registrado en su ficha de personal.`);
+    }
 
     // 2. Control de Rate Limit: Máximo 3 solicitudes por 10 minutos
     const rateRes = await query(`
@@ -236,17 +242,18 @@ export class AuthService {
 
     // 5. Enviar WhatsApp vía microservicio Baileys
     const { WhatsAppService } = await import('../../shared/utils/whatsapp.js');
-    await WhatsAppService.enviarOtpExcel(usuario.telefono, usuario.nombre, otp);
+    await WhatsAppService.enviarOtpExcel(usuario.telefono_whatsapp, usuario.nombre_completo, otp);
 
-    const telefonoMask = usuario.telefono.length > 4 
-      ? `+${usuario.telefono.slice(0, 3)}*****${usuario.telefono.slice(-4)}` 
+    const tel = usuario.telefono_whatsapp;
+    const telefonoMask = tel.length > 4 
+      ? `+${tel.slice(0, 3)}*****${tel.slice(-4)}` 
       : 'su WhatsApp registrado';
 
     return {
       enviado: true,
       mensaje: `Código de verificación enviado a ${telefonoMask}. Válido por 5 minutos.`,
-      usuario_windows: usuario.usuario_windows,
-      nombre: usuario.nombre,
+      usuario_windows: usuario.usuario_windows || usuarioNorm,
+      nombre: usuario.nombre_completo,
       expira_en_minutos: 5
     };
   }
@@ -259,16 +266,16 @@ export class AuthService {
     const soloUsername = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
     const otpNorm = otp.trim();
 
-    // 1. Buscar usuario
+    // 1. Buscar usuario en core.personal
     const userRes = await query(`
-      SELECT id, usuario_windows, nombre, telefono 
-      FROM core.usuarios_excel 
+      SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows
+      FROM core.personal p
       WHERE (
-        UPPER(usuario_windows) = UPPER($1) 
-        OR UPPER(usuario_windows) = UPPER($2)
-        OR UPPER(SPLIT_PART(usuario_windows, '\\', 2)) = UPPER($2)
+        UPPER(p.usuario_windows) = UPPER($1) 
+        OR UPPER(p.usuario_windows) = UPPER($2)
+        OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER($2)
       ) 
-      AND activo = TRUE 
+      AND p.activo = TRUE 
       LIMIT 1;
     `, [usuarioNorm, soloUsername]);
 
@@ -296,20 +303,23 @@ export class AuthService {
     // 3. Consumir inmediatamente el OTP (un solo uso garantizado)
     await query('UPDATE core.auth_otps SET used = TRUE WHERE id = $1', [otpRes.rows[0].id]);
 
-    // 4. Generar Token JWT firmado con vigencia de 4 horas
+    // 4. Generar Token JWT firmado con vigencia de 4 horas vinculando tenant_id y personal_id
     const payload = {
-      sub: usuario.usuario_windows,
+      sub: usuario.usuario_windows || usuarioNorm,
+      personal_id: usuario.id,
+      tenant_id: usuario.tenant_id,
       scope: 'excel_sync',
-      nombre: usuario.nombre,
-      telefono: usuario.telefono
+      nombre: usuario.nombre_completo,
+      telefono: usuario.telefono_whatsapp
     };
 
     const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '4h' });
 
     return {
       token,
-      usuario_windows: usuario.usuario_windows,
-      nombre: usuario.nombre,
+      usuario_windows: usuario.usuario_windows || usuarioNorm,
+      nombre: usuario.nombre_completo,
+      tenant_id: usuario.tenant_id,
       expira_en: '4h'
     };
   }

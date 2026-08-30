@@ -54,14 +54,16 @@ personalRouter.get('/', async (req: Request, res: Response, next: NextFunction) 
 
 const createPersonalSchema = z.object({
   tenant_id: z.string().uuid(),
-  proyecto_id: z.string().uuid().optional(),
+  proyecto_id: z.string().uuid().optional().nullable(),
   rut: z.string().min(8),
   nombre_completo: z.string().min(3),
   cargo: z.string().min(2),
   rol_organizacional: z.string().default('operario'),
-  telefono_whatsapp: z.string().optional(),
-  email: z.string().email().optional(),
-  turno: z.string().optional()
+  telefono_whatsapp: z.string().optional().nullable(),
+  email: z.string().email().optional().nullable(),
+  turno: z.string().optional().nullable(),
+  usuario_windows: z.string().optional().nullable(),
+  puede_sincronizar_excel: z.boolean().default(true)
 });
 
 // Crear personal
@@ -75,12 +77,14 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
     }
 
     const telefonoNorm = body.telefono_whatsapp ? normalizarTelefonoChileno(body.telefono_whatsapp) : null;
+    const usuarioWindowsNorm = body.usuario_windows ? body.usuario_windows.trim() : null;
 
     const result = await query(`
       INSERT INTO core.personal (
-        tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno
+        tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, 
+        telefono_whatsapp, email, turno, usuario_windows, puede_sincronizar_excel
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *;
     `, [
       body.tenant_id,
@@ -91,10 +95,23 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
       body.rol_organizacional,
       telefonoNorm,
       body.email || null,
-      body.turno || null
+      body.turno || null,
+      usuarioWindowsNorm,
+      body.puede_sincronizar_excel
     ]);
 
-    return sendSuccess(res, result.rows[0], 201);
+    const nuevoPersonal = result.rows[0];
+
+    // Si viene asignado a un proyecto, asegurar registro en core.personal_proyectos
+    if (body.proyecto_id) {
+      await query(`
+        INSERT INTO core.personal_proyectos (personal_id, proyecto_id, puede_sincronizar)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (personal_id, proyecto_id) DO UPDATE SET puede_sincronizar = $3;
+      `, [nuevoPersonal.id, body.proyecto_id, body.puede_sincronizar_excel]);
+    }
+
+    return sendSuccess(res, nuevoPersonal, 201, { mensaje: `Personal '${nuevoPersonal.nombre_completo}' registrado con éxito.` });
   } catch (error) {
     next(error);
   }

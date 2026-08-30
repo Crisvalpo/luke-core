@@ -16,7 +16,7 @@ export interface RespuestaSincronizacionJuntas {
 export class PipingService {
   /**
    * Sincronización atómica de lista de juntas desde Excel Sync v1.0
-   * Realiza validación de identidad (JWT vs Payload), chequeo de permisos en proyecto y Upsert masivo.
+   * Realiza validación de identidad (JWT vs Payload), chequeo de permisos en proyecto y Upsert en piping.lista_juntas.
    */
   static async sincronizarJuntas(
     usuarioWindowsJwt: string,
@@ -42,38 +42,50 @@ export class PipingService {
         }
       }
 
-      // 2. Validar autorización de usuario en el proyecto (core.usuarios_excel_proyectos)
+      // 2. Validar autorización de usuario en el proyecto (core.personal + core.personal_proyectos)
       if (usuarioWindowsJwt !== 'ADMIN_KEY') {
         const authUserQuery = await client.query(`
-          SELECT u.id, u.usuario_windows, p.puede_publicar
-          FROM core.usuarios_excel u
-          LEFT JOIN core.usuarios_excel_proyectos p 
-            ON p.usuario_id = u.id AND p.proyecto_id = $2
-          WHERE (
-            UPPER(u.usuario_windows) = UPPER($1)
-            OR UPPER(u.usuario_windows) = UPPER(SPLIT_PART($1, '\\', 2))
-            OR UPPER(SPLIT_PART(u.usuario_windows, '\\', 2)) = UPPER(SPLIT_PART($1, '\\', 2))
+          SELECT 
+            p.id AS personal_id, 
+            p.tenant_id, 
+            p.nombre_completo,
+            pr.id AS proyecto_id,
+            pr.codigo AS proyecto_codigo
+          FROM core.personal p
+          JOIN core.proyectos pr ON (
+            (pr.codigo = $2 OR pr.id::text = $2)
+            AND pr.tenant_id = p.tenant_id
           )
-          AND u.activo = TRUE
+          LEFT JOIN core.personal_proyectos pp ON (
+            pp.personal_id = p.id AND pp.proyecto_id = pr.id
+          )
+          WHERE (
+            UPPER(p.usuario_windows) = UPPER($1)
+            OR UPPER(p.usuario_windows) = UPPER(SPLIT_PART($1, '\\', 2))
+            OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER(SPLIT_PART($1, '\\', 2))
+          )
+          AND p.activo = TRUE
+          AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
+          AND (
+            p.proyecto_id = pr.id 
+            OR pp.puede_sincronizar IS TRUE 
+            OR p.rol_organizacional = 'super_admin'
+            OR p.rol_organizacional = 'admin'
+          )
           LIMIT 1;
         `, [usuarioWindowsJwt, idProyecto]);
 
         if (authUserQuery.rows.length === 0) {
-          throw new Error(`Usuario '${usuarioWindowsJwt}' no registrado o inactivo.`);
-        }
-
-        const authData = authUserQuery.rows[0];
-        if (!authData.puede_publicar) {
-          throw new Error(`Permiso denegado: El usuario '${usuarioWindowsJwt}' no está autorizado para sincronizar o publicar datos en el proyecto '${idProyecto}'.`);
+          throw new Error(`Permiso denegado: El usuario '${usuarioWindowsJwt}' no está autorizado para sincronizar datos en el proyecto '${idProyecto}'.`);
         }
       }
 
       const resultadoJuntas: JuntaSincronizadaOutput[] = [];
 
-      // 3. Ejecutar Upsert masivo para cada junta obteniendo su UUID definitivo
+      // 3. Ejecutar Upsert masivo en el esquema dedicado: piping.lista_juntas
       for (const junta of registros) {
         const res = await client.query(`
-          INSERT INTO core.lista_juntas (
+          INSERT INTO piping.lista_juntas (
             uuid, id_proyecto, id_junta, tag, estado, vigente, fecha_sync, updated_at
           )
           VALUES (
@@ -103,7 +115,7 @@ export class PipingService {
         }
       }
 
-      // 4. Registrar en la tabla de auditoría (core.audit_sync) con la identidad REAL del JWT
+      // 4. Registrar en la tabla de auditoría (core.audit_sync)
       await client.query(`
         INSERT INTO core.audit_sync (
           usuario_windows, proyecto_id, tabla, registros, detalles, fecha
@@ -112,7 +124,7 @@ export class PipingService {
       `, [
         usuarioWindowsJwt,
         idProyecto,
-        'lista_juntas',
+        'piping.lista_juntas',
         registros.length,
         JSON.stringify({
           total: registros.length,
