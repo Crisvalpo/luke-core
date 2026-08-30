@@ -62,8 +62,8 @@ const apiV1 = express.Router();
 apiV1.use('/auth', authRouter);
 apiV1.use('/identidad', identidadRouter);
 
-// 🔒 Capa 1: Exclusiva Equipo LukeAPP (Super-Admin)
-apiV1.use('/tenants', requireAuth, requireSuperAdmin, tenantsRouter);
+// 🔒 Capa 1: Exclusiva Equipo LukeAPP (Super-Admin) y Gestión Multi-Tenant
+apiV1.use('/tenants', requireAuth, tenantsRouter);
 apiV1.use('/ingesta', requireAuth, requireSuperAdmin, ingestaRouter);
 
 // 🔐 Capa 2: Rutas con Auth + Tenant (Admins de Empresa y sus operaciones)

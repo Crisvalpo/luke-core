@@ -3,19 +3,22 @@ import { TenantsController } from './tenants.controller.js';
 import { query } from '../../config/database.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
 import { normalizarRut, validarRut } from '../../shared/utils/rut.js';
+import { requireSuperAdmin } from '../../shared/middlewares/authGuard.js';
 
 export const tenantsRouter = Router();
 
-// 1. Onboarding de Nuevo Tenant (Empresa + Admin + Proyecto Base + Canal WA)
-tenantsRouter.post('/onboarding', TenantsController.onboard);
+// 1. Onboarding de Nuevo Tenant (Exclusivo Super-Admin)
+tenantsRouter.post('/onboarding', requireSuperAdmin, TenantsController.onboard);
 
-// 2. Listar todos los tenants activos con métricas agregadas
+// 2. Listar tenants (Super-Admin lista todos; Admin de empresa lista su propio tenant)
 tenantsRouter.get('/', TenantsController.listar);
 
 // 3. Obtener detalle de un tenant por slug o UUID
 tenantsRouter.get('/:idOrSlug', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { idOrSlug } = req.params;
+    const user = req.user;
+
     const result = await query(`
       SELECT * FROM core.tenants 
       WHERE (id::text = $1 OR slug = $1)
@@ -26,7 +29,12 @@ tenantsRouter.get('/:idOrSlug', async (req: Request, res: Response, next: NextFu
       return sendError(res, 'Tenant no encontrado', 404);
     }
 
-    return sendSuccess(res, result.rows[0]);
+    const tenant = result.rows[0];
+    if (user && user.rol !== 'super_admin' && user.tenant_id && user.tenant_id !== tenant.id) {
+      return sendError(res, 'Permiso denegado: No tiene acceso a este tenant', 403);
+    }
+
+    return sendSuccess(res, tenant);
   } catch (error) {
     next(error);
   }
@@ -116,8 +124,8 @@ tenantsRouter.patch('/:id/config', async (req: Request, res: Response, next: Nex
   }
 });
 
-// 6. Eliminar empresa y todo su contenido en Cascada (Proyectos, Personal, Flota, Roles, Sesiones)
-tenantsRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+// 6. Eliminar empresa y todo su contenido en Cascada (Exclusivo Super-Admin)
+tenantsRouter.delete('/:id', requireSuperAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
