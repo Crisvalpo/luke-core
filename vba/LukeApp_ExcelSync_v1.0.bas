@@ -1,16 +1,16 @@
 ' ==============================================================================
-' LUKEAPP EXCEL SYNC v1.0 — MÓDULO UNIFICADO PIPING
-' Incluye: Lógica de Sincronización + Callbacks de Ribbon XML + Onboarding WhatsApp
+' LUKEAPP EXCEL SYNC v1.0 - MODULO UNIFICADO PIPING
+' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
 
 Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
 
-' Token volátil en memoria (destruido automáticamente al cerrar Excel)
+' Token volatil en memoria (destruido automaticamente al cerrar Excel)
 Private m_JwtToken As String
 
 ' ==============================================================================
-' SECCIÓN 1: CALLBACKS DEL RIBBON XML (UI DE EXCEL)
+' SECCION 1: CALLBACKS DEL RIBBON XML (UI DE EXCEL)
 ' ==============================================================================
 
 Public Sub SolicitarAccesoRibbon(control As IRibbonControl)
@@ -31,7 +31,7 @@ End Sub
 
 Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
     ThisWorkbook.RefreshAll
-    MsgBox "Planilla actualizada desde los orígenes de datos locales.", vbInformation, "LukeApp"
+    MsgBox "Planilla actualizada desde los origenes de datos locales.", vbInformation, "LukeApp"
 End Sub
 
 Public Sub VerProyectoRibbon(control As IRibbonControl)
@@ -41,29 +41,29 @@ Public Sub VerProyectoRibbon(control As IRibbonControl)
     emp = LeerConfiguracion("EMPRESA")
     disc = LeerConfiguracion("DISCIPLINA")
     
-    MsgBox "Parámetros del Proyecto Activo:" & vbCrLf & vbCrLf & _
-           "• ID Proyecto: " & idProy & vbCrLf & _
-           "• Nombre: " & nomProy & vbCrLf & _
-           "• Empresa (Tenant): " & emp & vbCrLf & _
-           "• Disciplina: " & disc & vbCrLf & vbCrLf & _
+    MsgBox "Parametros del Proyecto Activo:" & vbCrLf & vbCrLf & _
+           "- ID Proyecto: " & idProy & vbCrLf & _
+           "- Nombre: " & nomProy & vbCrLf & _
+           "- Empresa (Tenant): " & emp & vbCrLf & _
+           "- Disciplina: " & disc & vbCrLf & vbCrLf & _
            "Usuario Windows: " & ObtenerUsuarioWindowsCompleto(), _
-           vbInformation, "Configuración del Proyecto"
+           vbInformation, "Configuracion del Proyecto"
 End Sub
 
 Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
-    MsgBox "LukeApp Excel Client — Piping Management" & vbCrLf & _
-           "Versión: 1.0 (Zero-Touch WhatsApp Onboarding)" & vbCrLf & _
+    MsgBox "LukeApp Excel Client - Piping Management" & vbCrLf & _
+           "Version: 1.0 (Zero-Touch WhatsApp Onboarding)" & vbCrLf & _
            "API: " & API_BASE_URL & vbCrLf & _
-           "Seguridad: JWT 4 Horas (Volátil en Memoria)", _
+           "Seguridad: JWT 4 Horas (Volatil en Memoria)", _
            vbInformation, "Acerca de LukeApp"
 End Sub
 
 ' ==============================================================================
-' SECCIÓN 2: MACROS PRINCIPALES (ACCESIBLES DIRECTAMENTE O POR RIBBON)
+' SECCION 2: MACROS PRINCIPALES (ACCESIBLES DIRECTAMENTE O POR RIBBON)
 ' ==============================================================================
 
 ' ------------------------------------------------------------------------------
-' 1. SOLICITAR ACCESO (Onboarding Zero-Touch vía WhatsApp Admin)
+' 1. SOLICITAR ACCESO (Onboarding Zero-Touch via WhatsApp Admin)
 ' ------------------------------------------------------------------------------
 Public Sub SolicitarAcceso()
     Dim usuarioWindows As String
@@ -84,14 +84,14 @@ Public Sub SolicitarAcceso()
     nombre = InputBox( _
         "Ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
         "Usuario Windows: " & usuarioWindows, _
-        "LukeApp — Solicitar Acceso")
+        "LukeApp - Solicitar Acceso")
     nombre = Trim(nombre)
     If nombre = "" Then Exit Sub
     
     telefono = InputBox( _
-        "Ingresa tu número de WhatsApp con código de país (ejemplo: +56912345678):" & vbCrLf & vbCrLf & _
-        "A este número recibirás los códigos PIN y notificaciones de aprobación.", _
-        "LukeApp — Teléfono WhatsApp", "+569")
+        "Ingresa tu numero de WhatsApp con codigo de pais (ejemplo: +56912345678):" & vbCrLf & vbCrLf & _
+        "A este numero recibiras los codigos PIN y notificaciones de aprobacion.", _
+        "LukeApp - Telefono WhatsApp", "+569")
     telefono = Trim(telefono)
     If telefono = "" Or telefono = "+569" Then Exit Sub
     
@@ -113,9 +113,9 @@ Public Sub SolicitarAcceso()
     Application.StatusBar = False
     
     If http.Status = 200 Or http.Status = 201 Then
-        MsgBox "¡Solicitud Enviada con Éxito!" & vbCrLf & vbCrLf & _
-               "Se ha notificado al Administrador vía WhatsApp." & vbCrLf & _
-               "En cuanto tu acceso sea aprobado, recibirás un mensaje en WhatsApp (" & telefono & ") para que puedas iniciar sesión.", _
+        MsgBox "Solicitud Enviada con Exito." & vbCrLf & vbCrLf & _
+               "Se ha notificado al Administrador via WhatsApp." & vbCrLf & _
+               "En cuanto tu acceso sea aprobado, recibiras un mensaje en WhatsApp (" & telefono & ") para que puedas iniciar sesion.", _
                vbInformation, "LukeApp Onboarding"
     Else
         MsgBox "No se pudo registrar la solicitud (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error al Solicitar Acceso"
@@ -126,11 +126,11 @@ Public Sub SolicitarAcceso()
 
 ManejoError:
     Application.StatusBar = False
-    MsgBox "Ocurrió un error al solicitar acceso:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+    MsgBox "Ocurrio un error al solicitar acceso:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 2. INICIAR SESIÓN (Solicita OTP y precarga JWT 4h)
+' 2. INICIAR SESION (Solicita OTP y precarga JWT 4h)
 ' ------------------------------------------------------------------------------
 Public Sub IniciarSesion()
     Dim usuarioWindows As String
@@ -141,24 +141,24 @@ Public Sub IniciarSesion()
     m_JwtToken = ""
     
     If AsegurarTokenValido(usuarioWindows) Then
-        MsgBox "¡Sesión Iniciada Exitosamente!" & vbCrLf & vbCrLf & _
-               "• Usuario: " & usuarioWindows & vbCrLf & _
-               "• Vigencia: 4 horas" & vbCrLf & _
-               "• Estado: Listo para publicar datos.", _
+        MsgBox "Sesion Iniciada Exitosamente." & vbCrLf & vbCrLf & _
+               "- Usuario: " & usuarioWindows & vbCrLf & _
+               "- Vigencia: 4 horas" & vbCrLf & _
+               "- Estado: Listo para publicar datos.", _
                vbInformation, "LukeApp Seguridad"
     End If
     Exit Sub
 
 ManejoError:
-    MsgBox "Ocurrió un error al iniciar sesión:" & vbCrLf & Err.Description, vbCritical, "Error de Sesión"
+    MsgBox "Ocurrio un error al iniciar sesion:" & vbCrLf & Err.Description, vbCritical, "Error de Sesion"
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 3. CERRAR SESIÓN (Destruye JWT en memoria)
+' 3. CERRAR SESION (Destruye JWT en memoria)
 ' ------------------------------------------------------------------------------
 Public Sub CerrarSesion()
     m_JwtToken = ""
-    MsgBox "Tu sesión ha sido cerrada correctamente." & vbCrLf & _
+    MsgBox "Tu sesion ha sido cerrada correctamente." & vbCrLf & _
            "El token en memoria fue eliminado.", vbInformation, "LukeApp Seguridad"
 End Sub
 
@@ -183,11 +183,11 @@ Public Sub PublicarListaJuntas()
     ' 2. Leer ID_PROYECTO desde la tabla tbl_config en hoja CONFIG
     idProyecto = LeerConfiguracion("ID_PROYECTO")
     If idProyecto = "" Then
-        MsgBox "No se encontró el parámetro 'ID_PROYECTO' en la tabla 'tbl_config' de la hoja CONFIG.", vbCritical, "Error de Configuración"
+        MsgBox "No se encontro el parametro 'ID_PROYECTO' en la tabla 'tbl_config' de la hoja CONFIG.", vbCritical, "Error de Configuracion"
         Exit Sub
     End If
     
-    ' 3. Asegurar Token JWT válido (4 horas) vía WhatsApp OTP
+    ' 3. Asegurar Token JWT valido (4 horas) via WhatsApp OTP
     If Not AsegurarTokenValido(usuarioWindows) Then
         Exit Sub
     End If
@@ -201,7 +201,7 @@ Public Sub PublicarListaJuntas()
     
     Application.StatusBar = "Sincronizando " & totalFilas & " juntas con Luke Core..."
     
-    ' 5. Enviar Petición HTTP a Luke Core API
+    ' 5. Enviar Peticion HTTP a Luke Core API
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.Open "POST", API_BASE_URL & "/api/piping/lista-juntas", False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
@@ -212,26 +212,26 @@ Public Sub PublicarListaJuntas()
     If http.Status = 200 Or http.Status = 201 Then
         respuestaJson = http.responseText
         
-        ' Escribir los UUIDs y fecha de sincronización de vuelta en la tabla
+        ' Escribir los UUIDs y fecha de sincronizacion de vuelta en la tabla
         ActualizarUuidsEnTabla respuestaJson
         
         Application.StatusBar = False
-        MsgBox "Sincronización Exitosa:" & vbCrLf & vbCrLf & _
-               "• Proyecto: " & idProyecto & vbCrLf & _
-               "• Juntas procesadas: " & totalFilas & vbCrLf & _
-               "• Usuario autenticado: " & usuarioWindows & vbCrLf & _
-               "• Tiempo: " & Format(Timer - tInicio, "0.00") & " seg", _
+        MsgBox "Sincronizacion Exitosa:" & vbCrLf & vbCrLf & _
+               "- Proyecto: " & idProyecto & vbCrLf & _
+               "- Juntas procesadas: " & totalFilas & vbCrLf & _
+               "- Usuario autenticado: " & usuarioWindows & vbCrLf & _
+               "- Tiempo: " & Format(Timer - tInicio, "0.00") & " seg", _
                vbInformation, "LukeApp Sync v1.0"
                
     ElseIf http.Status = 401 Then
         m_JwtToken = ""
         Application.StatusBar = False
-        MsgBox "La sesión expiró o el token fue rechazado." & vbCrLf & _
+        MsgBox "La sesion expiro o el token fue rechazado." & vbCrLf & _
                "Presiona nuevamente PUBLICAR para solicitar un PIN nuevo.", _
-               vbExclamation, "Sesión Expirada"
+               vbExclamation, "Sesion Expirada"
     Else
         Application.StatusBar = False
-        MsgBox "Error del Servidor (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error de Sincronización"
+        MsgBox "Error del Servidor (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error de Sincronizacion"
     End If
     
     Set http = Nothing
@@ -239,11 +239,11 @@ Public Sub PublicarListaJuntas()
 
 ManejoError:
     Application.StatusBar = False
-    MsgBox "Ocurrió un error en la ejecución:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+    MsgBox "Ocurrio un error en la ejecucion:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
 ' ==============================================================================
-' SECCIÓN 3: AUTENTICACIÓN Y CONSTRUCTORES INTERNOS
+' SECCION 3: AUTENTICACION Y CONSTRUCTORES INTERNOS
 ' ==============================================================================
 
 Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
@@ -264,18 +264,18 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     
     If http.Status <> 200 Then
         MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText & vbCrLf & vbCrLf & _
-               "Si eres un usuario nuevo, haz clic en 'Solicitar Acceso' en el Ribbon.", vbCritical, "Error Autenticación"
+               "Si eres un usuario nuevo, haz clic en 'Solicitar Acceso' en el Ribbon.", vbCritical, "Error Autenticacion"
         Set http = Nothing
         Exit Function
     End If
     
     ' PASO 2: Solicitar PIN al usuario mediante InputBox
     pinIngresado = InputBox( _
-        "Se ha enviado un código de acceso de 6 dígitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
+        "Se ha enviado un codigo de acceso de 6 digitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
         "Usuario: " & usuarioWindows & vbCrLf & _
         "Vigencia: 5 minutos" & vbCrLf & vbCrLf & _
-        "Ingresa el código PIN recibido:", _
-        "LukeApp — Verificación de Acceso OTP")
+        "Ingresa el codigo PIN recibido:", _
+        "LukeApp - Verificacion de Acceso OTP")
         
     pinIngresado = Trim(pinIngresado)
     If pinIngresado = "" Then
@@ -284,7 +284,7 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     End If
     
     If Len(pinIngresado) <> 6 Or Not IsNumeric(pinIngresado) Then
-        MsgBox "El PIN debe contener exactamente 6 dígitos numéricos.", vbExclamation, "PIN Inválido"
+        MsgBox "El PIN debe contener exactamente 6 digitos numericos.", vbExclamation, "PIN Invalido"
         Set http = Nothing
         Exit Function
     End If
@@ -299,14 +299,14 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
         m_JwtToken = ExtraerValorJson(jsonResp, "token")
         
         If Len(m_JwtToken) <= 20 Then
-            MsgBox "Luke Core respondió, pero no entregó un token válido." & vbCrLf & vbCrLf & jsonResp, vbCritical, "Respuesta Inválida"
+            MsgBox "Luke Core respondio, pero no entrego un token valido." & vbCrLf & vbCrLf & jsonResp, vbCritical, "Respuesta Invalida"
             m_JwtToken = ""
             AsegurarTokenValido = False
         Else
             AsegurarTokenValido = True
         End If
     Else
-        MsgBox "Código PIN incorrecto o expirado:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Validación Fallida"
+        MsgBox "Codigo PIN incorrecto o expirado:" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Validacion Fallida"
         AsegurarTokenValido = False
     End If
     
@@ -325,7 +325,7 @@ Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWin
     On Error GoTo 0
     
     If tbl Is Nothing Then
-        MsgBox "No se encontró la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
+        MsgBox "No se encontro la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
         totalOut = 0
         Exit Function
     End If
@@ -437,7 +437,7 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
 End Sub
 
 ' ==============================================================================
-' SECCIÓN 4: FUNCIONES AUXILIARES
+' SECCION 4: FUNCIONES AUXILIARES
 ' ==============================================================================
 
 Private Function ObtenerUsuarioWindowsCompleto() As String
