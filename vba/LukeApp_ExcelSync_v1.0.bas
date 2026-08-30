@@ -471,6 +471,22 @@ Private Function ObtenerTablaSistema() As ListObject
     Set ObtenerTablaSistema = tbl
 End Function
 
+' ------------------------------------------------------------------------------
+' UTILIDADES DE DESARROLLADOR: VISIBILIDAD DE _SISTEMA
+' ------------------------------------------------------------------------------
+Public Sub OcultarHojaSistema()
+    On Error Resume Next
+    ThisWorkbook.Sheets("_SISTEMA").Visible = xlSheetVeryHidden
+    MsgBox "Hoja _SISTEMA ocultada en modo xlSheetVeryHidden.", vbInformation, "LukeApp"
+End Sub
+
+Public Sub MostrarHojaSistema()
+    On Error Resume Next
+    ThisWorkbook.Sheets("_SISTEMA").Visible = xlSheetVisible
+    ThisWorkbook.Sheets("_SISTEMA").Select
+    MsgBox "Hoja _SISTEMA visible para inspeccion tecnica.", vbInformation, "LukeApp"
+End Sub
+
 Public Sub GuardarEnSistema(ByVal columnaParametro As String, ByVal valor As String)
     Dim tbl As ListObject
     Dim colIdx As Long
