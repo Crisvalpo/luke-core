@@ -296,17 +296,26 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de Spools con auditoría
+   * Obtiene la lista completa de Spools con atributos de faena y auditoría
    */
   static async obtenerSpoolsProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         s.id AS uuid,
         s.codigo AS codigo_spool,
-        i.codigo AS codigo_iso,
-        s.tag,
-        s.estado_actual AS estado,
+        COALESCE(i.codigo, '') AS codigo_iso,
+        s.tag_gestion,
+        s.sistema,
+        s.sub_sistema,
+        s.area,
+        s.codigo_linea,
+        s.spool_numero,
+        s.nps,
+        s.material,
+        s.servicio,
+        s.proceso,
         s.ubicacion_actual AS ubicacion,
+        s.observaciones,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
