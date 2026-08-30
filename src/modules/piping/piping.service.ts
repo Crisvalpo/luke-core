@@ -259,18 +259,26 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista de Isométricos con auditoría
+   * Obtiene la lista completa de Isométricos con atributos de faena y auditoría
    */
   static async obtenerIsometricosProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         i.id AS uuid,
         i.codigo AS codigo_iso,
+        COALESCE(l.codigo, '') AS codigo_linea,
         i.hoja,
         i.revision_vigente AS revision,
-        l.codigo AS codigo_linea,
+        i.plano_contratista,
+        i.plano_codelco,
+        i.clase,
+        i.nps,
+        i.empresa_ingenieria AS ingenieria,
+        i.condicion,
+        i.spooleado,
         i.estado_documental AS estado,
-        i.observacion,
+        i.distribuido,
+        i.observacion AS observaciones,
         to_char(i.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
