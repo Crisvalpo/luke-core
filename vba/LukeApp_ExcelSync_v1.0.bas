@@ -1,6 +1,6 @@
 ' ==============================================================================
-' LUKEAPP EXCEL SYNC v1.0 — MÓDULO OFICIAL DE SINCRONIZACIÓN PIPING
-' Incluye: Ribbon de Seguridad (Solicitar Acceso, Iniciar Sesión, Cerrar Sesión)
+' LUKEAPP EXCEL SYNC v1.0 — MÓDULO UNIFICADO PIPING
+' Incluye: Lógica de Sincronización + Callbacks de Ribbon XML + Onboarding WhatsApp
 ' ==============================================================================
 Option Explicit
 
@@ -9,8 +9,45 @@ Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
 ' Token volátil en memoria (destruido automáticamente al cerrar Excel)
 Private m_JwtToken As String
 
+' ==============================================================================
+' SECCIÓN 1: CALLBACKS DEL RIBBON XML (UI DE EXCEL)
+' ==============================================================================
+
+Public Sub SolicitarAccesoRibbon(control As IRibbonControl)
+    SolicitarAcceso
+End Sub
+
+Public Sub IniciarSesionRibbon(control As IRibbonControl)
+    IniciarSesion
+End Sub
+
+Public Sub CerrarSesionLukeAppRibbon(control As IRibbonControl)
+    CerrarSesion
+End Sub
+
+Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
+    PublicarListaJuntas
+End Sub
+
+Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
+    ThisWorkbook.RefreshAll
+    MsgBox "Planilla actualizada desde los orígenes de datos locales.", vbInformation, "LukeApp"
+End Sub
+
+Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
+    MsgBox "LukeApp Excel Client — Piping Management" & vbCrLf & _
+           "Versión: 1.0 (Zero-Touch WhatsApp Onboarding)" & vbCrLf & _
+           "API: " & API_BASE_URL & vbCrLf & _
+           "Seguridad: JWT 4 Horas (Volátil en Memoria)", _
+           vbInformation, "Acerca de LukeApp"
+End Sub
+
+' ==============================================================================
+' SECCIÓN 2: MACROS PRINCIPALES (ACCESIBLES DIRECTAMENTE O POR RIBBON)
+' ==============================================================================
+
 ' ------------------------------------------------------------------------------
-' 1. BOTÓN RIBBON: Solicitar Acceso (Onboarding Zero-Touch vía WhatsApp)
+' 1. SOLICITAR ACCESO (Onboarding Zero-Touch vía WhatsApp Admin)
 ' ------------------------------------------------------------------------------
 Public Sub SolicitarAcceso()
     Dim usuarioWindows As String
@@ -28,18 +65,16 @@ Public Sub SolicitarAcceso()
     tenantSlug = LeerConfiguracion("EMPRESA")
     If tenantSlug = "" Then tenantSlug = "dem"
     
-    ' Solicitar Nombre Completo
     nombre = InputBox( _
-        "Por favor ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
+        "Ingresa tu Nombre y Apellido para la solicitud de acceso:" & vbCrLf & vbCrLf & _
         "Usuario Windows: " & usuarioWindows, _
         "LukeApp — Solicitar Acceso")
     nombre = Trim(nombre)
     If nombre = "" Then Exit Sub
     
-    ' Solicitar Teléfono WhatsApp
     telefono = InputBox( _
         "Ingresa tu número de WhatsApp con código de país (ejemplo: +56912345678):" & vbCrLf & vbCrLf & _
-        "A este número recibirás los códigos PIN de verificación y notificaciones.", _
+        "A este número recibirás los códigos PIN y notificaciones de aprobación.", _
         "LukeApp — Teléfono WhatsApp", "+569")
     telefono = Trim(telefono)
     If telefono = "" Or telefono = "+569" Then Exit Sub
@@ -79,7 +114,7 @@ ManejoError:
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 2. BOTÓN RIBBON: Iniciar Sesión (Solicita OTP y precarga JWT 4h)
+' 2. INICIAR SESIÓN (Solicita OTP y precarga JWT 4h)
 ' ------------------------------------------------------------------------------
 Public Sub IniciarSesion()
     Dim usuarioWindows As String
@@ -87,7 +122,6 @@ Public Sub IniciarSesion()
     On Error GoTo ManejoError
     usuarioWindows = ObtenerUsuarioWindowsCompleto()
     
-    ' Forzar solicitud de token fresco
     m_JwtToken = ""
     
     If AsegurarTokenValido(usuarioWindows) Then
@@ -104,7 +138,7 @@ ManejoError:
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 3. BOTÓN RIBBON: Cerrar Sesión (Destruye JWT en memoria)
+' 3. CERRAR SESIÓN (Destruye JWT en memoria)
 ' ------------------------------------------------------------------------------
 Public Sub CerrarSesion()
     m_JwtToken = ""
@@ -113,7 +147,7 @@ Public Sub CerrarSesion()
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 4. BOTÓN RIBBON: Publicar Lista de Juntas a LukeApp
+' 4. PUBLICAR LISTA DE JUNTAS A LUKEAPP (Upsert en piping.lista_juntas)
 ' ------------------------------------------------------------------------------
 Public Sub PublicarListaJuntas()
     Dim usuarioWindows As String
@@ -192,9 +226,10 @@ ManejoError:
     MsgBox "Ocurrió un error en la ejecución:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
-' ------------------------------------------------------------------------------
-' AUTENTICACIÓN OTP + JWT (4 HORAS EN MEMORIA)
-' ------------------------------------------------------------------------------
+' ==============================================================================
+' SECCIÓN 3: AUTENTICACIÓN Y CONSTRUCTORES INTERNOS
+' ==============================================================================
+
 Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     Dim http As Object
     Dim pinIngresado As String
@@ -262,9 +297,6 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     Set http = Nothing
 End Function
 
-' ------------------------------------------------------------------------------
-' CONSTRUCTOR DE PAYLOAD V1.0 DESDE tbl_juntas
-' ------------------------------------------------------------------------------
 Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String, ByRef totalOut As Long) As String
     Dim tbl As ListObject
     Dim i As Long
@@ -333,9 +365,6 @@ Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWin
     "}"
 End Function
 
-' ------------------------------------------------------------------------------
-' ACTUALIZAR UUIDs Y FECHA_SYNC DE VUELTA EN tbl_juntas
-' ------------------------------------------------------------------------------
 Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     Dim tbl As ListObject
     Dim colUuid As Long, colJunta As Long, colFecha As Long
@@ -391,9 +420,10 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     Application.ScreenUpdating = True
 End Sub
 
-' ------------------------------------------------------------------------------
-' FUNCIONES AUXILIARES
-' ------------------------------------------------------------------------------
+' ==============================================================================
+' SECCIÓN 4: FUNCIONES AUXILIARES
+' ==============================================================================
+
 Private Function ObtenerUsuarioWindowsCompleto() As String
     Dim dominio As String
     Dim usuario As String
