@@ -200,6 +200,8 @@ export class PipingService {
         p.titulo,
         p.revision_vigente AS revision,
         p.estado_documental AS estado,
+        p.metadata->>'archivo_pdf' AS archivo_pdf,
+        p.metadata->>'responsable' AS responsable,
         to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync
       FROM piping.pid p
       JOIN core.proyectos pr ON pr.id = p.proyecto_id
