@@ -18,6 +18,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { storageRouter } from './modules/storage/storage.routes.js';
 import { ingestaRouter } from './modules/ingesta/ingesta.routes.js';
 import { rolesRouter } from './modules/roles/roles.routes.js';
+import { pipingRouter } from './modules/piping/piping.routes.js';
 
 export const app = express();
 
@@ -46,7 +47,7 @@ app.get('/health', (req, res) => {
   return sendSuccess(res, {
     status: 'online',
     app: 'Luke Core',
-    version: '1.1.0',
+    version: '1.2.0',
     env: env.NODE_ENV,
     uptime_seconds: process.uptime()
   });
@@ -57,7 +58,7 @@ app.get('/health', (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 const apiV1 = express.Router();
 
-// 🔓 Rutas Públicas (sin autenticación)
+// 🔓 Rutas Públicas (sin autenticación requerida previa)
 apiV1.use('/auth', authRouter);
 apiV1.use('/identidad', identidadRouter);
 
@@ -73,7 +74,14 @@ apiV1.use('/proveedores', requireAuth, requireTenant, proveedoresRouter);
 apiV1.use('/roles', requireAuth, requireTenant, rolesRouter);
 apiV1.use('/storage', requireAuth, storageRouter);
 
+// 🚀 Capa 3: Sincronización y Módulos Operacionales (Excel / Piping)
+apiV1.use('/piping', pipingRouter);
+
 app.use('/api/v1', apiV1);
+
+// Alias directo para clientes legacy / macros Excel (/api/auth y /api/piping)
+app.use('/api/auth', authRouter);
+app.use('/api/piping', pipingRouter);
 
 // Middleware Global de Errores
 app.use(errorHandler);

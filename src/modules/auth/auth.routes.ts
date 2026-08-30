@@ -7,3 +7,7 @@ export const authRouter = Router();
 authRouter.post('/login', AuthController.login);
 authRouter.post('/establecer-clave-directa', AuthController.establecerClaveDirecta);
 authRouter.get('/me', requireAuth, AuthController.me);
+
+// 🔐 Endpoints OTP para Excel / VBA
+authRouter.post('/request-otp', AuthController.requestOtp);
+authRouter.post('/verify-otp', AuthController.verifyOtp);

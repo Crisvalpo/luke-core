@@ -184,4 +184,104 @@ export class AuthService {
 
     return this.login({ identificador: emailNorm, password });
   }
+
+  /**
+   * Genera y envía un OTP de 6 dígitos por WhatsApp al usuario de Excel / Windows
+   */
+  static async solicitarOtpExcel(usuarioWindows: string, ipOrigen?: string) {
+    const usuarioNorm = usuarioWindows.trim().toUpperCase();
+
+    // 1. Buscar usuario autorizado
+    const userRes = await query(
+      'SELECT id, usuario_windows, nombre, telefono, activo FROM core.usuarios_excel WHERE UPPER(usuario_windows) = $1 AND activo = TRUE LIMIT 1',
+      [usuarioNorm]
+    );
+
+    if (userRes.rows.length === 0) {
+      throw new Error(`El usuario de Windows '${usuarioNorm}' no está registrado o habilitado para sincronizar datos.`);
+    }
+
+    const usuario = userRes.rows[0];
+
+    // 2. Generar PIN de 6 dígitos numéricos
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 3. Guardar OTP con 5 minutos de vigencia
+    await query(`
+      INSERT INTO core.auth_otps (usuario_id, otp_hash, expires_at, used, ip_origen)
+      VALUES ($1, $2, NOW() + INTERVAL '5 minutes', FALSE, $3)
+    `, [usuario.id, otp, ipOrigen || null]);
+
+    // 4. Enviar WhatsApp vía microservicio Baileys
+    const { WhatsAppService } = await import('../../shared/utils/whatsapp.js');
+    await WhatsAppService.enviarOtpExcel(usuario.telefono, usuario.nombre, otp);
+
+    const telefonoMask = usuario.telefono.length > 4 
+      ? `+${usuario.telefono.slice(0, 3)}*****${usuario.telefono.slice(-4)}` 
+      : 'su WhatsApp registrado';
+
+    return {
+      enviado: true,
+      mensaje: `Código de verificación enviado a ${telefonoMask}. Válido por 5 minutos.`,
+      usuario_windows: usuario.usuario_windows,
+      nombre: usuario.nombre,
+      expira_en_minutos: 5
+    };
+  }
+
+  /**
+   * Verifica el OTP ingresado en Excel y emite un JWT firmado válido por 24h
+   */
+  static async verificarOtpExcel(usuarioWindows: string, otp: string) {
+    const usuarioNorm = usuarioWindows.trim().toUpperCase();
+    const otpNorm = otp.trim();
+
+    // 1. Buscar usuario
+    const userRes = await query(
+      'SELECT id, usuario_windows, nombre, telefono FROM core.usuarios_excel WHERE UPPER(usuario_windows) = $1 AND activo = TRUE LIMIT 1',
+      [usuarioNorm]
+    );
+
+    if (userRes.rows.length === 0) {
+      throw new Error(`Usuario '${usuarioNorm}' no autorizado.`);
+    }
+
+    const usuario = userRes.rows[0];
+
+    // 2. Validar OTP vigente y no usado
+    const otpRes = await query(`
+      SELECT id FROM core.auth_otps 
+      WHERE usuario_id = $1 
+        AND otp_hash = $2 
+        AND used = FALSE 
+        AND expires_at > NOW()
+      ORDER BY created_at DESC 
+      LIMIT 1;
+    `, [usuario.id, otpNorm]);
+
+    if (otpRes.rows.length === 0) {
+      throw new Error('Código OTP inválido o expirado. Solicite un nuevo código en Excel.');
+    }
+
+    // 3. Marcar OTP como utilizado
+    await query('UPDATE core.auth_otps SET used = TRUE WHERE id = $1', [otpRes.rows[0].id]);
+
+    // 4. Generar Token JWT con permiso de sincronización válido por 24 horas
+    const payload = {
+      sub: usuario.usuario_windows,
+      nombre: usuario.nombre,
+      telefono: usuario.telefono,
+      perm: 'sync',
+      tipo: 'excel_otp'
+    };
+
+    const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: '24h' });
+
+    return {
+      token,
+      usuario_windows: usuario.usuario_windows,
+      nombre: usuario.nombre,
+      expira_en: '24h'
+    };
+  }
 }

@@ -34,4 +34,27 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async requestOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { requestOtpSchema } = await import('./auth.schema.js');
+      const input = requestOtpSchema.parse(req.body);
+      const ip = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+      const resultado = await AuthService.solicitarOtpExcel(input.usuario_windows, ip);
+      return sendSuccess(res, resultado, 200, { mensaje: resultado.mensaje });
+    } catch (error: any) {
+      return sendError(res, error.message || 'Error al solicitar OTP', 400);
+    }
+  }
+
+  static async verifyOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { verifyOtpSchema } = await import('./auth.schema.js');
+      const input = verifyOtpSchema.parse(req.body);
+      const resultado = await AuthService.verificarOtpExcel(input.usuario_windows, input.otp);
+      return sendSuccess(res, resultado, 200, { mensaje: 'Autenticación exitosa. Token generado.' });
+    } catch (error: any) {
+      return sendError(res, error.message || 'Error al verificar OTP', 401);
+    }
+  }
 }
