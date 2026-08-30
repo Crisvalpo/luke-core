@@ -1,0 +1,81 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="tabLukeApp" label="LUKEAPP">
+
+        <!-- GRUPO 1: SEGURIDAD Y ACCESO -->
+        <group id="grpSeguridad" label="Seguridad y Acceso">
+          <button
+            id="btnSolicitarAcceso"
+            label="Solicitar Acceso"
+            imageMso="AddAccount"
+            size="large"
+            onAction="SolicitarAccesoRibbon"
+            screentip="Solicitar Acceso a Faena"
+            supertip="Envía una solicitud al Administrador vía WhatsApp para habilitar tu usuario en este proyecto." />
+
+          <button
+            id="btnIniciarSesion"
+            label="Iniciar Sesión"
+            imageMso="Key"
+            size="normal"
+            onAction="IniciarSesionRibbon"
+            screentip="Iniciar Sesión (OTP)"
+            supertip="Solicita un código PIN a tu WhatsApp y obtiene un token de 4 horas para publicar." />
+
+          <button
+            id="btnCerrarSesion"
+            label="Cerrar Sesión"
+            imageMso="CancelRequest"
+            size="normal"
+            onAction="CerrarSesionLukeAppRibbon"
+            screentip="Cerrar Sesión Activa"
+            supertip="Elimina el token de sesión de la memoria." />
+        </group>
+
+        <!-- GRUPO 2: OPERACIONES DE PIPING -->
+        <group id="grpSync" label="Sincronización">
+          <button
+            id="btnPublicarJuntas"
+            label="Publicar Juntas"
+            imageMso="ServerDatabase"
+            size="large"
+            onAction="PublicarListaJuntasRibbon"
+            screentip="Publicar Lista de Juntas"
+            supertip="Sube y sincroniza las juntas de esta hoja con Luke Core / Base de Datos." />
+
+          <button
+            id="btnActualizarNube"
+            label="Actualizar Planilla"
+            imageMso="RefreshAll"
+            size="normal"
+            onAction="ActualizarDesdeNubeRibbon"
+            screentip="Actualizar Datos"
+            supertip="Refresca las tablas y conexiones locales de la planilla." />
+        </group>
+
+        <!-- GRUPO 3: PROYECTO Y AYUDA -->
+        <group id="grpProyecto" label="Proyecto">
+          <button
+            id="btnVerProyecto"
+            label="Ver Proyecto"
+            imageMso="Properties"
+            size="normal"
+            onAction="VerProyectoRibbon"
+            screentip="Configuración del Proyecto"
+            supertip="Muestra los parámetros del proyecto actual definidos en la hoja CONFIG." />
+
+          <button
+            id="btnAcercaDe"
+            label="Acerca de"
+            imageMso="Info"
+            size="normal"
+            onAction="AcercaDeLukeAppRibbon"
+            screentip="Acerca de LukeApp"
+            supertip="Información de versión, API conectada y arquitectura." />
+        </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

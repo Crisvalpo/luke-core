@@ -34,6 +34,22 @@ Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
     MsgBox "Planilla actualizada desde los orígenes de datos locales.", vbInformation, "LukeApp"
 End Sub
 
+Public Sub VerProyectoRibbon(control As IRibbonControl)
+    Dim idProy As String, nomProy As String, emp As String, disc As String
+    idProy = LeerConfiguracion("ID_PROYECTO")
+    nomProy = LeerConfiguracion("NOMBRE_PROYECTO")
+    emp = LeerConfiguracion("EMPRESA")
+    disc = LeerConfiguracion("DISCIPLINA")
+    
+    MsgBox "Parámetros del Proyecto Activo:" & vbCrLf & vbCrLf & _
+           "• ID Proyecto: " & idProy & vbCrLf & _
+           "• Nombre: " & nomProy & vbCrLf & _
+           "• Empresa (Tenant): " & emp & vbCrLf & _
+           "• Disciplina: " & disc & vbCrLf & vbCrLf & _
+           "Usuario Windows: " & ObtenerUsuarioWindowsCompleto(), _
+           vbInformation, "Configuración del Proyecto"
+End Sub
+
 Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
     MsgBox "LukeApp Excel Client — Piping Management" & vbCrLf & _
            "Versión: 1.0 (Zero-Touch WhatsApp Onboarding)" & vbCrLf & _
