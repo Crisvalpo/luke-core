@@ -1022,7 +1022,7 @@ Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWin
     Dim ws As Worksheet
     Dim tbl As ListObject
     Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long
-    Dim i As Long, totalOut As Long
+    Dim i As Long
     Dim vUuid As String, vJunta As String, vTag As String, vEstado As String
     Dim jsonItems As String
     
