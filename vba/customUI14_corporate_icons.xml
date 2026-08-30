@@ -1,0 +1,171 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="tabLukeApp" label="LUKEAPP">
+
+        <!-- GRUPO 1: PROYECTO (GOBERNANZA CENTRALIZADA) -->
+        <group id="grpProyecto" label="Proyecto">
+          <button
+            id="btnProyectoActivo"
+            label="Proyecto Activo"
+            image="ProyectoActivo"
+            size="large"
+            onAction="VerProyectoRibbon"/>
+          <button
+            id="btnActualizarProyecto"
+            label="Actualizar Proyecto"
+            image="ActualizarProyecto"
+            size="normal"
+            onAction="ActualizarProyectoRibbon"/>
+          <button
+            id="btnCambiarProyecto"
+            label="Cambiar Proyecto"
+            image="CambiarProyecto"
+            size="normal"
+            onAction="CambiarProyectoRibbon"/>
+        </group>
+
+        <!-- GRUPO 2: SINCRONIZACION (PUSH / PULL / AUDITORIA) -->
+        <group id="grpSync" label="Sincronizacion">
+          <button
+            id="btnPublicarCambios"
+            label="Publicar Cambios"
+            image="PublicarCambios"
+            size="large"
+            onAction="PublicarListaJuntasRibbon"/>
+          <button
+            id="btnActualizarNube"
+            label="Actualizar desde Nube"
+            image="ActualizarNube"
+            size="large"
+            onAction="ActualizarDesdeNubeRibbon"/>
+          <button
+            id="btnEstadoSync"
+            label="Estado Sincronizacion"
+            image="EstadoSync"
+            size="normal"
+            onAction="VerEstadoSyncRibbon"/>
+          <button
+            id="btnHistorialSync"
+            label="Historial"
+            image="Historial"
+            size="normal"
+            onAction="VerHistorialSyncRibbon"/>
+          <button
+            id="btnAuditoriaColumnas"
+            label="Auditoria Columnas"
+            image="AuditoriaColumnas"
+            size="normal"
+            onAction="AlternarColumnasAuditoriaRibbon"/>
+        </group>
+
+        <!-- GRUPO 3: INGENIERIA (LISTAS MAESTRAS DE FAENA) -->
+        <group id="grpIngenieria" label="Ingenieria">
+          <button
+            id="btnIrPID"
+            label="P&amp;ID"
+            image="PID"
+            size="normal"
+            onAction="IrAPIDRibbon"/>
+          <button
+            id="btnIrLineas"
+            label="Lineas"
+            image="Lineas"
+            size="normal"
+            onAction="IrALineasRibbon"/>
+          <button
+            id="btnIrIsometricos"
+            label="Isometricos"
+            image="Isometricos"
+            size="normal"
+            onAction="IrAIsometricosRibbon"/>
+          <button
+            id="btnIrSpools"
+            label="Spools"
+            image="Spools"
+            size="normal"
+            onAction="IrASpoolsRibbon"/>
+          <button
+            id="btnIrJuntas"
+            label="Juntas"
+            image="Juntas"
+            size="large"
+            onAction="IrAJuntasRibbon"/>
+        </group>
+
+        <!-- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL EN TERRENO) -->
+        <group id="grpOperacion" label="Operacion">
+          <button
+            id="btnAvanceProyecto"
+            label="Avance Proyecto"
+            image="AvanceProyecto"
+            size="normal"
+            onAction="VerAvanceRibbon"/>
+          <button
+            id="btnCalidad"
+            label="Calidad"
+            image="Calidad"
+            size="normal"
+            onAction="VerCalidadRibbon"/>
+          <button
+            id="btnLogistica"
+            label="Logistica"
+            image="Logistica"
+            size="normal"
+            onAction="VerLogisticaRibbon"/>
+          <button
+            id="btnSDI"
+            label="SDI / RFI"
+            image="SDI"
+            size="normal"
+            onAction="VerSdiRibbon"/>
+        </group>
+
+        <!-- GRUPO 5: INTELIGENCIA (PANEL, BIM Y BOTS IA) -->
+        <group id="grpInteligencia" label="Inteligencia">
+          <button
+            id="btnDashboard"
+            label="Dashboard"
+            image="Dashboard"
+            size="large"
+            onAction="AbrirDashboardRibbon"/>
+          <button
+            id="btnBIMViewer"
+            label="BIM Viewer"
+            image="BIMViewer"
+            size="normal"
+            onAction="AbrirBimViewerRibbon"/>
+          <button
+            id="btnBotsIA"
+            label="Bots IA"
+            image="BotsIA"
+            size="normal"
+            onAction="AbrirBotsIaRibbon"/>
+        </group>
+
+        <!-- GRUPO 6: SEGURIDAD Y ACCESO -->
+        <group id="grpSeguridad" label="Seguridad">
+          <button
+            id="btnIniciarSesion"
+            label="Iniciar Sesion"
+            image="IniciarSesion"
+            size="large"
+            onAction="IniciarSesionRibbon"/>
+          <button
+            id="btnCerrarSesion"
+            label="Cerrar Sesion"
+            image="CerrarSesion"
+            size="normal"
+            onAction="CerrarSesionLukeAppRibbon"/>
+          <button
+            id="btnSolicitarAcceso"
+            label="Solicitar Acceso"
+            image="SolicitarAcceso"
+            size="normal"
+            onAction="SolicitarAccesoRibbon"/>
+        </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
