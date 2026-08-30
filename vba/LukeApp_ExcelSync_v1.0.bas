@@ -729,12 +729,13 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
     Set ws = ThisWorkbook.Sheets(nombreHoja)
     On Error GoTo 0
     
+    cols = Split(columnasCsv, ",")
+    
     If ws Is Nothing Then
         Application.ScreenUpdating = False
         Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
         ws.Name = nombreHoja
         
-        cols = Split(columnasCsv, ",")
         For i = 0 To UBound(cols)
             ws.Cells(1, i + 1).Value = cols(i)
         Next i
@@ -743,6 +744,28 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
         Set tbl = ws.ListObjects.Add(xlSrcRange, ws.Range(ws.Cells(1, 1), ws.Cells(2, r)), , xlYes)
         tbl.Name = nombreTabla
         Application.ScreenUpdating = True
+    Else
+        On Error Resume Next
+        Set tbl = ws.ListObjects(nombreTabla)
+        If tbl Is Nothing And ws.ListObjects.Count > 0 Then Set tbl = ws.ListObjects(1)
+        On Error GoTo 0
+        
+        ' Asegurar columnas faltantes en tablas que ya existían previamente
+        If Not tbl Is Nothing Then
+            Application.ScreenUpdating = False
+            For i = 0 To UBound(cols)
+                Dim nomCol As String
+                nomCol = Trim(cols(i))
+                If ObtenerIndiceColumna(tbl, nomCol) = 0 Then
+                    If nomCol = "UUID" Then
+                        tbl.ListColumns.Add(1).Name = "UUID"
+                    Else
+                        tbl.ListColumns.Add.Name = nomCol
+                    End If
+                End If
+            Next i
+            Application.ScreenUpdating = True
+        End If
     End If
     
     ws.Visible = xlSheetVisible
