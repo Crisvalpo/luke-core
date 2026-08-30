@@ -1,6 +1,6 @@
 ' ==============================================================================
 ' LUKEAPP EXCEL SYNC v1.0 - MODULO OFICIAL UNIFICADO PIPING
-' Gobierno 100% Centralizado en Luke Core (Tabla Horizontal en hoja _SISTEMA)
+' Sincronizacion Bidireccional (Publicar Juntas Push / Actualizar Planilla Pull)
 ' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
@@ -32,8 +32,7 @@ Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
-    ThisWorkbook.RefreshAll
-    MsgBox "Planilla actualizada desde los origenes de datos locales.", vbInformation, "LukeApp"
+    ActualizarPlanillaDesdeNube
 End Sub
 
 Public Sub ActualizarProyectoRibbon(control As IRibbonControl)
@@ -204,7 +203,7 @@ Public Sub CerrarSesion()
 End Sub
 
 ' ------------------------------------------------------------------------------
-' 4. PUBLICAR LISTA DE JUNTAS A LUKEAPP (Upsert en piping.lista_juntas)
+' 4. PUBLICAR LISTA DE JUNTAS A LUKEAPP (Push: Upsert en piping.lista_juntas)
 ' ------------------------------------------------------------------------------
 Public Sub PublicarListaJuntas()
     Dim usuarioWindows As String
@@ -284,6 +283,59 @@ Public Sub PublicarListaJuntas()
 ManejoError:
     Application.StatusBar = False
     MsgBox "Ocurrio un error en la ejecucion:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
+End Sub
+
+' ------------------------------------------------------------------------------
+' 5. ACTUALIZAR PLANILLA DESDE NUBE (Pull: Descarga lista maestra de piping)
+' ------------------------------------------------------------------------------
+Public Sub ActualizarPlanillaDesdeNube()
+    Dim usuarioWindows As String
+    Dim idProyecto As String
+    Dim http As Object
+    Dim respuestaJson As String
+    Dim totalJuntas As Long
+    
+    On Error GoTo ManejoError
+    
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    idProyecto = LeerDeSistema("PROYECTO_CODIGO")
+    If idProyecto = "" Then
+        If Not ActualizarProyectosAutorizados(False) Then Exit Sub
+        idProyecto = LeerDeSistema("PROYECTO_CODIGO")
+    End If
+    
+    Application.StatusBar = "Descargando lista maestra de juntas desde Luke Core..."
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", API_BASE_URL & "/api/piping/lista-juntas?id_proyecto=" & EscaparJson(idProyecto), False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    Application.StatusBar = False
+    
+    If http.Status = 200 Then
+        respuestaJson = http.responseText
+        totalJuntas = FusionarJuntasEnTabla(respuestaJson)
+        
+        GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
+        
+        MsgBox "Planilla Sincronizada con Exito desde la Nube:" & vbCrLf & vbCrLf & _
+               "- Proyecto: " & idProyecto & " (" & LeerDeSistema("PROYECTO_NOMBRE") & ")" & vbCrLf & _
+               "- Juntas Sincronizadas: " & totalJuntas & vbCrLf & _
+               "- Estado: Planilla actualizada con la ultima verdad de faena.", _
+               vbInformation, "Actualizar Planilla - LukeApp"
+    Else
+        MsgBox "No fue posible descargar las juntas (" & http.Status & "):" & vbCrLf & http.responseText, vbCritical, "Error al Actualizar Planilla"
+    End If
+    
+    Set http = Nothing
+    Exit Sub
+
+ManejoError:
+    Application.StatusBar = False
+    MsgBox "Ocurrio un error al actualizar la planilla:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
 ' ==============================================================================
@@ -438,13 +490,11 @@ Private Function ObtenerTablaSistema() As ListObject
     Set ws = ThisWorkbook.Sheets("_SISTEMA")
     On Error GoTo 0
     
-    ' Si la hoja _SISTEMA no existe, crearla
     If ws Is Nothing Then
         Application.ScreenUpdating = False
         Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
         ws.Name = "_SISTEMA"
         
-        ' Crear encabezados horizontales
         ws.Range("A1").Value = "PERSONAL_ID"
         ws.Range("B1").Value = "USUARIO_WINDOWS"
         ws.Range("C1").Value = "PROYECTO_UUID"
@@ -460,7 +510,6 @@ Private Function ObtenerTablaSistema() As ListObject
         ws.Visible = xlSheetVeryHidden
         Application.ScreenUpdating = True
     Else
-        ' Buscar tabla en la hoja _SISTEMA (soporta tbl_sistema o tbl_config)
         On Error Resume Next
         Set tbl = ws.ListObjects("tbl_sistema")
         If tbl Is Nothing Then Set tbl = ws.ListObjects("tbl_config")
@@ -471,9 +520,6 @@ Private Function ObtenerTablaSistema() As ListObject
     Set ObtenerTablaSistema = tbl
 End Function
 
-' ------------------------------------------------------------------------------
-' UTILIDADES DE DESARROLLADOR: VISIBILIDAD DE _SISTEMA
-' ------------------------------------------------------------------------------
 Public Sub OcultarHojaSistema()
     On Error Resume Next
     ThisWorkbook.Sheets("_SISTEMA").Visible = xlSheetVeryHidden
@@ -496,13 +542,11 @@ Public Sub GuardarEnSistema(ByVal columnaParametro As String, ByVal valor As Str
     
     colIdx = ObtenerIndiceColumna(tbl, columnaParametro)
     
-    ' Si la columna no existe, agregarla
     If colIdx = 0 Then
         tbl.ListColumns.Add.Name = columnaParametro
         colIdx = tbl.ListColumns.Count
     End If
     
-    ' Asegurar al menos una fila de datos
     If tbl.ListRows.Count = 0 Then
         tbl.ListRows.Add
     End If
@@ -716,6 +760,113 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     Next i
     Application.ScreenUpdating = True
 End Sub
+
+' ------------------------------------------------------------------------------
+' FUSIONAR LISTA MAESTRA DESDE LA NUBE EN tbl_juntas (PULL COMPLETO)
+' ------------------------------------------------------------------------------
+Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
+    Dim tbl As ListObject
+    Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long, colFecha As Long
+    Dim i As Long, posReg As Long, posItem As Long, posFin As Long
+    Dim idJunta As String, uuidVal As String, tagVal As String, estVal As String, fechaVal As String
+    Dim dictFilas As Object
+    Dim totalProcesadas As Long
+    Dim nuevaFila As ListRow
+    Dim fechaActual As String
+    
+    Set dictFilas = CreateObject("Scripting.Dictionary")
+    fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
+    
+    On Error Resume Next
+    Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        MsgBox "No se encontro la tabla 'tbl_juntas' en la hoja 'LIST_JUNTAS'.", vbCritical, "Error de Estructura"
+        FusionarJuntasEnTabla = 0
+        Exit Function
+    End If
+    
+    colUuid = ObtenerIndiceColumna(tbl, "UUID")
+    colJunta = ObtenerIndiceColumna(tbl, "ID_JUNTA")
+    colTag = ObtenerIndiceColumna(tbl, "TAG")
+    colEstado = ObtenerIndiceColumna(tbl, "ESTADO")
+    colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+    
+    If colJunta = 0 Then
+        MsgBox "La columna 'ID_JUNTA' no existe en 'tbl_juntas'.", vbCritical, "Error de Estructura"
+        FusionarJuntasEnTabla = 0
+        Exit Function
+    End If
+    
+    ' Indexar filas existentes por ID_JUNTA
+    For i = 1 To tbl.ListRows.Count
+        idJunta = UCase(Trim(CStr(tbl.DataBodyRange(i, colJunta).Value)))
+        If idJunta <> "" And Not dictFilas.Exists(idJunta) Then
+            dictFilas.Add idJunta, i
+        End If
+    Next i
+    
+    Application.ScreenUpdating = False
+    totalProcesadas = 0
+    
+    posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
+    If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
+    
+    If posReg > 0 Then
+        posItem = InStr(posReg, respuestaJson, "{")
+        Do While posItem > 0
+            posFin = InStr(posItem, respuestaJson, "}")
+            If posFin = 0 Then Exit Do
+            
+            Dim bloque As String
+            bloque = Mid(respuestaJson, posItem, posFin - posItem + 1)
+            
+            idJunta = ExtraerValorJson(bloque, "id_junta")
+            uuidVal = ExtraerValorJson(bloque, "uuid")
+            tagVal = ExtraerValorJson(bloque, "tag")
+            estVal = ExtraerValorJson(bloque, "estado")
+            fechaVal = ExtraerValorJson(bloque, "fecha_sync")
+            If fechaVal = "" Then fechaVal = fechaActual
+            
+            If idJunta <> "" Then
+                Dim idClave As String
+                idClave = UCase(Trim(idJunta))
+                
+                If dictFilas.Exists(idClave) Then
+                    ' Actualizar fila existente
+                    Dim filaNum As Long
+                    filaNum = dictFilas(idClave)
+                    If colUuid > 0 Then tbl.DataBodyRange(filaNum, colUuid).Value = uuidVal
+                    If colTag > 0 Then tbl.DataBodyRange(filaNum, colTag).Value = tagVal
+                    If colEstado > 0 Then tbl.DataBodyRange(filaNum, colEstado).Value = estVal
+                    If colFecha > 0 Then tbl.DataBodyRange(filaNum, colFecha).Value = fechaVal
+                Else
+                    ' Agregar nueva fila traida desde la nube
+                    Set nuevaFila = tbl.ListRows.Add
+                    Dim nRow As Long
+                    nRow = nuevaFila.Index
+                    
+                    tbl.DataBodyRange(nRow, colJunta).Value = idJunta
+                    If colUuid > 0 Then tbl.DataBodyRange(nRow, colUuid).Value = uuidVal
+                    If colTag > 0 Then tbl.DataBodyRange(nRow, colTag).Value = tagVal
+                    If colEstado > 0 Then tbl.DataBodyRange(nRow, colEstado).Value = estVal
+                    If colFecha > 0 Then tbl.DataBodyRange(nRow, colFecha).Value = fechaVal
+                    
+                    dictFilas.Add idClave, nRow
+                End If
+                
+                totalProcesadas = totalProcesadas + 1
+            End If
+            
+            posItem = InStr(posFin, respuestaJson, "{")
+        Loop
+    End If
+    
+    Application.ScreenUpdating = True
+    FusionarJuntasEnTabla = totalProcesadas
+    Set dictFilas = Nothing
+End Function
 
 ' ==============================================================================
 ' SECCION 5: FUNCIONES AUXILIARES
