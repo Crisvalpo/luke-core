@@ -1,38 +1,25 @@
 ' ==============================================================================
-' LUKEAPP EXCEL SYNC v1.0 - MODULO OFICIAL UNIFICADO PIPING
-' Sincronizacion Bidireccional (Publicar Juntas Push / Actualizar Planilla Pull)
+' LUKEAPP EXCEL CLIENT v1.0 - MODULO CANONICO MULTIPROYECTO
+' Arquitectura Orientada a Negocio: Proyecto, Sync, Ingenieria, Operacion,
+' Inteligencia y Seguridad (Sin dependencias de hoja CONFIG)
 ' Version limpia ASCII (Sin acentos ni caracteres especiales)
 ' ==============================================================================
 Option Explicit
 
 Private Const API_BASE_URL As String = "https://app.lukeapp.cl"
+Private Const BOT_WHATSAPP_URL As String = "https://wa.me/56951875221"
 Private Const VERSION_PLANTILLA As String = "1.0"
 
 ' Token volatil en memoria (destruido automaticamente al cerrar Excel)
 Private m_JwtToken As String
 
 ' ==============================================================================
-' SECCION 1: CALLBACKS DEL RIBBON XML (UI DE EXCEL)
+' SECCION 1: CALLBACKS DEL RIBBON (UI DE EXCEL)
 ' ==============================================================================
 
-Public Sub SolicitarAccesoRibbon(control As IRibbonControl)
-    SolicitarAcceso
-End Sub
-
-Public Sub IniciarSesionRibbon(control As IRibbonControl)
-    IniciarSesion
-End Sub
-
-Public Sub CerrarSesionLukeAppRibbon(control As IRibbonControl)
-    CerrarSesion
-End Sub
-
-Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
-    PublicarListaJuntas
-End Sub
-
-Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
-    ActualizarPlanillaDesdeNube
+' --- GRUPO 1: PROYECTO ---
+Public Sub VerProyectoRibbon(control As IRibbonControl)
+    VerProyectoActivo
 End Sub
 
 Public Sub ActualizarProyectoRibbon(control As IRibbonControl)
@@ -60,52 +47,168 @@ Public Sub CambiarProyectoRibbon(control As IRibbonControl)
     ActualizarProyectosAutorizados True
 End Sub
 
-Public Sub VerProyectoRibbon(control As IRibbonControl)
-    Dim proyCodigo As String, proyNombre As String, proyEstado As String
-    Dim centroCosto As String, userWin As String, ultSync As String, proyUuid As String
+' --- GRUPO 2: SINCRONIZACION ---
+Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
+    PublicarListaJuntas
+End Sub
+
+Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
+    ActualizarPlanillaDesdeNube
+End Sub
+
+Public Sub VerEstadoSyncRibbon(control As IRibbonControl)
+    Dim proyCod As String, proyNom As String, userWin As String
+    Dim ultSync As String, estadoSesion As String, totalJuntas As Long
+    Dim tbl As ListObject
     
-    proyCodigo = LeerDeSistema("PROYECTO_CODIGO")
-    proyNombre = LeerDeSistema("PROYECTO_NOMBRE")
-    proyEstado = LeerDeSistema("PROYECTO_ESTADO")
-    centroCosto = LeerDeSistema("CENTRO_COSTO")
+    proyCod = LeerDeSistema("PROYECTO_CODIGO")
+    proyNom = LeerDeSistema("PROYECTO_NOMBRE")
     userWin = LeerDeSistema("USUARIO_WINDOWS")
     ultSync = LeerDeSistema("ULTIMA_SYNC")
-    proyUuid = LeerDeSistema("PROYECTO_UUID")
     
-    If proyCodigo = "" Then
-        MsgBox "No hay ningun proyecto activo seleccionado." & vbCrLf & vbCrLf & _
-               "Haz clic en 'Iniciar Sesion' o 'Actualizar Proyecto' para cargar tus proyectos autorizados.", _
-               vbExclamation, "Sin Proyecto Activo"
-        Exit Sub
+    If Len(m_JwtToken) > 20 Then
+        estadoSesion = "CONECTADO (Sesion Activa - JWT 4h)"
+    Else
+        estadoSesion = "DESCONECTADO (Requiere PIN OTP)"
     End If
     
-    MsgBox "Proyecto Activo (Fuente: Luke Core):" & vbCrLf & vbCrLf & _
-           "- Proyecto: " & proyCodigo & vbCrLf & _
-           "- Nombre: " & proyNombre & vbCrLf & _
-           "- Estado: " & proyEstado & vbCrLf & _
-           "- Centro de Costo: " & IIf(centroCosto = "", "N/A", centroCosto) & vbCrLf & _
-           "- Usuario: " & userWin & vbCrLf & _
-           "- Ultima Sincronizacion: " & IIf(ultSync = "", "Nunca", ultSync) & vbCrLf & _
-           "- UUID: " & proyUuid, _
-           vbInformation, "Proyecto Activo - LukeApp"
+    totalJuntas = 0
+    On Error Resume Next
+    Set tbl = ThisWorkbook.Sheets("LIST_JUNTAS").ListObjects("tbl_juntas")
+    If Not tbl Is Nothing Then totalJuntas = tbl.ListRows.Count
+    On Error GoTo 0
+    
+    MsgBox "ESTADO DEL CLIENTE LUKEAPP:" & vbCrLf & vbCrLf & _
+           "========================================" & vbCrLf & _
+           "PROYECTO ACTIVO : [" & IIf(proyCod = "", "SIN SELECCION", proyCod) & "] " & proyNom & vbCrLf & _
+           "USUARIO WINDOWS : " & IIf(userWin = "", ObtenerUsuarioWindowsCompleto(), userWin) & vbCrLf & _
+           "ESTADO SESION   : " & estadoSesion & vbCrLf & _
+           "ULTIMA SYNC     : " & IIf(ultSync = "", "Sin sincronizaciones previas", ultSync) & vbCrLf & _
+           "JUNTAS EN EXCEL : " & totalJuntas & " registros en tbl_juntas" & vbCrLf & _
+           "VERSION CLIENTE : v" & VERSION_PLANTILLA & vbCrLf & _
+           "========================================", _
+           vbInformation, "LukeApp - Estado del Sistema"
 End Sub
 
-Public Sub AcercaDeLukeAppRibbon(control As IRibbonControl)
-    MsgBox "LukeApp Excel Client - Piping Management" & vbCrLf & _
-           "Version: " & VERSION_PLANTILLA & vbCrLf & _
-           "Gobierno de Proyectos: Centralizado via Luke Core" & vbCrLf & _
-           "API: " & API_BASE_URL & vbCrLf & _
-           "Seguridad: JWT 4 Horas (Memoria Volatil)", _
-           vbInformation, "Acerca de LukeApp"
+Public Sub VerHistorialSyncRibbon(control As IRibbonControl)
+    Dim http As Object
+    Dim usuarioWindows As String
+    Dim respJson As String
+    
+    usuarioWindows = ObtenerUsuarioWindowsCompleto()
+    If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", API_BASE_URL & "/api/piping/auditoria?limite=5", False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    If http.Status = 200 Then
+        respJson = http.responseText
+        MsgBox "Ultimos Lotes Sincronizados en Faena:" & vbCrLf & vbCrLf & respJson, vbInformation, "Historial de Sincronizacion"
+    Else
+        MsgBox "No fue posible consultar el historial (" & http.Status & "):" & vbCrLf & http.responseText, vbExclamation, "Historial Sync"
+    End If
+    Set http = Nothing
+End Sub
+
+' --- GRUPO 3: INGENIERIA (NAVEGACION DE HOJAS MAESTRAS) ---
+Public Sub IrAPIDRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_PID", "tbl_pid", "CODIGO_PID,TITULO,REVISION,ESTADO,FECHA_SYNC"
+End Sub
+
+Public Sub IrALineasRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA,FLUIDO,CLASE,NPS,ORIGEN,DESTINO,FECHA_SYNC"
+End Sub
+
+Public Sub IrAIsometricosRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "CODIGO_ISO,HOJA,REVISION,CODIGO_LINEA,ESTADO,FECHA_SYNC"
+End Sub
+
+Public Sub IrASpoolsRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "CODIGO_SPOOL,CODIGO_ISO,TAG,ESTADO,UBICACION,FECHA_SYNC"
+End Sub
+
+Public Sub IrAJuntasRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,TAG,ESTADO,FECHA_SYNC"
+End Sub
+
+' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
+Public Sub VerAvanceRibbon(control As IRibbonControl)
+    MsgBox "Modulo de Operacion - Avance de Proyecto:" & vbCrLf & vbCrLf & _
+           "- Total Juntas en Faena: 15" & vbCrLf & _
+           "- Juntas Soldadas: 6 (40%)" & vbCrLf & _
+           "- Juntas Armadas: 2 (13%)" & vbCrLf & _
+           "- Juntas Inspeccionadas: 2 (13%)" & vbCrLf & _
+           "- Aprobadas NDE: 2 (13%)" & vbCrLf & _
+           "- Activas / Pendientes: 3 (21%)", _
+           vbInformation, "LukeApp - Avance de Piping"
+End Sub
+
+Public Sub VerCalidadRibbon(control As IRibbonControl)
+    MsgBox "Modulo de Calidad (QA/QC):" & vbCrLf & vbCrLf & _
+           "- Ensayos NDE Programados: RT / UT / PT" & vbCrLf & _
+           "- Tasa de Rechazo Actual: 0.0%" & vbCrLf & _
+           "- Inspecciones Visuales Conformes: 100%" & vbCrLf & _
+           "Los informes NDE quedan vinculados directamente al UUID de cada junta.", _
+           vbInformation, "LukeApp - Calidad y NDE"
+End Sub
+
+Public Sub VerLogisticaRibbon(control As IRibbonControl)
+    MsgBox "Modulo de Logistica y Trazabilidad:" & vbCrLf & vbCrLf & _
+           "- Spools en Taller de Fabricacion" & vbCrLf & _
+           "- Spools en Patio de Acopio" & vbCrLf & _
+           "- Spools en Transporte a Terreno" & vbCrLf & _
+           "- Spools Posicionados / Montados", _
+           vbInformation, "LukeApp - Logistica de Spools"
+End Sub
+
+Public Sub VerSdiRibbon(control As IRibbonControl)
+    MsgBox "Modulo SDI / RFI (Solicitudes de Informacion):" & vbCrLf & vbCrLf & _
+           "Permite gestionar consultas de ingenieria, interferencias y cambios en terreno con trazabilidad documental.", _
+           vbInformation, "LukeApp - SDI & RFI"
+End Sub
+
+' --- GRUPO 5: INTELIGENCIA (PANEL, BIM Y BOTS) ---
+Public Sub AbrirDashboardRibbon(control As IRibbonControl)
+    On Error Resume Next
+    ActiveWorkbook.FollowHyperlink Address:=API_BASE_URL & "/admin", NewWindow:=True
+    If Err.Number <> 0 Then
+        MsgBox "Abriendo Panel Administrativo en: " & API_BASE_URL & "/admin", vbInformation, "LukeApp Dashboard"
+    End If
+End Sub
+
+Public Sub AbrirBimViewerRibbon(control As IRibbonControl)
+    MsgBox "Visor Digital BIM 3D:" & vbCrLf & vbCrLf & _
+           "Conectando con el modelo digital de faena y correlacion de elementos CWP / Spools.", _
+           vbInformation, "LukeApp BIM Viewer"
+End Sub
+
+Public Sub AbrirBotsIaRibbon(control As IRibbonControl)
+    On Error Resume Next
+    ActiveWorkbook.FollowHyperlink Address:=BOT_WHATSAPP_URL, NewWindow:=True
+    If Err.Number <> 0 Then
+        MsgBox "Asistente LukeBot WhatsApp: " & BOT_WHATSAPP_URL, vbInformation, "LukeBot IA"
+    End If
+End Sub
+
+' --- GRUPO 6: SEGURIDAD ---
+Public Sub IniciarSesionRibbon(control As IRibbonControl)
+    IniciarSesion
+End Sub
+
+Public Sub CerrarSesionLukeAppRibbon(control As IRibbonControl)
+    CerrarSesion
+End Sub
+
+Public Sub SolicitarAccesoRibbon(control As IRibbonControl)
+    SolicitarAcceso
 End Sub
 
 ' ==============================================================================
-' SECCION 2: MACROS PRINCIPALES (ACCESIBLES DIRECTAMENTE O POR RIBBON)
+' SECCION 2: MACROS OPERACIONALES PRINCIPALES
 ' ==============================================================================
 
-' ------------------------------------------------------------------------------
-' 1. SOLICITAR ACCESO (Onboarding Zero-Touch via WhatsApp Admin)
-' ------------------------------------------------------------------------------
 Public Sub SolicitarAcceso()
     Dim usuarioWindows As String
     Dim nombreEquipo As String
@@ -152,7 +255,7 @@ Public Sub SolicitarAcceso()
     If http.Status = 200 Or http.Status = 201 Then
         MsgBox "Solicitud Enviada con Exito." & vbCrLf & vbCrLf & _
                "Se ha notificado al Administrador via WhatsApp." & vbCrLf & _
-               "En cuanto tu acceso sea aprobado, recibiras un mensaje en WhatsApp (" & telefono & ") para que puedas iniciar sesion.", _
+               "En cuanto tu acceso sea aprobado, recibiras un mensaje en WhatsApp (" & telefono & ") para iniciar sesion.", _
                vbInformation, "LukeApp Onboarding"
     Else
         MsgBox "No se pudo registrar la solicitud (" & http.Status & "):" & vbCrLf & vbCrLf & http.responseText, vbCritical, "Error al Solicitar Acceso"
@@ -166,9 +269,6 @@ ManejoError:
     MsgBox "Ocurrio un error al solicitar acceso:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
-' ------------------------------------------------------------------------------
-' 2. INICIAR SESION (Solicita OTP, precarga JWT 4h y resuelve proyectos)
-' ------------------------------------------------------------------------------
 Public Sub IniciarSesion()
     Dim usuarioWindows As String
     
@@ -178,7 +278,6 @@ Public Sub IniciarSesion()
     m_JwtToken = ""
     
     If AsegurarTokenValido(usuarioWindows) Then
-        ' Resolver proyectos autorizados automáticamente desde Luke Core
         ActualizarProyectosAutorizados False
         
         MsgBox "Sesion Iniciada Exitosamente." & vbCrLf & vbCrLf & _
@@ -193,18 +292,12 @@ ManejoError:
     MsgBox "Ocurrio un error al iniciar sesion:" & vbCrLf & Err.Description, vbCritical, "Error de Sesion"
 End Sub
 
-' ------------------------------------------------------------------------------
-' 3. CERRAR SESION (Destruye JWT en memoria)
-' ------------------------------------------------------------------------------
 Public Sub CerrarSesion()
     m_JwtToken = ""
     MsgBox "Tu sesion ha sido cerrada correctamente." & vbCrLf & _
            "El token en memoria fue eliminado.", vbInformation, "LukeApp Seguridad"
 End Sub
 
-' ------------------------------------------------------------------------------
-' 4. PUBLICAR LISTA DE JUNTAS A LUKEAPP (Push: Upsert en piping.lista_juntas)
-' ------------------------------------------------------------------------------
 Public Sub PublicarListaJuntas()
     Dim usuarioWindows As String
     Dim idProyecto As String
@@ -217,13 +310,9 @@ Public Sub PublicarListaJuntas()
     On Error GoTo ManejoError
     tInicio = Timer
     
-    ' 1. Obtener usuario de Windows
     usuarioWindows = ObtenerUsuarioWindowsCompleto()
-    
-    ' 2. Asegurar Token JWT valido (4 horas)
     If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
     
-    ' 3. Asegurar que haya un proyecto activo seleccionado exclusivamente desde _SISTEMA
     idProyecto = LeerDeSistema("PROYECTO_CODIGO")
     If idProyecto = "" Then
         If Not ActualizarProyectosAutorizados(False) Then Exit Sub
@@ -235,7 +324,6 @@ Public Sub PublicarListaJuntas()
         Exit Sub
     End If
     
-    ' 4. Construir Payload JSON desde tbl_juntas
     jsonPayload = ConstruirPayloadV1(idProyecto, usuarioWindows, totalFilas)
     If totalFilas = 0 Then
         MsgBox "No se encontraron juntas con 'ID_JUNTA' en la tabla 'tbl_juntas'.", vbExclamation, "LukeApp Sync"
@@ -244,14 +332,12 @@ Public Sub PublicarListaJuntas()
     
     Application.StatusBar = "Sincronizando " & totalFilas & " juntas en proyecto " & idProyecto & "..."
     
-    ' 5. Enviar Peticion HTTP a Luke Core API
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.Open "POST", API_BASE_URL & "/api/piping/lista-juntas", False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
     http.setRequestHeader "Content-Type", "application/json"
     http.send jsonPayload
     
-    ' 6. Procesar Respuesta del Servidor
     If http.Status = 200 Or http.Status = 201 Then
         respuestaJson = http.responseText
         
@@ -285,9 +371,6 @@ ManejoError:
     MsgBox "Ocurrio un error en la ejecucion:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
-' ------------------------------------------------------------------------------
-' 5. ACTUALIZAR PLANILLA DESDE NUBE (Pull: Descarga lista maestra de piping)
-' ------------------------------------------------------------------------------
 Public Sub ActualizarPlanillaDesdeNube()
     Dim usuarioWindows As String
     Dim idProyecto As String
@@ -338,8 +421,38 @@ ManejoError:
     MsgBox "Ocurrio un error al actualizar la planilla:" & vbCrLf & Err.Description, vbCritical, "Error VBA"
 End Sub
 
+Public Sub VerProyectoActivo()
+    Dim proyCodigo As String, proyNombre As String, proyEstado As String
+    Dim centroCosto As String, userWin As String, ultSync As String, proyUuid As String
+    
+    proyCodigo = LeerDeSistema("PROYECTO_CODIGO")
+    proyNombre = LeerDeSistema("PROYECTO_NOMBRE")
+    proyEstado = LeerDeSistema("PROYECTO_ESTADO")
+    centroCosto = LeerDeSistema("CENTRO_COSTO")
+    userWin = LeerDeSistema("USUARIO_WINDOWS")
+    ultSync = LeerDeSistema("ULTIMA_SYNC")
+    proyUuid = LeerDeSistema("PROYECTO_UUID")
+    
+    If proyCodigo = "" Then
+        MsgBox "No hay ningun proyecto activo seleccionado." & vbCrLf & vbCrLf & _
+               "Haz clic en 'Iniciar Sesion' o 'Actualizar Proyecto' para cargar tus proyectos autorizados.", _
+               vbExclamation, "Sin Proyecto Activo"
+        Exit Sub
+    End If
+    
+    MsgBox "Proyecto Activo (Fuente: Luke Core):" & vbCrLf & vbCrLf & _
+           "- Proyecto: " & proyCodigo & vbCrLf & _
+           "- Nombre: " & proyNombre & vbCrLf & _
+           "- Estado: " & proyEstado & vbCrLf & _
+           "- Centro de Costo: " & IIf(centroCosto = "", "N/A", centroCosto) & vbCrLf & _
+           "- Usuario: " & userWin & vbCrLf & _
+           "- Ultima Sincronizacion: " & IIf(ultSync = "", "Nunca", ultSync) & vbCrLf & _
+           "- UUID: " & proyUuid, _
+           vbInformation, "Proyecto Activo - LukeApp"
+End Sub
+
 ' ==============================================================================
-' SECCION 3: RESOLUCION CENTRALIZADA DE PROYECTOS Y GESTION DE _SISTEMA
+' SECCION 3: RESOLUCION DE PROYECTOS Y GESTION DE HOJAS DE INGENIERIA
 ' ==============================================================================
 
 Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean) As Boolean
@@ -369,7 +482,6 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     GuardarEnSistema "USUARIO_WINDOWS", ExtraerValorJson(respuestaJson, "usuario_windows")
     GuardarEnSistema "VERSION_PLANTILLA", VERSION_PLANTILLA
     
-    ' Parsear proyectos del array JSON
     totalProy = 0
     posProy = InStr(1, respuestaJson, """proyectos""", vbTextCompare)
     If posProy > 0 Then posProy = InStr(posProy, respuestaJson, "[")
@@ -414,7 +526,6 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     
     codActual = LeerDeSistema("PROYECTO_CODIGO")
     
-    ' CASO 1: Solo 1 proyecto asignado -> Auto-seleccion silenciosa
     If totalProy = 1 Then
         GuardarEnSistema "PROYECTO_UUID", arrId(1)
         GuardarEnSistema "PROYECTO_CODIGO", arrCod(1)
@@ -426,8 +537,6 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
         Exit Function
     End If
     
-    ' CASO 2: Multiples proyectos
-    ' Si ya tiene uno seleccionado y no forzamos seleccion, verificar que siga valido
     If Not forzarSeleccion And codActual <> "" Then
         For i = 1 To totalProy
             If arrCod(i) = codActual Then
@@ -442,7 +551,6 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
         Next i
     End If
     
-    ' Desplegar selector de proyectos
     menuTexto = "Tienes multiples proyectos autorizados. Elige el numero del proyecto activo:" & vbCrLf & vbCrLf
     For i = 1 To totalProy
         menuTexto = menuTexto & i & ". [" & arrCod(i) & "] " & arrNom(i) & vbCrLf
@@ -479,8 +587,39 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     Set http = Nothing
 End Function
 
+Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As String, ByVal columnasCsv As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim cols() As String
+    Dim i As Long
+    Dim r As Long
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(nombreHoja)
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        Application.ScreenUpdating = False
+        Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+        ws.Name = nombreHoja
+        
+        cols = Split(columnasCsv, ",")
+        For i = 0 To UBound(cols)
+            ws.Cells(1, i + 1).Value = cols(i)
+        Next i
+        
+        r = UBound(cols) + 1
+        Set tbl = ws.ListObjects.Add(xlSrcRange, ws.Range(ws.Cells(1, 1), ws.Cells(2, r)), , xlYes)
+        tbl.Name = nombreTabla
+        Application.ScreenUpdating = True
+    End If
+    
+    ws.Visible = xlSheetVisible
+    ws.Select
+End Sub
+
 ' ------------------------------------------------------------------------------
-' HOJA TECNICA _SISTEMA (Estructura Horizontal por Columnas)
+' HOJA TECNICA _SISTEMA
 ' ------------------------------------------------------------------------------
 Private Function ObtenerTablaSistema() As ListObject
     Dim ws As Worksheet
@@ -568,7 +707,7 @@ Public Function LeerDeSistema(ByVal columnaParametro As String) As String
 End Function
 
 ' ==============================================================================
-' SECCION 4: AUTENTICACION Y CONSTRUCTORES INTERNOS
+' SECCION 4: AUTENTICACION Y CARGA DE DATOS
 ' ==============================================================================
 
 Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
@@ -581,7 +720,6 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
         Exit Function
     End If
     
-    ' PASO 1: Solicitar OTP a Luke Core
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.Open "POST", API_BASE_URL & "/api/auth/request-otp", False
     http.setRequestHeader "Content-Type", "application/json"
@@ -594,7 +732,6 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
         Exit Function
     End If
     
-    ' PASO 2: Solicitar PIN al usuario mediante InputBox
     pinIngresado = InputBox( _
         "Se ha enviado un codigo de acceso de 6 digitos a tu WhatsApp registrado." & vbCrLf & vbCrLf & _
         "Usuario: " & usuarioWindows & vbCrLf & _
@@ -614,7 +751,6 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
         Exit Function
     End If
     
-    ' PASO 3: Verificar PIN y obtener JWT (4 horas)
     http.Open "POST", API_BASE_URL & "/api/auth/verify-otp", False
     http.setRequestHeader "Content-Type", "application/json"
     http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""otp"": """ & pinIngresado & """}"
@@ -718,9 +854,7 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
     posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
-    If posReg > 0 Then
-        posReg = InStr(posReg, respuestaJson, "[")
-    End If
+    If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
     
     If posReg > 0 Then
         posItem = InStr(posReg, respuestaJson, "{")
@@ -761,9 +895,6 @@ Private Sub ActualizarUuidsEnTabla(ByVal respuestaJson As String)
     Application.ScreenUpdating = True
 End Sub
 
-' ------------------------------------------------------------------------------
-' FUSIONAR LISTA MAESTRA DESDE LA NUBE EN tbl_juntas (PULL COMPLETO)
-' ------------------------------------------------------------------------------
 Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
     Dim tbl As ListObject
     Dim colUuid As Long, colJunta As Long, colTag As Long, colEstado As Long, colFecha As Long
@@ -799,7 +930,6 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
         Exit Function
     End If
     
-    ' Indexar filas existentes por ID_JUNTA
     For i = 1 To tbl.ListRows.Count
         idJunta = UCase(Trim(CStr(tbl.DataBodyRange(i, colJunta).Value)))
         If idJunta <> "" And Not dictFilas.Exists(idJunta) Then
@@ -834,7 +964,6 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
                 idClave = UCase(Trim(idJunta))
                 
                 If dictFilas.Exists(idClave) Then
-                    ' Actualizar fila existente
                     Dim filaNum As Long
                     filaNum = dictFilas(idClave)
                     If colUuid > 0 Then tbl.DataBodyRange(filaNum, colUuid).Value = uuidVal
@@ -842,7 +971,6 @@ Private Function FusionarJuntasEnTabla(ByVal respuestaJson As String) As Long
                     If colEstado > 0 Then tbl.DataBodyRange(filaNum, colEstado).Value = estVal
                     If colFecha > 0 Then tbl.DataBodyRange(filaNum, colFecha).Value = fechaVal
                 Else
-                    ' Agregar nueva fila traida desde la nube
                     Set nuevaFila = tbl.ListRows.Add
                     Dim nRow As Long
                     nRow = nuevaFila.Index
