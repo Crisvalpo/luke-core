@@ -98,6 +98,15 @@ export class PipingService {
             vigente = TRUE,
             fecha_sync = NOW(),
             updated_at = NOW()
+          WHERE (
+            piping.lista_juntas.tag,
+            piping.lista_juntas.estado,
+            piping.lista_juntas.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.tag,
+            EXCLUDED.estado,
+            TRUE
+          )
           RETURNING id_junta, uuid::text;
         `, [
           junta.uuid || null,
@@ -111,6 +120,11 @@ export class PipingService {
           resultadoJuntas.push({
             id_junta: res.rows[0].id_junta,
             uuid: res.rows[0].uuid
+          });
+        } else if (junta.uuid) {
+          resultadoJuntas.push({
+            id_junta: junta.id_junta,
+            uuid: junta.uuid
           });
         }
       }

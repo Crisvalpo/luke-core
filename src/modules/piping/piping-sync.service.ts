@@ -70,6 +70,19 @@ export class PipingSyncService {
             vigente = TRUE,
             updated_by = EXCLUDED.updated_by,
             updated_at = NOW()
+          WHERE (
+            piping.pid.titulo,
+            piping.pid.revision_vigente,
+            piping.pid.estado_documental,
+            piping.pid.metadata,
+            piping.pid.vigente
+          ) IS DISTINCT FROM (
+            COALESCE(EXCLUDED.titulo, piping.pid.titulo),
+            COALESCE(EXCLUDED.revision_vigente, piping.pid.revision_vigente),
+            COALESCE(EXCLUDED.estado_documental, piping.pid.estado_documental),
+            piping.pid.metadata || EXCLUDED.metadata,
+            TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.titulo || null,
@@ -77,7 +90,11 @@ export class PipingSyncService {
           reg.responsable || null, personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -132,6 +149,21 @@ export class PipingSyncService {
             ral = EXCLUDED.ral, revestimiento_interior = EXCLUDED.revestimiento_interior,
             aislacion = EXCLUDED.aislacion, observaciones = EXCLUDED.observaciones,
             vigente = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.lineas.nps_codigo, piping.lineas.material, piping.lineas.plano_cliente,
+            piping.lineas.metros, piping.lineas.origen, piping.lineas.destino,
+            piping.lineas.temperatura_diseno, piping.lineas.presion_diseno,
+            piping.lineas.tipo_prueba, piping.lineas.esquema_pintura, piping.lineas.ral,
+            piping.lineas.revestimiento_interior, piping.lineas.aislacion,
+            piping.lineas.observaciones, piping.lineas.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.nps_codigo, EXCLUDED.material, EXCLUDED.plano_cliente,
+            EXCLUDED.metros, EXCLUDED.origen, EXCLUDED.destino,
+            EXCLUDED.temperatura_diseno, EXCLUDED.presion_diseno,
+            EXCLUDED.tipo_prueba, EXCLUDED.esquema_pintura, EXCLUDED.ral,
+            EXCLUDED.revestimiento_interior, EXCLUDED.aislacion,
+            EXCLUDED.observaciones, TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.nps || null, reg.material || null,
@@ -141,7 +173,11 @@ export class PipingSyncService {
           reg.aislacion || null, reg.observaciones || null, personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -193,6 +229,21 @@ export class PipingSyncService {
             spooleado = EXCLUDED.spooleado, estado_documental = EXCLUDED.estado_documental,
             distribuido = EXCLUDED.distribuido, observacion = EXCLUDED.observacion,
             vigente = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.isometricos.revision_vigente, piping.isometricos.plano_contratista,
+            piping.isometricos.plano_cliente, piping.isometricos.clase, piping.isometricos.nps,
+            piping.isometricos.empresa_ingenieria, piping.isometricos.condicion,
+            piping.isometricos.spooleado, piping.isometricos.estado_documental,
+            piping.isometricos.distribuido, piping.isometricos.observacion,
+            piping.isometricos.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.revision_vigente, EXCLUDED.plano_contratista,
+            EXCLUDED.plano_cliente, EXCLUDED.clase, EXCLUDED.nps,
+            EXCLUDED.empresa_ingenieria, EXCLUDED.condicion,
+            EXCLUDED.spooleado, EXCLUDED.estado_documental,
+            EXCLUDED.distribuido, EXCLUDED.observacion,
+            TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, hoja, reg.revision || null,
@@ -201,7 +252,11 @@ export class PipingSyncService {
           reg.estado || 'VIGENTE', reg.distribuido || null, reg.observaciones || null, personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -253,6 +308,19 @@ export class PipingSyncService {
             proceso = EXCLUDED.proceso, ubicacion_actual = EXCLUDED.ubicacion_actual,
             observaciones = EXCLUDED.observaciones, vigente = TRUE,
             updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.spools.tag_gestion, piping.spools.sistema, piping.spools.sub_sistema,
+            piping.spools.area, piping.spools.codigo_linea, piping.spools.spool_numero,
+            piping.spools.nps, piping.spools.material, piping.spools.servicio,
+            piping.spools.proceso, piping.spools.ubicacion_actual,
+            piping.spools.observaciones, piping.spools.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.tag_gestion, EXCLUDED.sistema, EXCLUDED.sub_sistema,
+            EXCLUDED.area, EXCLUDED.codigo_linea, EXCLUDED.spool_numero,
+            EXCLUDED.nps, EXCLUDED.material, EXCLUDED.servicio,
+            EXCLUDED.proceso, EXCLUDED.ubicacion_actual,
+            EXCLUDED.observaciones, TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.tag_gestion || null,
@@ -262,7 +330,11 @@ export class PipingSyncService {
           reg.ubicacion || null, reg.observaciones || null, reg.estado || 'EN_FABRICACION', personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -326,6 +398,27 @@ export class PipingSyncService {
             estado_material = EXCLUDED.estado_material, prioridad_fab = EXCLUDED.prioridad_fab,
             observaciones = EXCLUDED.observaciones, estado_actual = EXCLUDED.estado_actual,
             vigente = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.mto.item_numero, piping.mto.cwa, piping.mto.cwp, piping.mto.ewp,
+            piping.mto.pwp, piping.mto.codigo_linea, piping.mto.codigo_iso,
+            piping.mto.codigo_spool, piping.mto.clase, piping.mto.grupo_material,
+            piping.mto.descripcion, piping.mto.diametro_nps, piping.mto.cantidad,
+            piping.mto.unidad, piping.mto.peso_kg, piping.mto.suministro,
+            piping.mto.proveedor, piping.mto.orden_compra, piping.mto.recepcionado,
+            piping.mto.solicitado, piping.mto.despachado, piping.mto.cantidad_real,
+            piping.mto.ubicacion_actual, piping.mto.estado_material,
+            piping.mto.prioridad_fab, piping.mto.observaciones, piping.mto.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.item_numero, EXCLUDED.cwa, EXCLUDED.cwp, EXCLUDED.ewp,
+            EXCLUDED.pwp, EXCLUDED.codigo_linea, EXCLUDED.codigo_iso,
+            EXCLUDED.codigo_spool, EXCLUDED.clase, EXCLUDED.grupo_material,
+            EXCLUDED.descripcion, EXCLUDED.diametro_nps, EXCLUDED.cantidad,
+            EXCLUDED.unidad, EXCLUDED.peso_kg, EXCLUDED.suministro,
+            EXCLUDED.proveedor, EXCLUDED.orden_compra, EXCLUDED.recepcionado,
+            EXCLUDED.solicitado, EXCLUDED.despachado, EXCLUDED.cantidad_real,
+            EXCLUDED.ubicacion_actual, EXCLUDED.estado_material,
+            EXCLUDED.prioridad_fab, EXCLUDED.observaciones, TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.item_numero || null,
@@ -339,7 +432,11 @@ export class PipingSyncService {
           reg.prioridad_fab || null, reg.observaciones || null, reg.estado || 'EMITIDO', personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -390,6 +487,21 @@ export class PipingSyncService {
             correlativo_maqueta = EXCLUDED.correlativo_maqueta, numero_aconex = EXCLUDED.numero_aconex,
             diagrama = EXCLUDED.diagrama, estado_actual = EXCLUDED.estado_actual,
             vigente = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.valvulas.id_mto, piping.valvulas.clase, piping.valvulas.tag_piping,
+            piping.valvulas.tag_instrumentacion, piping.valvulas.diametro_nps,
+            piping.valvulas.cantidad, piping.valvulas.descripcion,
+            piping.valvulas.correlativo_maqueta, piping.valvulas.numero_aconex,
+            piping.valvulas.diagrama, piping.valvulas.estado_actual,
+            piping.valvulas.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.id_mto, EXCLUDED.clase, EXCLUDED.tag_piping,
+            EXCLUDED.tag_instrumentacion, EXCLUDED.diametro_nps,
+            EXCLUDED.cantidad, EXCLUDED.descripcion,
+            EXCLUDED.correlativo_maqueta, EXCLUDED.numero_aconex,
+            EXCLUDED.diagrama, EXCLUDED.estado_actual,
+            TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.id_mto || null, reg.clase || null,
@@ -398,7 +510,11 @@ export class PipingSyncService {
           reg.numero_aconex || null, reg.diagrama || null, reg.estado || 'POR_MONTAR', personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
@@ -453,6 +569,20 @@ export class PipingSyncService {
             suministro = EXCLUDED.suministro, observaciones = EXCLUDED.observaciones,
             estado_actual = EXCLUDED.estado_actual, vigente = TRUE,
             updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          WHERE (
+            piping.soportes.item_numero, piping.soportes.cwa, piping.soportes.cwp,
+            piping.soportes.ewp, piping.soportes.pwp, piping.soportes.codigo_linea,
+            piping.soportes.codigo_iso, piping.soportes.clase, piping.soportes.tipo_soporte,
+            piping.soportes.diametro_nps, piping.soportes.cantidad, piping.soportes.unidad,
+            piping.soportes.peso_kg, piping.soportes.suministro, piping.soportes.observaciones,
+            piping.soportes.vigente
+          ) IS DISTINCT FROM (
+            EXCLUDED.item_numero, EXCLUDED.cwa, EXCLUDED.cwp, EXCLUDED.ewp,
+            EXCLUDED.pwp, EXCLUDED.codigo_linea, EXCLUDED.codigo_iso,
+            EXCLUDED.clase, EXCLUDED.tipo_soporte, EXCLUDED.diametro_nps,
+            EXCLUDED.cantidad, EXCLUDED.unidad, EXCLUDED.peso_kg,
+            EXCLUDED.suministro, EXCLUDED.observaciones, TRUE
+          )
           RETURNING codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.item_numero || null,
@@ -463,7 +593,11 @@ export class PipingSyncService {
           reg.observaciones || null, reg.estado || 'POR_FABRICAR', personalId
         ]);
 
-        if (res.rows[0]) resultado.push(res.rows[0]);
+        if (res.rows[0]) {
+          resultado.push(res.rows[0]);
+        } else if (reg.uuid) {
+          resultado.push({ codigo: cod, uuid: reg.uuid });
+        }
       }
 
       await client.query('COMMIT');
