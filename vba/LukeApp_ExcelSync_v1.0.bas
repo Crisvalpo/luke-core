@@ -145,6 +145,10 @@ Public Sub IrASoportesRibbon(control As IRibbonControl)
     NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
+Public Sub IrAMTORibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+End Sub
+
 ' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
 Public Sub VerAvanceRibbon(control As IRibbonControl)
     MsgBox "Modulo de Operacion - Avance de Proyecto:" & vbCrLf & vbCrLf & _
@@ -442,6 +446,11 @@ Public Sub ActualizarHojaActiva()
             totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_soporte", idProyecto)
             MsgBox "Tabla LIST_SOPORTES actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
+        Case "LIST_MTO"
+            Application.StatusBar = "Sincronizando únicamente MTO (Materiales)..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/mto", "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_mto", idProyecto)
+            MsgBox "Tabla LIST_MTO actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
         Case Else
             ' Si no está en una lista conocida, actualizar todo
             ActualizarPlanillaDesdeNube
@@ -460,7 +469,7 @@ End Sub
 Public Sub ActualizarPlanillaDesdeNube()
     Dim usuarioWindows As String
     Dim idProyecto As String
-    Dim totalJuntas As Long, totalPid As Long, totalLineas As Long, totalIsos As Long, totalSpools As Long, totalValvulas As Long, totalSoportes As Long
+    Dim totalJuntas As Long, totalPid As Long, totalLineas As Long, totalIsos As Long, totalSpools As Long, totalValvulas As Long, totalSoportes As Long, totalMto As Long
     
     On Error GoTo ManejoError
     
@@ -496,6 +505,9 @@ Public Sub ActualizarPlanillaDesdeNube()
     ' 7. Sincronizar Soportes (con AWP)
     totalSoportes = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_soporte", idProyecto)
     
+    ' 8. Sincronizar MTO (Material Take-Off con AWP)
+    totalMto = DescargarYFusionarLista("/api/piping/mto", "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_mto", idProyecto)
+    
     GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
     Application.StatusBar = False
     
@@ -506,8 +518,9 @@ Public Sub ActualizarPlanillaDesdeNube()
            "- Spools       : " & totalSpools & " registros en LIST_SPOOLS" & vbCrLf & _
            "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & _
            "- Valvulas     : " & totalValvulas & " registros en LIST_VALVULAS" & vbCrLf & _
-           "- Soportes     : " & totalSoportes & " registros en LIST_SOPORTES (AWP)" & vbCrLf & vbCrLf & _
-           "Auditoria y AWP sincronizados correctamente.", _
+           "- Soportes     : " & totalSoportes & " registros en LIST_SOPORTES (AWP)" & vbCrLf & _
+           "- MTO Material : " & totalMto & " registros en LIST_MTO (AWP & Bodega)" & vbCrLf & vbCrLf & _
+           "Auditoria, MTO y AWP sincronizados correctamente.", _
            vbInformation, "Actualizar Planilla - LukeApp"
     Exit Sub
 

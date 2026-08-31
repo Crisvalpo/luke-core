@@ -105,10 +105,16 @@
             onAction="IrAValvulasRibbon"/>
           <button
             id="btnIrSoportes"
-            label="Soportes (AWP)"
+            label="Soportes"
             imageMso="ArrangeWindows"
             size="normal"
             onAction="IrASoportesRibbon"/>
+          <button
+            id="btnIrMTO"
+            label="MTO (Materiales)"
+            imageMso="MasterDocumentShow"
+            size="normal"
+            onAction="IrAMTORibbon"/>
         </group>
 
         <!-- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL EN TERRENO) -->
