@@ -95,8 +95,20 @@
             id="btnIrJuntas"
             label="Juntas"
             imageMso="TableProperties"
-            size="large"
+            size="normal"
             onAction="IrAJuntasRibbon"/>
+          <button
+            id="btnIrValvulas"
+            label="Valvulas"
+            imageMso="PropertySheet"
+            size="normal"
+            onAction="IrAValvulasRibbon"/>
+          <button
+            id="btnIrSoportes"
+            label="Soportes (AWP)"
+            imageMso="ArrangeWindows"
+            size="normal"
+            onAction="IrASoportesRibbon"/>
         </group>
 
         <!-- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL EN TERRENO) -->

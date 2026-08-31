@@ -425,4 +425,57 @@ export class PipingService {
     `, [idProyecto.trim()]);
     return result.rows;
   }
+
+  /**
+   * Obtiene la lista completa de MTO (Material Take-Off) con compras, bodega y AWP
+   */
+  static async obtenerMtoProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        m.id AS uuid,
+        m.codigo AS codigo_mto,
+        m.item_numero,
+        m.cwa,
+        m.cwp,
+        m.ewp,
+        m.pwp,
+        COALESCE(l.codigo, m.codigo_linea, '') AS codigo_linea,
+        COALESCE(i.codigo, m.codigo_iso, '') AS codigo_iso,
+        COALESCE(s.codigo, m.codigo_spool, '') AS codigo_spool,
+        m.clase,
+        m.grupo_material,
+        m.descripcion,
+        m.diametro_nps AS nps,
+        m.cantidad,
+        m.unidad,
+        m.peso_kg,
+        m.suministro,
+        m.proveedor,
+        m.orden_compra,
+        m.recepcionado,
+        m.solicitado,
+        m.despachado,
+        m.cantidad_real,
+        m.ubicacion_actual,
+        m.estado_material,
+        m.prioridad_fab,
+        m.observaciones,
+        m.estado_actual AS estado,
+        m.vigente,
+        to_char(m.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(m.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.mto m
+      JOIN core.proyectos pr ON pr.id = m.proyecto_id
+      LEFT JOIN piping.lineas l ON l.id = m.linea_id
+      LEFT JOIN piping.isometricos i ON i.id = m.isometrico_id
+      LEFT JOIN piping.spools s ON s.id = m.spool_id
+      LEFT JOIN core.personal uc ON uc.id = m.created_by
+      LEFT JOIN core.personal uu ON uu.id = m.updated_by
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+      ORDER BY m.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
 }

@@ -122,11 +122,11 @@ Public Sub IrAPIDRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
@@ -135,6 +135,14 @@ End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
     NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,SISTEMA,SUB_SISTEMA,TEST_PACK,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+End Sub
+
+Public Sub IrAValvulasRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+End Sub
+
+Public Sub IrASoportesRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
 End Sub
 
 ' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
@@ -406,12 +414,12 @@ Public Sub ActualizarHojaActiva()
             
         Case "LIST_LINEAS"
             Application.StatusBar = "Sincronizando únicamente Líneas..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
             MsgBox "Tabla LIST_LINEAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_ISOMETRICOS"
             Application.StatusBar = "Sincronizando únicamente Isométricos..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
             MsgBox "Tabla LIST_ISOMETRICOS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_SPOOLS"
@@ -423,6 +431,16 @@ Public Sub ActualizarHojaActiva()
             Application.StatusBar = "Sincronizando únicamente Juntas..."
             totalProcesados = SincronizarJuntasDesdeNube(idProyecto)
             MsgBox "Tabla LIST_JUNTAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_VALVULAS"
+            Application.StatusBar = "Sincronizando únicamente Válvulas..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_valvula", idProyecto)
+            MsgBox "Tabla LIST_VALVULAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "LIST_SOPORTES"
+            Application.StatusBar = "Sincronizando únicamente Soportes..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_soporte", idProyecto)
+            MsgBox "Tabla LIST_SOPORTES actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case Else
             ' Si no está en una lista conocida, actualizar todo
@@ -442,7 +460,7 @@ End Sub
 Public Sub ActualizarPlanillaDesdeNube()
     Dim usuarioWindows As String
     Dim idProyecto As String
-    Dim totalJuntas As Long, totalPid As Long, totalLineas As Long, totalIsos As Long, totalSpools As Long
+    Dim totalJuntas As Long, totalPid As Long, totalLineas As Long, totalIsos As Long, totalSpools As Long, totalValvulas As Long, totalSoportes As Long
     
     On Error GoTo ManejoError
     
@@ -457,20 +475,26 @@ Public Sub ActualizarPlanillaDesdeNube()
     
     Application.StatusBar = "Sincronizando listas maestras de faena desde Luke Core..."
     
-    ' 1. Sincronizar P&IDs (con UUID, archivo, responsable y auditoría)
+    ' 1. Sincronizar P&IDs
     totalPid = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_pid", idProyecto)
     
-    ' 2. Sincronizar Líneas (17 columnas reales de Andina + auditoría)
-    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CODELCO,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
+    ' 2. Sincronizar Líneas (con PLANO_CLIENTE)
+    totalLineas = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
     
-    ' 3. Sincronizar Isométricos (19 columnas reales de faena + auditoría)
-    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CODELCO,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
+    ' 3. Sincronizar Isométricos (con PLANO_CLIENTE)
+    totalIsos = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
     
-    ' 4. Sincronizar Spools (19 columnas reales de faena + auditoría)
+    ' 4. Sincronizar Spools
     totalSpools = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
     
     ' 5. Sincronizar Juntas
     totalJuntas = SincronizarJuntasDesdeNube(idProyecto)
+    
+    ' 6. Sincronizar Válvulas
+    totalValvulas = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_valvula", idProyecto)
+    
+    ' 7. Sincronizar Soportes (con AWP)
+    totalSoportes = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_soporte", idProyecto)
     
     GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
     Application.StatusBar = False
@@ -480,8 +504,10 @@ Public Sub ActualizarPlanillaDesdeNube()
            "- Lineas       : " & totalLineas & " registros en LIST_LINEAS" & vbCrLf & _
            "- Isometricos  : " & totalIsos & " registros en LIST_ISOMETRICOS" & vbCrLf & _
            "- Spools       : " & totalSpools & " registros en LIST_SPOOLS" & vbCrLf & _
-           "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & vbCrLf & _
-           "Auditoria: Quien creo, edito y fechas sincronizadas correctamente.", _
+           "- Juntas       : " & totalJuntas & " registros en LIST_JUNTAS" & vbCrLf & _
+           "- Valvulas     : " & totalValvulas & " registros en LIST_VALVULAS" & vbCrLf & _
+           "- Soportes     : " & totalSoportes & " registros en LIST_SOPORTES (AWP)" & vbCrLf & vbCrLf & _
+           "Auditoria y AWP sincronizados correctamente.", _
            vbInformation, "Actualizar Planilla - LukeApp"
     Exit Sub
 

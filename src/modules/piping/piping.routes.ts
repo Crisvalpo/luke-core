@@ -123,6 +123,19 @@ pipingRouter.get('/soportes', requireSyncAuth, async (req: Request, res: Respons
 });
 
 /**
+ * GET /api/v1/piping/mto — Obtener cubicación MTO y trazabilidad de materiales por Spool/Línea
+ */
+pipingRouter.get('/mto', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const mto = await PipingService.obtenerMtoProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: mto.length, registros: mto });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/piping/auditoria — Historial de sincronizaciones
  */
 pipingRouter.get('/auditoria', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
