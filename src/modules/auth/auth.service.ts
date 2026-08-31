@@ -115,24 +115,56 @@ export class AuthService {
     // 2. Resolver ficha y contexto del usuario en core.personal
     const personalRes = await query(`
       SELECT 
-        p.id, p.nombre_completo, p.email, p.rol_organizacional,
-        t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+        p.id, p.nombre_completo, p.email, p.rol_organizacional, p.activo, p.auth_user_id,
+        t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social, t.activo AS tenant_activo
       FROM core.personal p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
-      WHERE p.auth_user_id = $1 OR LOWER(p.email) = $2
+      WHERE (p.auth_user_id = $1 OR LOWER(p.email) = $2)
+        AND p.activo = TRUE
+      ORDER BY (p.rol_organizacional = 'super_admin') DESC, p.created_at DESC
       LIMIT 1;
     `, [data.user.id, email]);
 
-    const perfil = personalRes.rows[0] || {};
+    const perfil = personalRes.rows[0];
+    const isSuperAdminUser = perfil?.rol_organizacional === 'super_admin' || data.user.app_metadata?.role === 'super_admin';
+
+    // Separación de Apps: Si el usuario existe en Supabase Auth (e.g. Quiz o Ruleta) pero no en Luke Core
+    if (!perfil && !isSuperAdminUser) {
+      throw new Error('Acceso denegado: Su cuenta no tiene una empresa o perfil activo en Luke Core. Solicite acceso a su Administrador.');
+    }
+
+    if (perfil && perfil.tenant_activo === false && !isSuperAdminUser) {
+      throw new Error(`Acceso suspendido: La empresa '${perfil.tenant_razon_social || perfil.tenant_slug}' se encuentra inactiva.`);
+    }
+
+    // Vincular auth_user_id si aún no estaba asignado
+    if (perfil && !perfil.auth_user_id) {
+      await query(`UPDATE core.personal SET auth_user_id = $1 WHERE id = $2`, [data.user.id, perfil.id]);
+    }
+
+    // Sincronizar App Metadata en Supabase Auth
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+        app_metadata: {
+          ...data.user.app_metadata,
+          apps_habilitadas: Array.from(new Set([...(data.user.app_metadata?.apps_habilitadas || []), 'core', 'piping'])),
+          tenant_id: perfil?.tenant_id || null,
+          tenant_slug: perfil?.tenant_slug || null,
+          rol: perfil?.rol_organizacional || 'super_admin'
+        }
+      });
+    } catch (metaErr: any) {
+      console.warn('⚠️ No se pudo sincronizar app_metadata:', metaErr.message);
+    }
 
     return {
-      id: perfil.id || data.user.id,
-      nombre_completo: perfil.nombre_completo || data.user.user_metadata?.nombre || email,
+      id: perfil?.id || data.user.id,
+      nombre_completo: perfil?.nombre_completo || data.user.user_metadata?.nombre || email,
       email: data.user.email!,
-      rol: perfil.rol_organizacional || data.user.user_metadata?.role || 'super_admin',
-      tenant_id: perfil.tenant_id || null,
-      tenant_slug: perfil.tenant_slug,
-      tenant_razon_social: perfil.tenant_razon_social,
+      rol: perfil?.rol_organizacional || data.user.user_metadata?.role || (isSuperAdminUser ? 'super_admin' : 'worker'),
+      tenant_id: perfil?.tenant_id || null,
+      tenant_slug: perfil?.tenant_slug,
+      tenant_razon_social: perfil?.tenant_razon_social,
       access_token: data.session.access_token
     };
   }

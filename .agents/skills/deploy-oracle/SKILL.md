@@ -47,3 +47,28 @@ pm2 save
 curl http://localhost:3080/health
 ```
 Respuesta esperada: `{"ok": true, "data": {"status": "online", "app": "Luke Core", ...}}`
+
+---
+
+## 🔐 Estándar de Autenticación & Aislamiento de Apps (Supabase Shared Auth)
+
+Dado que la instancia de **Supabase Auth (`auth.users`)** es compartida en el servidor entre múltiples aplicaciones (`app.lukeapp.cl`, `quiz.lukeapp.cl`, `ruleta.lukeapp.cl`, `tiktok.lukeapp.cl`):
+
+### 📌 Regla de Aislamiento de Identidad
+1. **No asumir acceso por existencia en `auth.users`**: Un usuario registrado en una app pública (ej. `quiz` o `ruleta`) existe en `auth.users`, pero **NO debe tener acceso automático a Luke Core (`app.lukeapp.cl`)**.
+2. **Control por `app_metadata.apps_habilitadas`**:
+   Cada aplicación debe gestionar el array `apps_habilitadas` en `user.app_metadata`:
+   ```json
+   {
+     "apps_habilitadas": ["core", "piping", "quiz"],
+     "tenant_id": "uuid-del-tenant",
+     "rol": "admin"
+   }
+   ```
+3. **Flujo para Aplicaciones Corporativas (Luke Core)**:
+   - Al hacer login en `app.lukeapp.cl`, se consulta `core.personal` filtrando por `p.activo = TRUE`.
+   - Si no existe en `core.personal` y no es `super_admin`, se rechaza con HTTP 403 (`Acceso denegado: Su cuenta no tiene una empresa asignada en Luke Core`).
+   - Al dar de alta una nueva empresa, si el correo ya existe en `auth.users`, se enlaza su `auth_user_id` y se le envía el enlace para definir o actualizar contraseña (`resetPasswordForEmail`).
+4. **Flujo para Aplicaciones Públicas (Quiz / Ruleta / TikTok)**:
+   - Al registrarse o loguearse, agregar su slug a `apps_habilitadas` sin tocar ni dar acceso a los esquemas corporativos de `core`.
+
