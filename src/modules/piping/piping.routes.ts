@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { PipingService } from './piping.service.js';
+import { PipingSyncService } from './piping-sync.service.js';
 import { payloadSyncJuntasSchema } from './piping.schema.js';
 import { requireSyncAuth } from '../../shared/middlewares/authGuard.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
@@ -7,13 +8,12 @@ import { sendSuccess, sendError } from '../../shared/utils/response.js';
 export const pipingRouter = Router();
 
 /**
- * POST /api/v1/piping/lista-juntas — Sincronización masiva de juntas de piping desde Excel
+ * POST /api/v1/piping/lista-juntas — Sincronización masiva de juntas desde Excel
  */
 pipingRouter.post('/lista-juntas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
     const body = payloadSyncJuntasSchema.parse(req.body);
-
     const resultado = await PipingService.sincronizarJuntas(usuarioWindows, body);
 
     return sendSuccess(res, resultado, 200, {
@@ -23,6 +23,111 @@ pipingRouter.post('/lista-juntas', requireSyncAuth, async (req: Request, res: Re
     if (error.name === 'ZodError') {
       return sendError(res, error.errors[0]?.message || 'Estructura de juntas inválida', 400);
     }
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/pid — Sincronización masiva de P&IDs desde Excel
+ */
+pipingRouter.post('/pid', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarPid(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} P&IDs procesados.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/lineas — Sincronización masiva de Líneas desde Excel
+ */
+pipingRouter.post('/lineas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarLineas(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} Líneas procesadas.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/isometricos — Sincronización masiva de Isométricos desde Excel
+ */
+pipingRouter.post('/isometricos', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarIsometricos(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} Isométricos procesados.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/spools — Sincronización masiva de Spools desde Excel
+ */
+pipingRouter.post('/spools', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarSpools(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} Spools procesados.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/valvulas — Sincronización masiva de Válvulas desde Excel
+ */
+pipingRouter.post('/valvulas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarValvulas(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} Válvulas procesadas.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/soportes — Sincronización masiva de Soportes desde Excel
+ */
+pipingRouter.post('/soportes', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarSoportes(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} Soportes procesados.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/piping/mto — Sincronización masiva de MTO desde Excel
+ */
+pipingRouter.post('/mto', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingSyncService.sincronizarMto(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, {
+      mensaje: `Sincronización exitosa: ${resultado.procesados} registros MTO procesados.`
+    });
+  } catch (error) {
     next(error);
   }
 });

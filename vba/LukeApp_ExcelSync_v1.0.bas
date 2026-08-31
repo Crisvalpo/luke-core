@@ -48,8 +48,12 @@ Public Sub CambiarProyectoRibbon(control As IRibbonControl)
 End Sub
 
 ' --- GRUPO 2: SINCRONIZACION ---
+Public Sub PublicarHojaActivaRibbon(control As IRibbonControl)
+    PublicarHojaActiva
+End Sub
+
 Public Sub PublicarListaJuntasRibbon(control As IRibbonControl)
-    PublicarListaJuntas
+    PublicarHojaActiva
 End Sub
 
 Public Sub ActualizarDesdeNubeRibbon(control As IRibbonControl)
@@ -103,6 +107,7 @@ Public Sub VerHistorialSyncRibbon(control As IRibbonControl)
     If Not AsegurarTokenValido(usuarioWindows) Then Exit Sub
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "GET", API_BASE_URL & "/api/piping/auditoria?limite=5", False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
     http.send
@@ -262,6 +267,7 @@ Public Sub SolicitarAcceso()
     "}"
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "POST", API_BASE_URL & "/api/access/request", False
     http.setRequestHeader "Content-Type", "application/json"
     http.send jsonPayload
@@ -314,7 +320,52 @@ Public Sub CerrarSesion()
            "El token en memoria fue eliminado.", vbInformation, "LukeApp Seguridad"
 End Sub
 
+Public Sub PublicarHojaActiva()
+    Dim ws As Worksheet
+    Dim nombreHoja As String
+    
+    Set ws = ActiveSheet
+    nombreHoja = UCase(Trim(ws.Name))
+    
+    Select Case nombreHoja
+        Case "LIST_PID"
+            PublicarTablaGenerica "/api/piping/pid", "LIST_PID", "tbl_pid", "CODIGO_PID"
+        Case "LIST_LINEAS"
+            PublicarTablaGenerica "/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "CODIGO_LINEA"
+        Case "LIST_ISOMETRICOS"
+            PublicarTablaGenerica "/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "CODIGO_ISO"
+        Case "LIST_SPOOLS"
+            PublicarTablaGenerica "/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "CODIGO_SPOOL"
+        Case "LIST_JUNTAS"
+            PublicarTablaGenerica "/api/piping/lista-juntas", "LIST_JUNTAS", "tbl_juntas", "ID_JUNTA"
+        Case "LIST_VALVULAS"
+            PublicarTablaGenerica "/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "CODIGO_VALVULA"
+        Case "LIST_SOPORTES"
+            PublicarTablaGenerica "/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "CODIGO_SOPORTE"
+        Case "LIST_MTO"
+            PublicarTablaGenerica "/api/piping/mto", "LIST_MTO", "tbl_mto", "CODIGO_MTO"
+        Case Else
+            MsgBox "Para publicar cambios, debes estar posicionado en una hoja de ingenieria valida:" & vbCrLf & vbCrLf & _
+                   "- LIST_PID (P&IDs)" & vbCrLf & _
+                   "- LIST_LINEAS (Lineas)" & vbCrLf & _
+                   "- LIST_ISOMETRICOS (Isometricos)" & vbCrLf & _
+                   "- LIST_SPOOLS (Spools)" & vbCrLf & _
+                   "- LIST_JUNTAS (Juntas)" & vbCrLf & _
+                   "- LIST_VALVULAS (Valvulas)" & vbCrLf & _
+                   "- LIST_SOPORTES (Soportes)" & vbCrLf & _
+                   "- LIST_MTO (Materiales)", _
+                   vbExclamation, "Hoja No Publicable - LukeApp"
+    End Select
+End Sub
+
 Public Sub PublicarListaJuntas()
+    ' Alias de retrocompatibilidad
+    PublicarTablaGenerica "/api/piping/lista-juntas", "LIST_JUNTAS", "tbl_juntas", "ID_JUNTA"
+End Sub
+
+Private Sub PublicarTablaGenerica(ByVal endpoint As String, ByVal nombreHoja As String, ByVal nombreTabla As String, ByVal colClave As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
     Dim usuarioWindows As String
     Dim idProyecto As String
     Dim jsonPayload As String
@@ -340,16 +391,30 @@ Public Sub PublicarListaJuntas()
         Exit Sub
     End If
     
-    jsonPayload = ConstruirPayloadV1(idProyecto, usuarioWindows, totalFilas)
-    If totalFilas = 0 Then
-        MsgBox "No se encontraron juntas con 'ID_JUNTA' en la tabla 'tbl_juntas'.", vbExclamation, "LukeApp Sync"
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(nombreHoja)
+    If Not ws Is Nothing Then Set tbl = ws.ListObjects(nombreTabla)
+    If tbl Is Nothing And Not ws Is Nothing Then
+        If ws.ListObjects.Count > 0 Then Set tbl = ws.ListObjects(1)
+    End If
+    On Error GoTo ManejoError
+    
+    If tbl Is Nothing Then
+        MsgBox "No se encontro la tabla '" & nombreTabla & "' en la hoja '" & nombreHoja & "'.", vbCritical, "Error de Datos"
         Exit Sub
     End If
     
-    Application.StatusBar = "Sincronizando " & totalFilas & " juntas en proyecto " & idProyecto & "..."
+    jsonPayload = ConstruirPayloadGenerico(tbl, idProyecto, usuarioWindows, colClave, totalFilas)
+    If totalFilas = 0 Then
+        MsgBox "No se encontraron registros con valor en '" & colClave & "' en la tabla '" & tbl.Name & "'.", vbExclamation, "LukeApp Sync"
+        Exit Sub
+    End If
+    
+    Application.StatusBar = "Publicando " & totalFilas & " registros de " & nombreHoja & " en proyecto " & idProyecto & "..."
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-    http.Open "POST", API_BASE_URL & "/api/piping/lista-juntas", False
+    http.setTimeouts 10000, 30000, 60000, 300000
+    http.Open "POST", API_BASE_URL & endpoint, False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
     http.setRequestHeader "Content-Type", "application/json"
     http.send jsonPayload
@@ -357,16 +422,18 @@ Public Sub PublicarListaJuntas()
     If http.Status = 200 Or http.Status = 201 Then
         respuestaJson = http.responseText
         
-        ActualizarUuidsEnTabla respuestaJson
+        ActualizarUuidsEnTablaGenerica tbl, respuestaJson, colClave
         GuardarEnSistema "ULTIMA_SYNC", Format(Now, "yyyy-mm-dd hh:nn:ss")
         
         Application.StatusBar = False
-        MsgBox "Sincronizacion Exitosa:" & vbCrLf & vbCrLf & _
+        MsgBox "Publicacion Exitosa de Hoja Actual:" & vbCrLf & vbCrLf & _
+               "- Hoja: " & nombreHoja & vbCrLf & _
+               "- Tabla: " & tbl.Name & vbCrLf & _
                "- Proyecto: " & idProyecto & " (" & LeerDeSistema("PROYECTO_NOMBRE") & ")" & vbCrLf & _
-               "- Juntas procesadas: " & totalFilas & vbCrLf & _
-               "- Usuario autenticado: " & usuarioWindows & vbCrLf & _
+               "- Registros sincronizados: " & totalFilas & vbCrLf & _
+               "- Usuario: " & usuarioWindows & vbCrLf & _
                "- Tiempo: " & Format(Timer - tInicio, "0.00") & " seg", _
-               vbInformation, "LukeApp Sync v1.0"
+               vbInformation, "LukeApp Sync - Publicar Hoja"
                
     ElseIf http.Status = 401 Then
         m_JwtToken = ""
@@ -542,137 +609,147 @@ End Function
 Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreHoja As String, ByVal nombreTabla As String, ByVal columnasCsv As String, ByVal clavePrincipalJson As String, ByVal idProyecto As String) As Long
     Dim http As Object
     Dim respJson As String
+    Dim ws As Worksheet
     Dim tbl As ListObject
-    Dim posReg As Long, posItem As Long, posFin As Long
-    Dim totalProcesados As Long
-    Dim dictFilas As Object
+    Dim posReg As Long, posItem As Long, posFin As Long, tempPos As Long
+    Dim totalProcesados As Long, numRegistros As Long
     Dim fechaActual As String
     Dim cols() As String
     Dim cIdx As Long, i As Long
-    Dim colUuidIdx As Long, colClaveIdx As Long
+    Dim matrizValores() As Variant
+    Dim bloque As String
+    Dim prevCalc As XlCalculation
+    Dim prevEvents As Boolean
+    Dim prevScreen As Boolean
     
-    Set dictFilas = CreateObject("Scripting.Dictionary")
     fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
     
     NavegarOCrearHoja nombreHoja, nombreTabla, columnasCsv
-    Set tbl = ThisWorkbook.Sheets(nombreHoja).ListObjects(nombreTabla)
+    Set ws = ThisWorkbook.Sheets(nombreHoja)
+    Set tbl = ws.ListObjects(nombreTabla)
     If tbl Is Nothing Then Exit Function
     
     cols = Split(columnasCsv, ",")
-    colUuidIdx = ObtenerIndiceColumna(tbl, "UUID")
-    colClaveIdx = ObtenerIndiceColumna(tbl, UCase(clavePrincipalJson))
-    If colClaveIdx = 0 And UBound(cols) >= 1 Then colClaveIdx = 2
-    
-    ' Indexar filas existentes por UUID y por Código
-    Dim primeraFilaVacia As Boolean
-    primeraFilaVacia = False
-    
-    If tbl.ListRows.Count > 1 Then
-        Dim v1Test As String, v2Test As String
-        If colUuidIdx > 0 Then v1Test = Trim(CStr(tbl.DataBodyRange(1, colUuidIdx).Value))
-        If colClaveIdx > 0 Then v2Test = Trim(CStr(tbl.DataBodyRange(1, colClaveIdx).Value))
-        If v1Test = "" And v2Test = "" Then
-            ' Eliminar fila en blanco residual
-            tbl.ListRows(1).Delete
-        End If
-    End If
-    
-    If tbl.ListRows.Count = 1 Then
-        Dim v1 As String, v2 As String
-        If colUuidIdx > 0 Then v1 = Trim(CStr(tbl.DataBodyRange(1, colUuidIdx).Value))
-        If colClaveIdx > 0 Then v2 = Trim(CStr(tbl.DataBodyRange(1, colClaveIdx).Value))
-        If v1 = "" And v2 = "" Then primeraFilaVacia = True
-    End If
-    
-    If Not primeraFilaVacia Then
-        For i = 1 To tbl.ListRows.Count
-            If colUuidIdx > 0 Then
-                Dim valUuid As String
-                valUuid = UCase(Trim(CStr(tbl.DataBodyRange(i, colUuidIdx).Value)))
-                If valUuid <> "" And Not dictFilas.Exists(valUuid) Then dictFilas.Add valUuid, i
-            End If
-            If colClaveIdx > 0 Then
-                Dim valKey As String
-                valKey = UCase(Trim(CStr(tbl.DataBodyRange(i, colClaveIdx).Value)))
-                If valKey <> "" And Not dictFilas.Exists(valKey) Then dictFilas.Add valKey, i
-            End If
-        Next i
-    End If
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    ' Timeouts en ms: resolve (10s), connect (30s), send (60s), receive (300s / 5 minutos)
+    http.setTimeouts 10000, 30000, 60000, 300000
     http.Open "GET", API_BASE_URL & endpoint & "?id_proyecto=" & EscaparJson(idProyecto), False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
     http.send
     
-    If http.Status = 200 Then
-        respJson = http.responseText
-        posReg = InStr(1, respJson, """registros""", vbTextCompare)
-        If posReg > 0 Then posReg = InStr(posReg, respJson, "[")
-        
-        If posReg > 0 Then
-            posItem = InStr(posReg, respJson, "{")
-            Do While posItem > 0
-                posFin = InStr(posItem, respJson, "}")
-                If posFin = 0 Then Exit Do
-                
-                Dim bloque As String
-                bloque = Mid(respJson, posItem, posFin - posItem + 1)
-                
-                Dim uuidVal As String, kVal As String
-                uuidVal = ExtraerValorJson(bloque, "uuid")
-                kVal = ExtraerValorJson(bloque, clavePrincipalJson)
-                
-                Dim idBuscar As String
-                If uuidVal <> "" Then
-                    idBuscar = UCase(Trim(uuidVal))
-                Else
-                    idBuscar = UCase(Trim(kVal))
-                End If
-                
-                If idBuscar <> "" Then
-                    Dim filaNum As Long
-                    If dictFilas.Exists(idBuscar) Then
-                        filaNum = dictFilas(idBuscar)
-                    ElseIf kVal <> "" And dictFilas.Exists(UCase(Trim(kVal))) Then
-                        filaNum = dictFilas(UCase(Trim(kVal)))
-                    ElseIf primeraFilaVacia And totalProcesados = 0 Then
-                        filaNum = 1
-                        dictFilas.Add idBuscar, filaNum
-                    Else
-                        Dim nFila As ListRow
-                        Set nFila = tbl.ListRows.Add
-                        filaNum = nFila.Index
-                        dictFilas.Add idBuscar, filaNum
-                    End If
-                    
-                    For cIdx = 0 To UBound(cols)
-                        Dim nomCol As String, colKeyLower As String, colValor As String
-                        nomCol = Trim(cols(cIdx))
-                        colKeyLower = LCase(nomCol)
-                        colValor = ExtraerValorJson(bloque, colKeyLower)
-                        
-                        If nomCol = "FECHA_SYNC" Then
-                            colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
-                            If colValor = "" Then colValor = fechaActual
-                        End If
-                        
-                        If colValor <> "" Then
-                            Dim colIndexTbl As Long
-                            colIndexTbl = ObtenerIndiceColumna(tbl, nomCol)
-                            If colIndexTbl > 0 Then tbl.DataBodyRange(filaNum, colIndexTbl).Value = colValor
-                        End If
-                    Next cIdx
-                    
-                    totalProcesados = totalProcesados + 1
-                End If
-                
-                posItem = InStr(posFin, respJson, "{")
-            Loop
-        End If
+    If http.Status <> 200 Then
+        Set http = Nothing
+        DescargarYFusionarLista = 0
+        Exit Function
     End If
     
+    respJson = http.responseText
     Set http = Nothing
-    Set dictFilas = Nothing
+    
+    Dim posArrayFin As Long
+    posReg = InStr(1, respJson, """registros""", vbTextCompare)
+    If posReg > 0 Then posReg = InStr(posReg, respJson, "[")
+    If posReg > 0 Then posArrayFin = InStrRev(respJson, "]")
+    
+    If posReg = 0 Or posArrayFin = 0 Or posArrayFin <= posReg Then
+        DescargarYFusionarLista = 0
+        Exit Function
+    End If
+    
+    ' Paso 1: Conteo exacto dentro de los límites del array JSON
+    numRegistros = 0
+    tempPos = InStr(posReg, respJson, "{")
+    Do While tempPos > 0 And tempPos < posArrayFin
+        numRegistros = numRegistros + 1
+        tempPos = InStr(tempPos + 1, respJson, "{")
+    Loop
+    
+    If numRegistros = 0 Then
+        On Error Resume Next
+        If tbl.ListRows.Count > 0 Then tbl.DataBodyRange.Delete
+        On Error GoTo 0
+        DescargarYFusionarLista = 0
+        Exit Function
+    End If
+    
+    ' Paso 2: Crear matriz 2D en memoria RAM
+    ReDim matrizValores(1 To numRegistros, 1 To UBound(cols) + 1)
+    
+    totalProcesados = 0
+    posItem = InStr(posReg, respJson, "{")
+    Do While posItem > 0 And posItem < posArrayFin
+        posFin = InStr(posItem, respJson, "}")
+        If posFin = 0 Or posFin > posArrayFin Then Exit Do
+        
+        bloque = Mid(respJson, posItem, posFin - posItem + 1)
+        
+        ' Validar que el bloque tenga contenido de clave o uuid antes de procesarlo
+        Dim kVal As String, uuidVal As String
+        kVal = ExtraerValorJson(bloque, clavePrincipalJson)
+        uuidVal = ExtraerValorJson(bloque, "uuid")
+        
+        If kVal <> "" Or uuidVal <> "" Then
+            totalProcesados = totalProcesados + 1
+            
+            For cIdx = 0 To UBound(cols)
+                Dim nomCol As String, colKeyLower As String, colValor As String
+                nomCol = Trim(cols(cIdx))
+                colKeyLower = LCase(nomCol)
+                
+                colValor = ExtraerValorJson(bloque, colKeyLower)
+                
+                If nomCol = "FECHA_SYNC" Then
+                    colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
+                    If colValor = "" Then colValor = fechaActual
+                ElseIf nomCol = "FECHA_CREACION" Then
+                    colValor = LimpiarFechaChile(colValor)
+                End If
+                
+                matrizValores(totalProcesados, cIdx + 1) = colValor
+            Next cIdx
+        End If
+        
+        posItem = InStr(posFin, respJson, "{")
+    Loop
+    
+    ' Paso 3: Volcado masivo a Excel y ajuste exacto de la tabla (sin filas fantasma)
+    On Error GoTo RestaurarConfig
+    prevCalc = Application.Calculation
+    prevEvents = Application.EnableEvents
+    prevScreen = Application.ScreenUpdating
+    
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    
+    ' Limpiar filas existentes de la tabla
+    If tbl.ListRows.Count > 0 Then tbl.DataBodyRange.Delete
+    
+    If totalProcesados > 0 Then
+        ' Construir matriz final ajustada exactamente a totalProcesados
+        Dim matrizFinal() As Variant
+        ReDim matrizFinal(1 To totalProcesados, 1 To UBound(cols) + 1)
+        For i = 1 To totalProcesados
+            For cIdx = 0 To UBound(cols)
+                matrizFinal(i, cIdx + 1) = matrizValores(i, cIdx + 1)
+            Next cIdx
+        Next i
+        
+        ' Escribir la matriz de datos en bloque
+        ws.Range(ws.Cells(2, 1), ws.Cells(1 + totalProcesados, UBound(cols) + 1)).Value = matrizFinal
+        
+        ' Redimensionar la tabla al rango exacto de los datos
+        tbl.Resize ws.Range(ws.Cells(1, 1), ws.Cells(1 + totalProcesados, UBound(cols) + 1))
+    End If
+    
+    OcultarColumnasTecnicas tbl
+    
+RestaurarConfig:
+    Application.Calculation = prevCalc
+    Application.EnableEvents = prevEvents
+    Application.ScreenUpdating = prevScreen
+    
     DescargarYFusionarLista = totalProcesados
 End Function
 
@@ -721,6 +798,7 @@ Public Function ActualizarProyectosAutorizados(ByVal forzarSeleccion As Boolean)
     Dim codActual As String
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "GET", API_BASE_URL & "/api/me/projects", False
     http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
     http.send
@@ -1069,6 +1147,7 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     End If
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "POST", API_BASE_URL & "/api/auth/request-otp", False
     http.setRequestHeader "Content-Type", "application/json"
     http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """}"
@@ -1095,6 +1174,7 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     End If
     
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "POST", API_BASE_URL & "/api/auth/verify-otp", False
     http.setRequestHeader "Content-Type", "application/json"
     http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""otp"": """ & EscaparJson(pinIngresado) & """}"
@@ -1116,6 +1196,148 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
     
     Set http = Nothing
 End Function
+
+Private Function ConstruirPayloadGenerico(tbl As ListObject, ByVal idProyecto As String, ByVal usuarioWindows As String, ByVal colClave As String, ByRef totalOut As Long) As String
+    Dim colClaveIdx As Long, colUuidIdx As Long
+    Dim i As Long, c As Long, numFilas As Long, numCols As Long
+    Dim valClave As String, valCelda As String, nomCol As String
+    Dim jsonItems As String, itemJson As String
+    Dim primeraCol As Boolean
+    Dim matrizHoja As Variant
+    Dim colNames() As String
+    
+    colClaveIdx = ObtenerIndiceColumna(tbl, colClave)
+    colUuidIdx = ObtenerIndiceColumna(tbl, "UUID")
+    
+    If colClaveIdx = 0 Then
+        MsgBox "La tabla '" & tbl.Name & "' no contiene la columna clave '" & colClave & "'.", vbCritical, "Error de Estructura"
+        Exit Function
+    End If
+    
+    numFilas = tbl.ListRows.Count
+    numCols = tbl.ListColumns.Count
+    If numFilas = 0 Then
+        totalOut = 0
+        Exit Function
+    End If
+    
+    ' Leer toda la tabla a memoria RAM de forma instantánea
+    matrizHoja = tbl.DataBodyRange.Value
+    
+    ReDim colNames(1 To numCols)
+    For c = 1 To numCols
+        colNames(c) = LCase(Trim(tbl.ListColumns(c).Name))
+    Next c
+    
+    totalOut = 0
+    jsonItems = ""
+    
+    For i = 1 To numFilas
+        valClave = Trim(CStr(matrizHoja(i, colClaveIdx)))
+        
+        If valClave <> "" Then
+            If totalOut > 0 Then jsonItems = jsonItems & ","
+            
+            itemJson = "{"
+            primeraCol = True
+            
+            For c = 1 To numCols
+                nomCol = colNames(c)
+                valCelda = Trim(CStr(matrizHoja(i, c)))
+                
+                If nomCol <> "fecha_sync" And nomCol <> "fecha_creacion" And nomCol <> "creado_por" And nomCol <> "editado_por" Then
+                    If Not primeraCol Then itemJson = itemJson & ","
+                    itemJson = itemJson & """" & nomCol & """:""" & EscaparJson(valCelda) & """"
+                    primeraCol = False
+                End If
+            Next c
+            
+            If InStr(itemJson, """vigente""") = 0 Then
+                itemJson = itemJson & ",""vigente"":true"
+            End If
+            
+            itemJson = itemJson & "}"
+            jsonItems = jsonItems & itemJson
+            totalOut = totalOut + 1
+        End If
+    Next i
+    
+    ConstruirPayloadGenerico = "{" & _
+        """id_proyecto"": """ & EscaparJson(idProyecto) & """," & _
+        """usuario_windows"": """ & EscaparJson(usuarioWindows) & """," & _
+        """registros"": [" & jsonItems & "]" & _
+    "}"
+End Function
+
+Private Sub ActualizarUuidsEnTablaGenerica(tbl As ListObject, ByVal respuestaJson As String, ByVal colClave As String)
+    Dim colUuid As Long, colClaveIdx As Long, colFecha As Long
+    Dim i As Long, posReg As Long, posItem As Long, posFin As Long
+    Dim claveVal As String, uuidValor As String
+    Dim fechaActual As String
+    Dim dictUuids As Object
+    Dim claveLower As String
+    Dim matrizHoja As Variant
+    Dim numFilas As Long
+    Dim modificado As Boolean
+    
+    numFilas = tbl.ListRows.Count
+    If numFilas = 0 Then Exit Sub
+    
+    Set dictUuids = CreateObject("Scripting.Dictionary")
+    fechaActual = Format(Now, "yyyy-mm-dd hh:nn:ss")
+    claveLower = LCase(Trim(colClave))
+    
+    posReg = InStr(1, respuestaJson, """registros""", vbTextCompare)
+    If posReg > 0 Then posReg = InStr(posReg, respuestaJson, "[")
+    
+    If posReg > 0 Then
+        posItem = InStr(posReg, respuestaJson, "{")
+        Do While posItem > 0
+            posFin = InStr(posItem, respuestaJson, "}")
+            If posFin = 0 Then Exit Do
+            
+            Dim bloque As String
+            bloque = Mid(respuestaJson, posItem, posFin - posItem + 1)
+            
+            claveVal = ExtraerValorJson(bloque, claveLower)
+            If claveVal = "" Then claveVal = ExtraerValorJson(bloque, "codigo")
+            If claveVal = "" Then claveVal = ExtraerValorJson(bloque, "id_junta")
+            uuidValor = ExtraerValorJson(bloque, "uuid")
+            
+            If claveVal <> "" And uuidValor <> "" Then
+                dictUuids(UCase(Trim(claveVal))) = uuidValor
+            End If
+            
+            posItem = InStr(posFin, respuestaJson, "{")
+        Loop
+    End If
+    
+    colUuid = ObtenerIndiceColumna(tbl, "UUID")
+    colClaveIdx = ObtenerIndiceColumna(tbl, colClave)
+    colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+    
+    If colClaveIdx = 0 Then Exit Sub
+    
+    ' Leer matriz completa a RAM
+    matrizHoja = tbl.DataBodyRange.Value
+    modificado = False
+    
+    For i = 1 To numFilas
+        claveVal = UCase(Trim(CStr(matrizHoja(i, colClaveIdx))))
+        If dictUuids.Exists(claveVal) Then
+            If colUuid > 0 Then matrizHoja(i, colUuid) = dictUuids(claveVal)
+            If colFecha > 0 Then matrizHoja(i, colFecha) = fechaActual
+            modificado = True
+        End If
+    Next i
+    
+    ' Volcar en bloque a Excel
+    If modificado Then
+        Application.ScreenUpdating = False
+        tbl.DataBodyRange.Value = matrizHoja
+        Application.ScreenUpdating = True
+    End If
+End Sub
 
 Private Function ConstruirPayloadV1(ByVal idProyecto As String, ByVal usuarioWindows As String, ByRef totalOut As Long) As String
     Dim ws As Worksheet
@@ -1395,38 +1617,77 @@ Private Function EscaparJson(ByVal texto As String) As String
 End Function
 
 Private Function ExtraerValorJson(ByVal json As String, ByVal clave As String) As String
-    Dim regex As Object
-    Dim coincidencias As Object
-    Dim valExtraido As String
+    Dim posClave As Long
+    Dim posDosPuntos As Long
+    Dim posInicio As Long, posFin As Long
+    Dim charInicio As String
+    Dim resultado As String
+    Dim lenJson As Long
     
-    Set regex = CreateObject("VBScript.RegExp")
-    regex.Global = False
-    regex.IgnoreCase = True
+    posClave = InStr(1, json, """" & clave & """", vbTextCompare)
+    If posClave = 0 Then
+        ExtraerValorJson = ""
+        Exit Function
+    End If
     
-    ' Soporta strings con comillas escapadas: "clave": "valor \"con comillas\""
-    regex.Pattern = """" & clave & """\s*:\s*""((?:\\.|[^""\\])*)"""
+    posDosPuntos = InStr(posClave + Len(clave) + 2, json, ":")
+    If posDosPuntos = 0 Then Exit Function
     
-    If regex.Test(json) Then
-        Set coincidencias = regex.Execute(json)
-        valExtraido = coincidencias(0).SubMatches(0)
-        valExtraido = Replace(valExtraido, "\""", """")
-        valExtraido = Replace(valExtraido, "\\", "\")
-        valExtraido = Replace(valExtraido, "\/", "/")
-        valExtraido = Replace(valExtraido, "\n", " ")
-        valExtraido = Replace(valExtraido, "\r", "")
-        ExtraerValorJson = Trim(valExtraido)
-    Else
-        ' Soporta números o booleanos: "metros": 194.35 o "vigente": true
-        regex.Pattern = """" & clave & """\s*:\s*([0-9.-]+|true|false)"
-        If regex.Test(json) Then
-            Set coincidencias = regex.Execute(json)
-            ExtraerValorJson = Trim(coincidencias(0).SubMatches(0))
+    posInicio = posDosPuntos + 1
+    lenJson = Len(json)
+    
+    ' Saltar espacios en blanco
+    Do While posInicio <= lenJson
+        charInicio = Mid(json, posInicio, 1)
+        If charInicio <> " " And charInicio <> vbTab And charInicio <> vbCr And charInicio <> vbLf Then
+            Exit Do
+        End If
+        posInicio = posInicio + 1
+    Loop
+    
+    If posInicio > lenJson Then Exit Function
+    
+    If charInicio = """" Then
+        ' Es un String: buscar comilla de cierre que no esté escapada
+        posInicio = posInicio + 1
+        posFin = posInicio
+        Do While posFin <= lenJson
+            If Mid(json, posFin, 1) = """" Then
+                If Mid(json, posFin - 1, 1) <> "\" Then
+                    Exit Do
+                End If
+            End If
+            posFin = posFin + 1
+        Loop
+        
+        If posFin <= lenJson Then
+            resultado = Mid(json, posInicio, posFin - posInicio)
+            resultado = Replace(resultado, "\""", """")
+            resultado = Replace(resultado, "\\", "\")
+            resultado = Replace(resultado, "\/", "/")
+            resultado = Replace(resultado, "\n", " ")
+            resultado = Replace(resultado, "\r", "")
+            resultado = Replace(resultado, "\t", " ")
+            ExtraerValorJson = Trim(resultado)
         Else
             ExtraerValorJson = ""
         End If
+    ElseIf charInicio = "n" And Mid(json, posInicio, 4) = "null" Then
+        ExtraerValorJson = ""
+    Else
+        ' Es un número o booleano (true/false) o hasta delimitador
+        posFin = posInicio
+        Do While posFin <= lenJson
+            charInicio = Mid(json, posFin, 1)
+            If charInicio = "," Or charInicio = "}" Or charInicio = "]" Or charInicio = " " Or charInicio = vbCr Or charInicio = vbLf Then
+                Exit Do
+            End If
+            posFin = posFin + 1
+        Loop
+        resultado = Mid(json, posInicio, posFin - posInicio)
+        If LCase(resultado) = "null" Then resultado = ""
+        ExtraerValorJson = Trim(resultado)
     End If
-    
-    Set regex = Nothing
 End Function
 
 Private Function LimpiarFechaChile(ByVal f As String) As String

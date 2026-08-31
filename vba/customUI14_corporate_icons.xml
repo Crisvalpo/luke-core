@@ -32,7 +32,7 @@
             label="Publicar Cambios"
             image="PublicarCambios"
             size="large"
-            onAction="PublicarListaJuntasRibbon"/>
+            onAction="PublicarHojaActivaRibbon"/>
           <button
             id="btnActualizarHoja"
             label="Actualizar Hoja Actual"
