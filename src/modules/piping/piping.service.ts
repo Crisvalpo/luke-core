@@ -247,7 +247,7 @@ export class PipingService {
         l.nps_codigo AS nps,
         f.codigo AS servicio,
         l.material,
-        l.plano_codelco,
+        COALESCE(l.plano_cliente, l.plano_codelco, '') AS plano_cliente,
         l.metros,
         l.origen,
         l.destino,
@@ -288,7 +288,7 @@ export class PipingService {
         i.hoja,
         i.revision_vigente AS revision,
         i.plano_contratista,
-        i.plano_codelco,
+        COALESCE(i.plano_cliente, i.plano_codelco, '') AS plano_cliente,
         i.clase,
         i.nps,
         i.empresa_ingenieria AS ingenieria,
@@ -346,6 +346,42 @@ export class PipingService {
       LEFT JOIN core.personal uu ON uu.id = s.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
       ORDER BY s.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
+
+  /**
+   * Obtiene la lista completa de Válvulas de piping con atributos MTO y auditoría
+   */
+  static async obtenerValvulasProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        v.id AS uuid,
+        v.codigo AS codigo_valvula,
+        v.id_mto,
+        COALESCE(l.codigo, v.codigo_linea, '') AS codigo_linea,
+        v.clase,
+        v.tag_piping,
+        v.tag_instrumentacion,
+        v.diametro_nps AS nps,
+        v.cantidad,
+        v.descripcion,
+        v.correlativo_maqueta,
+        v.numero_aconex,
+        v.diagrama,
+        v.estado_actual AS estado,
+        v.vigente,
+        to_char(v.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(v.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.valvulas v
+      JOIN core.proyectos pr ON pr.id = v.proyecto_id
+      LEFT JOIN piping.lineas l ON l.id = v.linea_id
+      LEFT JOIN core.personal uc ON uc.id = v.created_by
+      LEFT JOIN core.personal uu ON uu.id = v.updated_by
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+      ORDER BY v.codigo ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }

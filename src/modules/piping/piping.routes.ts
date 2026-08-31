@@ -97,6 +97,19 @@ pipingRouter.get('/spools', requireSyncAuth, async (req: Request, res: Response,
 });
 
 /**
+ * GET /api/v1/piping/valvulas — Obtener Válvulas de piping vigentes
+ */
+pipingRouter.get('/valvulas', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const valvulas = await PipingService.obtenerValvulasProyecto(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: valvulas.length, registros: valvulas });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/piping/auditoria — Historial de sincronizaciones
  */
 pipingRouter.get('/auditoria', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
