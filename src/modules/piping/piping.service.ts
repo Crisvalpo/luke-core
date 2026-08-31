@@ -184,8 +184,6 @@ export class PipingService {
         j.material,
         j.metros,
         j.servicio,
-        j.soldador,
-        j.porc_total AS avance,
         j.estado_actual AS estado,
         j.observaciones,
         to_char(j.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
