@@ -95,8 +95,26 @@
             id="btnIrJuntas"
             label="Juntas"
             image="Juntas"
-            size="large"
+            size="normal"
             onAction="IrAJuntasRibbon"/>
+          <button
+            id="btnIrValvulas"
+            label="Valvulas"
+            image="Valvulas"
+            size="normal"
+            onAction="IrAValvulasRibbon"/>
+          <button
+            id="btnIrSoportes"
+            label="Soportes"
+            image="Soportes"
+            size="normal"
+            onAction="IrASoportesRibbon"/>
+          <button
+            id="btnIrMTO"
+            label="MTO (Materiales)"
+            image="MTO"
+            size="normal"
+            onAction="IrAMTORibbon"/>
         </group>
 
         <!-- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL EN TERRENO) -->

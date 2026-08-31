@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="gradDoc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <linearGradient id="gradBox" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <!-- Hoja MTO / Lista de Materiales -->
+  <path d="M 12,8 L 40,8 L 52,20 L 52,56 L 12,56 Z" fill="url(#gradDoc)" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="40,8 52,20 40,20" fill="#94a3b8"/>
+  <!-- Líneas de MTO / Itemizado -->
+  <line x1="18" y1="20" x2="34" y2="20" stroke="#0284c7" stroke-width="3" stroke-linecap="round"/>
+  <line x1="18" y1="28" x2="44" y2="28" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <line x1="18" y1="36" x2="44" y2="36" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+  <!-- Caja / Suministro de Bodega en esquina -->
+  <polygon points="34,42 48,36 60,42 48,48" fill="url(#gradBox)"/>
+  <polygon points="34,42 48,48 48,60 34,54" fill="#b45309"/>
+  <polygon points="60,42 48,48 48,60 60,54" fill="#d97706"/>
+</svg>
