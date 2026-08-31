@@ -155,6 +155,9 @@ async function main() {
           spool_id,
           codigo,
           numero_junta,
+          sistema,
+          sub_sistema,
+          test_pack,
           tipo_union_codigo,
           destination,
           nps_codigo,
@@ -173,12 +176,15 @@ async function main() {
           updated_by,
           updated_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, TRUE, $20, $20, NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, TRUE, $23, $23, NOW()
         )
         ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
           spool_id = COALESCE(EXCLUDED.spool_id, piping.juntas.spool_id),
           isometrico_id = COALESCE(EXCLUDED.isometrico_id, piping.juntas.isometrico_id),
           numero_junta = EXCLUDED.numero_junta,
+          sistema = EXCLUDED.sistema,
+          sub_sistema = EXCLUDED.sub_sistema,
+          test_pack = EXCLUDED.test_pack,
           tipo_union_codigo = EXCLUDED.tipo_union_codigo,
           destination = EXCLUDED.destination,
           nps_codigo = EXCLUDED.nps_codigo,
@@ -202,6 +208,9 @@ async function main() {
         spoolId,
         idJunta.trim(),
         numUnion ? numUnion.trim() : '0',
+        sistema ? sistema.trim() : null,
+        subSistema ? subSistema.trim() : null,
+        testPack ? testPack.trim() : null,
         tipoUnion ? tipoUnion.trim() : null,
         destination ? destination.trim() : null,
         nps ? `${nps}"` : null,
