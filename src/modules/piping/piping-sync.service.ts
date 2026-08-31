@@ -59,7 +59,7 @@ export class PipingSyncService {
           VALUES (
             COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
             $2, $3, $4, $5, $6, COALESCE($7, 'VIGENTE'),
-            jsonb_build_object('archivo_pdf', $8, 'responsable', $9),
+            jsonb_build_object('archivo_pdf', $8::text, 'responsable', $9::text),
             TRUE, $10, $10, NOW(), NOW()
           )
           ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
