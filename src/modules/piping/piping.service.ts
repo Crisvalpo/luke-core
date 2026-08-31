@@ -189,6 +189,7 @@ export class PipingService {
         j.servicio,
         j.estado_actual AS estado,
         j.observaciones,
+        j.vigente,
         to_char(j.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
@@ -200,7 +201,6 @@ export class PipingService {
       LEFT JOIN core.personal uc ON uc.id = j.created_by
       LEFT JOIN core.personal uu ON uu.id = j.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
-        AND j.vigente = TRUE
       ORDER BY j.codigo ASC;
     `, [proyNorm]);
 
@@ -220,6 +220,7 @@ export class PipingService {
         p.estado_documental AS estado,
         p.metadata->>'archivo_pdf' AS archivo_pdf,
         COALESCE(p.metadata->>'responsable', uc.nombre_completo, 'Sistema') AS responsable,
+        p.vigente,
         to_char(p.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
@@ -229,7 +230,6 @@ export class PipingService {
       LEFT JOIN core.personal uc ON uc.id = p.created_by
       LEFT JOIN core.personal uu ON uu.id = p.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
-        AND p.vigente = TRUE
       ORDER BY p.codigo ASC;
     `, [idProyecto.trim()]);
     return result.rows;
@@ -259,6 +259,7 @@ export class PipingService {
         l.revestimiento_interior,
         l.aislacion,
         l.observaciones,
+        l.vigente,
         to_char(l.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
@@ -270,7 +271,6 @@ export class PipingService {
       LEFT JOIN core.personal uc ON uc.id = l.created_by
       LEFT JOIN core.personal uu ON uu.id = l.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
-        AND l.vigente = TRUE
       ORDER BY l.codigo ASC;
     `, [idProyecto.trim()]);
     return result.rows;
@@ -297,6 +297,7 @@ export class PipingService {
         i.estado_documental AS estado,
         i.distribuido,
         i.observacion AS observaciones,
+        i.vigente,
         to_char(i.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
@@ -307,7 +308,6 @@ export class PipingService {
       LEFT JOIN core.personal uc ON uc.id = i.created_by
       LEFT JOIN core.personal uu ON uu.id = i.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
-        AND i.vigente = TRUE
       ORDER BY i.codigo ASC, i.hoja ASC;
     `, [idProyecto.trim()]);
     return result.rows;
@@ -334,6 +334,7 @@ export class PipingService {
         s.proceso,
         s.ubicacion_actual AS ubicacion,
         s.observaciones,
+        s.vigente,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
@@ -344,7 +345,6 @@ export class PipingService {
       LEFT JOIN core.personal uc ON uc.id = s.created_by
       LEFT JOIN core.personal uu ON uu.id = s.updated_by
       WHERE (pr.codigo = $1 OR pr.id::text = $1)
-        AND s.vigente = TRUE
       ORDER BY s.codigo ASC;
     `, [idProyecto.trim()]);
     return result.rows;
