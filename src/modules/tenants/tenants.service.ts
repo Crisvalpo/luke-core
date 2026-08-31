@@ -140,6 +140,22 @@ export class TenantsService {
           console.log(`📧 [EMAIL] Correo de invitación enviado con éxito a ${emailAdmin} desde noreply@lukeapp.cl`);
         } else if (inviteErr) {
           console.warn(`⚠️ Aviso al invitar usuario por email (${emailAdmin}):`, inviteErr.message);
+
+          // Si el usuario ya existe en Supabase Auth, enlazar su auth_user_id y enviar correo de clave
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === emailAdmin);
+
+          if (existingUser) {
+            await client.query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [
+              existingUser.id,
+              administrador.id
+            ]);
+
+            await supabaseAdmin.auth.resetPasswordForEmail(emailAdmin, {
+              redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html'
+            });
+            console.log(`📧 [EMAIL] Correo de restablecimiento/creación de clave enviado a usuario existente: ${emailAdmin}`);
+          }
         }
       } catch (authErr: any) {
         console.warn('⚠️ Supabase Auth invite aviso:', authErr.message);
