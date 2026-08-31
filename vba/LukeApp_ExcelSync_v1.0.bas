@@ -123,35 +123,35 @@ End Sub
 
 ' --- GRUPO 3: INGENIERIA (NAVEGACION DE HOJAS MAESTRAS) ---
 Public Sub IrAPIDRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrASpoolsRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrAJuntasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,SISTEMA,SUB_SISTEMA,TEST_PACK,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_JUNTAS", "tbl_juntas", "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,SISTEMA,SUB_SISTEMA,TEST_PACK,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrAValvulasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrASoportesRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrAMTORibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR"
+    NavegarOCrearHoja "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 ' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
@@ -480,22 +480,22 @@ Public Sub ActualizarHojaActiva()
     Select Case nombreHoja
         Case "LIST_PID"
             Application.StatusBar = "Sincronizando únicamente P&IDs..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_pid", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/pid", "LIST_PID", "tbl_pid", "UUID,CODIGO_PID,TITULO,REVISION,ESTADO,ARCHIVO_PDF,RESPONSABLE,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_pid", idProyecto)
             MsgBox "Tabla LIST_PID actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_LINEAS"
             Application.StatusBar = "Sincronizando únicamente Líneas..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_linea", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,CODIGO_LINEA,CLASE,NPS,SERVICIO,MATERIAL,PLANO_CLIENTE,METROS,ORIGEN,DESTINO,TEMP_DISENO,PRESION_DISENO,TIPO_PRUEBA,ESQUEMA_PINTURA,RAL,REVESTIMIENTO_INTERIOR,AISLACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_linea", idProyecto)
             MsgBox "Tabla LIST_LINEAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_ISOMETRICOS"
             Application.StatusBar = "Sincronizando únicamente Isométricos..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_iso", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/isometricos", "LIST_ISOMETRICOS", "tbl_isometricos", "UUID,CODIGO_ISO,CODIGO_LINEA,HOJA,REVISION,PLANO_CONTRATISTA,PLANO_CLIENTE,CLASE,NPS,INGENIERIA,CONDICION,SPOOLEADO,ESTADO,DISTRIBUIDO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_iso", idProyecto)
             MsgBox "Tabla LIST_ISOMETRICOS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_SPOOLS"
             Application.StatusBar = "Sincronizando únicamente Spools..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_spool", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/spools", "LIST_SPOOLS", "tbl_spools", "UUID,CODIGO_SPOOL,CODIGO_ISO,TAG_GESTION,SISTEMA,SUB_SISTEMA,AREA,CODIGO_LINEA,SPOOL_NUMERO,NPS,MATERIAL,SERVICIO,PROCESO,UBICACION,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_spool", idProyecto)
             MsgBox "Tabla LIST_SPOOLS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_JUNTAS"
@@ -505,17 +505,17 @@ Public Sub ActualizarHojaActiva()
             
         Case "LIST_VALVULAS"
             Application.StatusBar = "Sincronizando únicamente Válvulas..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_valvula", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_valvula", idProyecto)
             MsgBox "Tabla LIST_VALVULAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_SOPORTES"
             Application.StatusBar = "Sincronizando únicamente Soportes..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_soporte", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_soporte", idProyecto)
             MsgBox "Tabla LIST_SOPORTES actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_MTO"
             Application.StatusBar = "Sincronizando únicamente MTO (Materiales)..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/mto", "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", "codigo_mto", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/mto", "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_mto", idProyecto)
             MsgBox "Tabla LIST_MTO actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case Else
@@ -601,7 +601,7 @@ Private Function SincronizarJuntasDesdeNube(ByVal idProyecto As String) As Long
         "/api/piping/lista-juntas", _
         "LIST_JUNTAS", _
         "tbl_juntas", _
-        "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,SISTEMA,SUB_SISTEMA,TEST_PACK,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_SYNC,EDITADO_POR", _
+        "UUID,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,TAG,SISTEMA,SUB_SISTEMA,TEST_PACK,TIPO_UNION,DESTINATION,NPS,SCH,CLASE,MATERIAL,METROS,SERVICIO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", _
         "id_junta", _
         idProyecto)
 End Function
@@ -699,8 +699,9 @@ Private Function DescargarYFusionarLista(ByVal endpoint As String, ByVal nombreH
                 
                 colValor = ExtraerValorJson(bloque, colKeyLower)
                 
-                If nomCol = "FECHA_SYNC" Then
-                    colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
+                If nomCol = "FECHA_EDICION" Or nomCol = "FECHA_SYNC" Then
+                    colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_edicion"))
+                    If colValor = "" Then colValor = LimpiarFechaChile(ExtraerValorJson(bloque, "fecha_sync"))
                     If colValor = "" Then colValor = fechaActual
                 ElseIf nomCol = "FECHA_CREACION" Then
                     colValor = LimpiarFechaChile(colValor)
@@ -955,6 +956,13 @@ Private Sub NavegarOCrearHoja(ByVal nombreHoja As String, ByVal nombreTabla As S
         
         If Not tbl Is Nothing Then
             Application.ScreenUpdating = False
+            
+            ' Compatibilidad: si existe columna FECHA_SYNC renombrarla a FECHA_EDICION
+            Dim colSyncIdx As Long
+            colSyncIdx = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+            If colSyncIdx > 0 And ObtenerIndiceColumna(tbl, "FECHA_EDICION") = 0 Then
+                tbl.ListColumns(colSyncIdx).Name = "FECHA_EDICION"
+            End If
             
             ' Verificar si faltan columnas de la definición canónica
             colFaltante = False
@@ -1245,7 +1253,7 @@ Private Function ConstruirPayloadGenerico(tbl As ListObject, ByVal idProyecto As
                 nomCol = colNames(c)
                 valCelda = Trim(CStr(matrizHoja(i, c)))
                 
-                If nomCol <> "fecha_sync" And nomCol <> "fecha_creacion" And nomCol <> "creado_por" And nomCol <> "editado_por" Then
+                If nomCol <> "fecha_edicion" And nomCol <> "fecha_sync" And nomCol <> "fecha_creacion" And nomCol <> "creado_por" And nomCol <> "editado_por" Then
                     If Not primeraCol Then itemJson = itemJson & ","
                     itemJson = itemJson & """" & nomCol & """:""" & EscaparJson(valCelda) & """"
                     primeraCol = False
@@ -1314,7 +1322,8 @@ Private Sub ActualizarUuidsEnTablaGenerica(tbl As ListObject, ByVal respuestaJso
     
     colUuid = ObtenerIndiceColumna(tbl, "UUID")
     colClaveIdx = ObtenerIndiceColumna(tbl, colClave)
-    colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
+    colFecha = ObtenerIndiceColumna(tbl, "FECHA_EDICION")
+    If colFecha = 0 Then colFecha = ObtenerIndiceColumna(tbl, "FECHA_SYNC")
     
     If colClaveIdx = 0 Then Exit Sub
     

@@ -206,6 +206,7 @@ export class PipingService {
         j.vigente,
         to_char(j.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.juntas j
@@ -237,6 +238,7 @@ export class PipingService {
         p.vigente,
         to_char(p.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.pid p
@@ -276,6 +278,7 @@ export class PipingService {
         l.vigente,
         to_char(l.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.lineas l
@@ -314,6 +317,7 @@ export class PipingService {
         i.vigente,
         to_char(i.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.isometricos i
@@ -351,6 +355,7 @@ export class PipingService {
         s.vigente,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.spools s
@@ -387,6 +392,7 @@ export class PipingService {
         v.vigente,
         to_char(v.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(v.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(v.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.valvulas v
@@ -427,6 +433,7 @@ export class PipingService {
         s.vigente,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.soportes s
@@ -478,6 +485,7 @@ export class PipingService {
         m.vigente,
         to_char(m.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
         COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(m.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(m.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
         COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.mto m
