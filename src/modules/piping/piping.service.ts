@@ -385,4 +385,44 @@ export class PipingService {
     `, [idProyecto.trim()]);
     return result.rows;
   }
+
+  /**
+   * Obtiene la lista completa de Soportes de piping con empaquetamiento AWP y auditoría
+   */
+  static async obtenerSoportesProyecto(idProyecto: string) {
+    const result = await dbPool.query(`
+      SELECT 
+        s.id AS uuid,
+        s.codigo AS codigo_soporte,
+        s.item_numero,
+        s.cwa,
+        s.cwp,
+        s.ewp,
+        s.pwp,
+        COALESCE(l.codigo, s.codigo_linea, '') AS codigo_linea,
+        COALESCE(s.codigo_iso, '') AS codigo_iso,
+        s.clase,
+        s.tipo_soporte,
+        s.diametro_nps AS nps,
+        s.cantidad,
+        s.unidad,
+        s.peso_kg,
+        s.suministro,
+        s.estado_actual AS estado,
+        s.observaciones,
+        s.vigente,
+        to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
+        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
+        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.soportes s
+      JOIN core.proyectos pr ON pr.id = s.proyecto_id
+      LEFT JOIN piping.lineas l ON l.id = s.linea_id
+      LEFT JOIN core.personal uc ON uc.id = s.created_by
+      LEFT JOIN core.personal uu ON uu.id = s.updated_by
+      WHERE (pr.codigo = $1 OR pr.id::text = $1)
+      ORDER BY s.codigo ASC;
+    `, [idProyecto.trim()]);
+    return result.rows;
+  }
 }
