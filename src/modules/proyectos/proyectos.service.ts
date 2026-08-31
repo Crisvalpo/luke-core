@@ -88,7 +88,7 @@ export class ProyectosService {
       await client.query(`
         INSERT INTO core.frentes_trabajo (tenant_id, proyecto_id, codigo, nombre, disciplina)
         VALUES ($1, $2, 'FR-00', 'Frente General', 'GENERAL')
-        ON CONFLICT DO NOTHING;
+        ON CONFLICT (proyecto_id, codigo) DO NOTHING;
       `, [tenantId, proyecto.id]);
 
       // Clonar automáticamente las plantillas de roles del tenant a este proyecto

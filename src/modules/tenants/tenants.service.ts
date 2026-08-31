@@ -79,7 +79,7 @@ export class TenantsService {
         `
         INSERT INTO core.frentes_trabajo (tenant_id, proyecto_id, codigo, nombre, disciplina)
         VALUES ($1, $2, 'FR-00', 'Frente General', 'GENERAL')
-        ON CONFLICT DO NOTHING;
+        ON CONFLICT (proyecto_id, codigo) DO NOTHING;
         `,
         [tenant.id, proyecto.id]
       );
