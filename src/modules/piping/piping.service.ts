@@ -186,37 +186,37 @@ export class PipingService {
     const result = await dbPool.query(`
       SELECT 
         j.id AS uuid,
-        j.codigo AS id_junta,
-        COALESCE(s.codigo, '') AS codigo_spool,
-        COALESCE(i.codigo, '') AS codigo_iso,
-        COALESCE(j.numero_junta, '') AS tag,
-        j.sistema,
-        j.sub_sistema,
+        j.code AS id_junta,
+        COALESCE(s.code, '') AS codigo_spool,
+        COALESCE(i.code, '') AS codigo_iso,
+        COALESCE(j.joint_no, '') AS tag,
+        j.system AS sistema,
+        j.sub_system AS sub_sistema,
         j.test_pack,
-        j.tipo_union_codigo AS tipo_union,
+        j.joint_type_code AS tipo_union,
         j.destination,
-        j.nps_codigo AS nps,
+        j.nps_code AS nps,
         j.sch,
-        j.clase,
+        j.pipe_class AS clase,
         j.material,
-        j.metros,
-        j.servicio,
-        j.estado_actual AS estado,
-        j.observaciones,
-        j.vigente,
+        j.length_meters AS metros,
+        j.service AS servicio,
+        j.current_status AS estado,
+        j.remarks AS observaciones,
+        j.is_current AS vigente,
         to_char(j.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(j.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
-      FROM piping.juntas j
-      JOIN core.proyectos pr ON pr.id = j.proyecto_id
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.joints j
+      JOIN core.projects pr ON pr.id = j.project_id
       LEFT JOIN piping.spools s ON s.id = j.spool_id
-      LEFT JOIN piping.isometricos i ON i.id = j.isometrico_id
-      LEFT JOIN core.personal uc ON uc.id = j.created_by
-      LEFT JOIN core.personal uu ON uu.id = j.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY j.codigo ASC;
+      LEFT JOIN piping.isometrics i ON i.id = j.isometric_id
+      LEFT JOIN core.personnel uc ON uc.id = j.created_by
+      LEFT JOIN core.personnel uu ON uu.id = j.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY j.code ASC;
     `, [proyNorm]);
 
     return result.rows;

@@ -154,7 +154,24 @@ Public Sub IrAMTORibbon(control As IRibbonControl)
     NavegarOCrearHoja "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
-' --- GRUPO 4: OPERACION (SEGUIMIENTO Y CONTROL) ---
+' --- GRUPO 4: REGISTROS DE TERRENO Y CALIDAD (QA/QC) ---
+Public Sub IrARegEjecucionesRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "REG_EJECUCIONES", "tbl_reg_ejecuciones", "UUID,ID_REGISTRO,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,FECHA_EJECUCION,ESTAMPA_SOLDADOR,NOMBRE_SOLDADOR,PROCESO_SOLDADURA,AVANCE_PORC,ESTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+End Sub
+
+Public Sub IrARegCalidadVTRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "REG_CALIDAD_VT", "tbl_reg_calidad_vt", "UUID,ID_INSPECCION,ID_JUNTA,FECHA_INSPECCION,INSPECTOR_RUT,INSPECTOR_NOMBRE,CRITERIO_ACEPTACION,RESULTADO,DEFECTO_DETECTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+End Sub
+
+Public Sub IrARegCalidadNDERibbon(control As IRibbonControl)
+    NavegarOCrearHoja "REG_CALIDAD_NDE", "tbl_reg_calidad_nde", "UUID,NUMERO_INFORME,METODO_NDE,ID_JUNTA,FECHA_ENSAYO,EMPRESA_NDE,EVALUADOR,RESULTADO,DEFECTOLOGIA,LINK_INFORME_PDF,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+End Sub
+
+Public Sub IrARegEventosSpoolRibbon(control As IRibbonControl)
+    NavegarOCrearHoja "REG_EVENTOS_SPOOL", "tbl_reg_eventos_spool", "UUID,ID_EVENTO,CODIGO_SPOOL,TIPO_EVENTO,FECHA_EVENTO,UBICACION,RESPONSABLE,GUIA_DESPACHO,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+End Sub
+
+' --- GRUPO 5: OPERACION (SEGUIMIENTO Y CONTROL) ---
 Public Sub VerAvanceRibbon(control As IRibbonControl)
     MsgBox "Modulo de Operacion - Avance de Proyecto:" & vbCrLf & vbCrLf & _
            "- Total Juntas en Faena: 15" & vbCrLf & _
@@ -344,16 +361,22 @@ Public Sub PublicarHojaActiva()
             PublicarTablaGenerica "/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "CODIGO_SOPORTE"
         Case "LIST_MTO"
             PublicarTablaGenerica "/api/piping/mto", "LIST_MTO", "tbl_mto", "CODIGO_MTO"
+        Case "REG_EJECUCIONES"
+            PublicarTablaGenerica "/api/piping/ejecuciones", "REG_EJECUCIONES", "tbl_reg_ejecuciones", "ID_REGISTRO"
+        Case "REG_CALIDAD_VT"
+            PublicarTablaGenerica "/api/piping/inspecciones-vt", "REG_CALIDAD_VT", "tbl_reg_calidad_vt", "ID_INSPECCION"
+        Case "REG_CALIDAD_NDE"
+            PublicarTablaGenerica "/api/piping/inspecciones-nde", "REG_CALIDAD_NDE", "tbl_reg_calidad_nde", "NUMERO_INFORME"
+        Case "REG_EVENTOS_SPOOL"
+            PublicarTablaGenerica "/api/piping/eventos-spool", "REG_EVENTOS_SPOOL", "tbl_reg_eventos_spool", "ID_EVENTO"
         Case Else
-            MsgBox "Para publicar cambios, debes estar posicionado en una hoja de ingenieria valida:" & vbCrLf & vbCrLf & _
-                   "- LIST_PID (P&IDs)" & vbCrLf & _
-                   "- LIST_LINEAS (Lineas)" & vbCrLf & _
-                   "- LIST_ISOMETRICOS (Isometricos)" & vbCrLf & _
-                   "- LIST_SPOOLS (Spools)" & vbCrLf & _
-                   "- LIST_JUNTAS (Juntas)" & vbCrLf & _
-                   "- LIST_VALVULAS (Valvulas)" & vbCrLf & _
-                   "- LIST_SOPORTES (Soportes)" & vbCrLf & _
-                   "- LIST_MTO (Materiales)", _
+            MsgBox "Para publicar cambios, debes estar posicionado en una hoja valida de ingenieria o registro:" & vbCrLf & vbCrLf & _
+                   "- LIST_PID, LIST_LINEAS, LIST_ISOMETRICOS, LIST_SPOOLS" & vbCrLf & _
+                   "- LIST_JUNTAS, LIST_VALVULAS, LIST_SOPORTES, LIST_MTO" & vbCrLf & _
+                   "- REG_EJECUCIONES (Ejecucion Diaria)" & vbCrLf & _
+                   "- REG_CALIDAD_VT (Inspeccion Visual)" & vbCrLf & _
+                   "- REG_CALIDAD_NDE (Ensayos NDE)" & vbCrLf & _
+                   "- REG_EVENTOS_SPOOL (Eventos Spool)", _
                    vbExclamation, "Hoja No Publicable - LukeApp"
     End Select
 End Sub
@@ -517,6 +540,26 @@ Public Sub ActualizarHojaActiva()
             Application.StatusBar = "Sincronizando únicamente MTO (Materiales)..."
             totalProcesados = DescargarYFusionarLista("/api/piping/mto", "LIST_MTO", "tbl_mto", "UUID,CODIGO_MTO,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CODIGO_SPOOL,CLASE,GRUPO_MATERIAL,DESCRIPCION,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,PROVEEDOR,ORDEN_COMPRA,RECEPCIONADO,SOLICITADO,DESPACHADO,CANTIDAD_REAL,UBICACION_ACTUAL,ESTADO_MATERIAL,PRIORIDAD_FAB,OBSERVACIONES,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_mto", idProyecto)
             MsgBox "Tabla LIST_MTO actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "REG_EJECUCIONES"
+            Application.StatusBar = "Sincronizando registros de Ejecuciones Diarias..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/ejecuciones", "REG_EJECUCIONES", "tbl_reg_ejecuciones", "UUID,ID_REGISTRO,ID_JUNTA,CODIGO_SPOOL,CODIGO_ISO,FECHA_EJECUCION,ESTAMPA_SOLDADOR,NOMBRE_SOLDADOR,PROCESO_SOLDADURA,AVANCE_PORC,ESTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "id_registro", idProyecto)
+            MsgBox "Tabla REG_EJECUCIONES actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "REG_CALIDAD_VT"
+            Application.StatusBar = "Sincronizando registros de Calidad Visual VT..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/inspecciones-vt", "REG_CALIDAD_VT", "tbl_reg_calidad_vt", "UUID,ID_INSPECCION,ID_JUNTA,FECHA_INSPECCION,INSPECTOR_RUT,INSPECTOR_NOMBRE,CRITERIO_ACEPTACION,RESULTADO,DEFECTO_DETECTADO,OBSERVACIONES,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "id_inspeccion", idProyecto)
+            MsgBox "Tabla REG_CALIDAD_VT actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "REG_CALIDAD_NDE"
+            Application.StatusBar = "Sincronizando registros de Ensayos NDE..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/inspecciones-nde", "REG_CALIDAD_NDE", "tbl_reg_calidad_nde", "UUID,NUMERO_INFORME,METODO_NDE,ID_JUNTA,FECHA_ENSAYO,EMPRESA_NDE,EVALUADOR,RESULTADO,DEFECTOLOGIA,LINK_INFORME_PDF,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "numero_informe", idProyecto)
+            MsgBox "Tabla REG_CALIDAD_NDE actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
+            
+        Case "REG_EVENTOS_SPOOL"
+            Application.StatusBar = "Sincronizando eventos y trazabilidad de Spools..."
+            totalProcesados = DescargarYFusionarLista("/api/piping/eventos-spool", "REG_EVENTOS_SPOOL", "tbl_reg_eventos_spool", "UUID,ID_EVENTO,CODIGO_SPOOL,TIPO_EVENTO,FECHA_EVENTO,UBICACION,RESPONSABLE,GUIA_DESPACHO,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "id_evento", idProyecto)
+            MsgBox "Tabla REG_EVENTOS_SPOOL actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case Else
             ' Si no está en una lista conocida, actualizar todo

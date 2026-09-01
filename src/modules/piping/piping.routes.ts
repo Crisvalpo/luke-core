@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { PipingService } from './piping.service.js';
 import { PipingSyncService } from './piping-sync.service.js';
+import { PipingRegistrosService } from './piping-registros.service.js';
 import { payloadSyncJuntasSchema } from './piping.schema.js';
 import { requireSyncAuth } from '../../shared/middlewares/authGuard.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
@@ -252,3 +253,87 @@ pipingRouter.get('/auditoria', requireSyncAuth, async (req: Request, res: Respon
     next(error);
   }
 });
+
+/**
+ * REGISTROS DE TERRENO Y CALIDAD (QA/QC)
+ */
+pipingRouter.post('/ejecuciones', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingRegistrosService.sincronizarEjecuciones(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, { mensaje: `Sincronización exitosa: ${resultado.procesados} ejecuciones procesadas.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.get('/ejecuciones', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const registros = await PipingRegistrosService.obtenerEjecuciones(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: registros.length, registros });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.post('/inspecciones-vt', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingRegistrosService.sincronizarInspeccionesVT(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, { mensaje: `Sincronización exitosa: ${resultado.procesados} inspecciones VT procesadas.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.get('/inspecciones-vt', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const registros = await PipingRegistrosService.obtenerInspeccionesVT(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: registros.length, registros });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.post('/inspecciones-nde', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingRegistrosService.sincronizarInspeccionesNDE(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, { mensaje: `Sincronización exitosa: ${resultado.procesados} ensayos NDE procesados.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.get('/inspecciones-nde', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const registros = await PipingRegistrosService.obtenerInspeccionesNDE(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: registros.length, registros });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.post('/eventos-spool', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const resultado = await PipingRegistrosService.sincronizarEventosSpool(usuarioWindows, req.body);
+    return sendSuccess(res, resultado, 200, { mensaje: `Sincronización exitosa: ${resultado.procesados} eventos de spool procesados.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+pipingRouter.get('/eventos-spool', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const registros = await PipingRegistrosService.obtenerEventosSpool(idProyecto);
+    return sendSuccess(res, { id_proyecto: idProyecto, total: registros.length, registros });
+  } catch (error) {
+    next(error);
+  }
+});
+
