@@ -198,7 +198,7 @@ function renderizarTenants(tenants) {
           <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
             📊 Cargar Excel
           </button>
-          <button class="btn btn-primary" onclick="verDetalleTenant('${t.slug}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+          <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${t.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
             🔍 Faenas
           </button>
         </div>
@@ -457,8 +457,115 @@ async function eliminarTenantActual() {
   }
 }
 
-function verDetalleTenant(slug) {
-  alert(`Cargando faenas y dotación para el tenant: ${slug.toUpperCase()}`);
+let tenantActualFaenas = null;
+
+async function abrirModalFaenas(tenantId, slug, razonSocial) {
+  tenantActualFaenas = { id: tenantId, slug: slug, razonSocial: razonSocial };
+  document.getElementById('faenas-subtitle').innerText = `Empresa: ${razonSocial || slug}`;
+  document.getElementById('faena-tenant-id').value = tenantId;
+  document.getElementById('modal-faenas').classList.add('active');
+  await cargarFaenasTenant(tenantId);
+}
+
+function cerrarModalFaenas() {
+  document.getElementById('modal-faenas').classList.remove('active');
+}
+
+async function cargarFaenasTenant(tenantId) {
+  const container = document.getElementById('faenas-lista-container');
+  container.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">Cargando faenas...</div>';
+
+  try {
+    const res = await fetch('/api/v1/proyectos', {
+      headers: {
+        ...getAuthHeaders(),
+        'x-tenant-id': tenantId
+      }
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al cargar faenas');
+
+    const proyectos = json.data || [];
+
+    if (proyectos.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--color-text-muted);">No hay faenas registradas para esta empresa. Crea la primera abajo.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-container); border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #f8fafc; text-align: left; border-bottom: 1px solid var(--border-container);">
+              <th style="padding: 0.5rem 0.75rem;">Código</th>
+              <th style="padding: 0.5rem 0.75rem;">Proyecto / Faena</th>
+              <th style="padding: 0.5rem 0.75rem;">Ubicación</th>
+              <th style="padding: 0.5rem 0.75rem;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${proyectos.map(p => `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: var(--color-primary);">${p.codigo}</td>
+                <td style="padding: 0.5rem 0.75rem;">${p.nombre}</td>
+                <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">${p.ubicacion || '-'}</td>
+                <td style="padding: 0.5rem 0.75rem;">
+                  <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: ${p.estado === 'en_ejecucion' ? '#ecfdf5; color: #059669;' : '#f3f4f6; color: #4b5563;'}">${p.estado}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div style="text-align: center; padding: 1rem; color: #c21a25;">❌ Error: ${err.message}</div>`;
+  }
+}
+
+async function ejecutarCrearFaena(event) {
+  event.preventDefault();
+  const btn = document.getElementById('btn-submit-faena');
+  const tenantId = document.getElementById('faena-tenant-id').value;
+
+  const payload = {
+    codigo: document.getElementById('faena-codigo').value.trim(),
+    nombre: document.getElementById('faena-nombre').value.trim(),
+    ubicacion: document.getElementById('faena-ubicacion').value.trim() || undefined,
+    centro_costo: document.getElementById('faena-centro-costo').value.trim() || undefined,
+    estado: 'en_ejecucion',
+    metadata: {}
+  };
+
+  btn.disabled = true;
+  btn.innerText = 'Guardando...';
+
+  try {
+    const res = await fetch('/api/v1/proyectos', {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'x-tenant-id': tenantId
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al crear la faena');
+
+    document.getElementById('form-crear-faena').reset();
+    document.getElementById('faena-tenant-id').value = tenantId;
+    alert(`✅ Proyecto / Faena '${payload.nombre}' creado exitosamente.`);
+    await cargarFaenasTenant(tenantId);
+    await cargarTenants();
+
+  } catch (error) {
+    alert(`❌ ${error.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Guardar Faena';
+  }
 }
 
 // -----------------------------------------------------------------------------
