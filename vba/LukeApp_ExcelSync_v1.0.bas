@@ -143,11 +143,11 @@ Public Sub IrAJuntasRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrAValvulasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+    NavegarOCrearHoja "LIST_VALVULAS", "tbl_valvulas", "UUID,VALVE_TAG,LINE_TAG,ISO_TAG,VALVE_TYPE,PIPING_TAG,INSTRUMENTATION_TAG,NOMINAL_SIZE,RATING_CLASS,END_CONNECTION,BODY_MATERIAL,ACTUATOR_TYPE,MODEL_REF_NO,CWA,CWP,IWP,PWP,VALVE_STATUS,REMARKS,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrASoportesRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+    NavegarOCrearHoja "LIST_SOPORTES", "tbl_soportes", "UUID,SUPPORT_TAG,ISO_TAG,LINE_TAG,SUPPORT_TYPE,STANDARD_DETAIL_NO,NOMINAL_SIZE,WEIGHT_KG,MATERIAL,CWA,CWP,IWP,SUPPLY_SCOPE,SUPPORT_STATUS,REMARKS,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
 End Sub
 
 Public Sub IrAMTORibbon(control As IRibbonControl)
@@ -356,9 +356,9 @@ Public Sub PublicarHojaActiva()
         Case "LIST_JUNTAS"
             PublicarTablaGenerica "/api/piping/lista-juntas", "LIST_JUNTAS", "tbl_juntas", "ID_JUNTA"
         Case "LIST_VALVULAS"
-            PublicarTablaGenerica "/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "CODIGO_VALVULA"
+            PublicarTablaGenerica "/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "VALVE_TAG"
         Case "LIST_SOPORTES"
-            PublicarTablaGenerica "/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "CODIGO_SOPORTE"
+            PublicarTablaGenerica "/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "SUPPORT_TAG"
         Case "LIST_MTO"
             PublicarTablaGenerica "/api/piping/mto", "LIST_MTO", "tbl_mto", "CODIGO_MTO"
         Case "REG_EJECUCIONES"
@@ -528,12 +528,12 @@ Public Sub ActualizarHojaActiva()
             
         Case "LIST_VALVULAS"
             Application.StatusBar = "Sincronizando únicamente Válvulas..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,CODIGO_VALVULA,ID_MTO,CODIGO_LINEA,CLASE,TAG_PIPING,TAG_INSTRUMENTACION,NPS,CANTIDAD,DESCRIPCION,CORRELATIVO_MAQUETA,NUMERO_ACONEX,DIAGRAMA,ESTADO,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_valvula", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/valvulas", "LIST_VALVULAS", "tbl_valvulas", "UUID,VALVE_TAG,LINE_TAG,ISO_TAG,VALVE_TYPE,PIPING_TAG,INSTRUMENTATION_TAG,NOMINAL_SIZE,RATING_CLASS,END_CONNECTION,BODY_MATERIAL,ACTUATOR_TYPE,MODEL_REF_NO,CWA,CWP,IWP,PWP,VALVE_STATUS,REMARKS,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "valve_tag", idProyecto)
             MsgBox "Tabla LIST_VALVULAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_SOPORTES"
             Application.StatusBar = "Sincronizando únicamente Soportes..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,CODIGO_SOPORTE,ITEM_NUMERO,CWA,CWP,EWP,PWP,CODIGO_LINEA,CODIGO_ISO,CLASE,TIPO_SOPORTE,NPS,CANTIDAD,UNIDAD,PESO_KG,SUMINISTRO,ESTADO,OBSERVACIONES,VIGENTE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "codigo_soporte", idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/soportes", "LIST_SOPORTES", "tbl_soportes", "UUID,SUPPORT_TAG,ISO_TAG,LINE_TAG,SUPPORT_TYPE,STANDARD_DETAIL_NO,NOMINAL_SIZE,WEIGHT_KG,MATERIAL,CWA,CWP,IWP,SUPPLY_SCOPE,SUPPORT_STATUS,REMARKS,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "support_tag", idProyecto)
             MsgBox "Tabla LIST_SOPORTES actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_MTO"

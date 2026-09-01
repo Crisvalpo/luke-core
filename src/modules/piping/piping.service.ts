@@ -383,79 +383,88 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista completa de Válvulas de piping con atributos MTO y auditoría
+   * Obtiene la lista completa de Válvulas de piping con capa AWP y atributos mecánicos
    */
   static async obtenerValvulasProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         v.id AS uuid,
-        v.codigo AS codigo_valvula,
-        v.id_mto,
-        COALESCE(l.codigo, v.codigo_linea, '') AS codigo_linea,
-        v.clase,
-        v.tag_piping,
-        v.tag_instrumentacion,
-        v.diametro_nps AS nps,
-        v.cantidad,
-        v.descripcion,
-        v.correlativo_maqueta,
-        v.numero_aconex,
-        v.diagrama,
-        v.estado_actual AS estado,
-        v.vigente,
+        v.code AS valve_tag,
+        v.code AS codigo_valvula,
+        COALESCE(l.code, v.line_code, '') AS line_tag,
+        COALESCE(l.code, v.line_code, '') AS codigo_linea,
+        COALESCE(v.iso_code, '') AS iso_tag,
+        COALESCE(v.valve_type, '') AS valve_type,
+        COALESCE(v.piping_tag, '') AS piping_tag,
+        COALESCE(v.instrumentation_tag, '') AS instrumentation_tag,
+        COALESCE(v.nps_diameter, v.diameter, '') AS nominal_size,
+        COALESCE(v.rating, '') AS rating_class,
+        COALESCE(v.end_connection, '') AS end_connection,
+        COALESCE(v.body_material, '') AS body_material,
+        COALESCE(v.actuator_type, '') AS actuator_type,
+        COALESCE(v.model_ref_no, '') AS model_ref_no,
+        COALESCE(v.cwa, '') AS cwa,
+        COALESCE(v.cwp, '') AS cwp,
+        COALESCE(v.iwp, '') AS iwp,
+        COALESCE(v.pwp, '') AS pwp,
+        COALESCE(v.current_status, 'POR_RECIBIR') AS valve_status,
+        COALESCE(v.current_status, 'POR_RECIBIR') AS estado,
+        COALESCE(v.description, '') AS remarks,
+        v.is_current AS vigente,
         to_char(v.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(v.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(v.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
-      FROM piping.valvulas v
-      JOIN core.proyectos pr ON pr.id = v.proyecto_id
-      LEFT JOIN piping.lineas l ON l.id = v.linea_id
-      LEFT JOIN core.personal uc ON uc.id = v.created_by
-      LEFT JOIN core.personal uu ON uu.id = v.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY v.codigo ASC;
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.valves v
+      JOIN core.projects pr ON pr.id = v.project_id
+      LEFT JOIN piping.lines l ON l.id = v.line_id
+      LEFT JOIN core.personnel uc ON uc.id = v.created_by
+      LEFT JOIN core.personnel uu ON uu.id = v.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY v.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
 
   /**
-   * Obtiene la lista completa de Soportes de piping con empaquetamiento AWP y auditoría
+   * Obtiene la lista completa de Soportes de piping con empaquetamiento AWP y detalle típico
    */
   static async obtenerSoportesProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         s.id AS uuid,
-        s.codigo AS codigo_soporte,
-        s.item_numero,
-        s.cwa,
-        s.cwp,
-        s.ewp,
-        s.pwp,
-        COALESCE(l.codigo, s.codigo_linea, '') AS codigo_linea,
-        COALESCE(s.codigo_iso, '') AS codigo_iso,
-        s.clase,
-        s.tipo_soporte,
-        s.diametro_nps AS nps,
-        s.cantidad,
-        s.unidad,
-        s.peso_kg,
-        s.suministro,
-        s.estado_actual AS estado,
-        s.observaciones,
-        s.vigente,
+        s.code AS support_tag,
+        s.code AS codigo_soporte,
+        COALESCE(s.iso_code, '') AS iso_tag,
+        COALESCE(s.iso_code, '') AS codigo_iso,
+        COALESCE(l.code, s.line_code, '') AS line_tag,
+        COALESCE(l.code, s.line_code, '') AS codigo_linea,
+        COALESCE(s.support_type, '') AS support_type,
+        COALESCE(s.standard_detail_no, '') AS standard_detail_no,
+        COALESCE(s.nps_diameter, '') AS nominal_size,
+        COALESCE(s.weight_kg, 0) AS weight_kg,
+        COALESCE(s.material, '') AS material,
+        COALESCE(s.cwa, '') AS cwa,
+        COALESCE(s.cwp, '') AS cwp,
+        COALESCE(s.iwp, '') AS iwp,
+        COALESCE(s.supply_scope, 'PIPING') AS supply_scope,
+        COALESCE(s.current_status, 'POR_FABRICAR') AS support_status,
+        COALESCE(s.current_status, 'POR_FABRICAR') AS estado,
+        COALESCE(s.remarks, '') AS remarks,
+        s.is_current AS vigente,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
-      FROM piping.soportes s
-      JOIN core.proyectos pr ON pr.id = s.proyecto_id
-      LEFT JOIN piping.lineas l ON l.id = s.linea_id
-      LEFT JOIN core.personal uc ON uc.id = s.created_by
-      LEFT JOIN core.personal uu ON uu.id = s.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY s.codigo ASC;
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.supports s
+      JOIN core.projects pr ON pr.id = s.project_id
+      LEFT JOIN piping.lines l ON l.id = s.line_id
+      LEFT JOIN core.personnel uc ON uc.id = s.created_by
+      LEFT JOIN core.personnel uu ON uu.id = s.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY s.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
