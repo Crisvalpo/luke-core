@@ -8,8 +8,8 @@ export class ProyectosService {
   /**
    * Listar proyectos de un tenant con métricas agregadas
    */
-  static async listar(tenantId: string) {
-    const sql = `
+  static async listar(tenantId: string, userId?: string, userRol?: string) {
+    let sql = `
       SELECT 
         p.*,
         COUNT(DISTINCT f.id) AS total_frentes,
@@ -20,10 +20,31 @@ export class ProyectosService {
       LEFT JOIN core.personal per ON per.proyecto_id = p.id AND per.activo = TRUE
       LEFT JOIN core.equipos eq ON eq.proyecto_id = p.id AND eq.activo = TRUE
       WHERE p.tenant_id = $1 AND p.activo = TRUE
+    `;
+    const params: any[] = [tenantId];
+
+    // Si no es Super-Admin ni Fundador/Dueño de Empresa, filtrar solo los proyectos autorizados
+    const esAdminGlobalEmpresa = userRol === 'super_admin' || userRol === 'fundador' || userRol === 'owner' || userRol === 'admin_empresa';
+
+    if (!esAdminGlobalEmpresa && userId) {
+      params.push(userId);
+      sql += `
+        AND (
+          p.id = (SELECT proyecto_id FROM core.personal WHERE id::text = $${params.length} OR auth_user_id::text = $${params.length} LIMIT 1)
+          OR p.id IN (
+            SELECT pp.proyecto_id FROM core.personal_proyectos pp
+            JOIN core.personal pers ON pers.id = pp.personal_id
+            WHERE pers.id::text = $${params.length} OR pers.auth_user_id::text = $${params.length}
+          )
+        )
+      `;
+    }
+
+    sql += `
       GROUP BY p.id
       ORDER BY p.nombre ASC;
     `;
-    const result = await dbPool.query(sql, [tenantId]);
+    const result = await dbPool.query(sql, params);
     return result.rows;
   }
 

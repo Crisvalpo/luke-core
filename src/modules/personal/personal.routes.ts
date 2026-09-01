@@ -111,6 +111,39 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
       `, [nuevoPersonal.id, body.proyecto_id, body.puede_sincronizar_excel]);
     }
 
+    // Si se especificó email, enviar invitación oficial de Supabase Auth
+    if (body.email) {
+      try {
+        const { supabaseAdmin } = await import('../../config/supabase.js');
+        const emailNorm = body.email.toLowerCase().trim();
+        const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailNorm, {
+          redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html',
+          data: {
+            nombre: body.nombre_completo,
+            role: body.rol_organizacional,
+            tenant_id: body.tenant_id
+          }
+        });
+
+        if (authData?.user) {
+          await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [authData.user.id, nuevoPersonal.id]);
+          console.log(`📧 [EMAIL] Invitación enviada a ${emailNorm} para rol ${body.rol_organizacional}`);
+        } else if (inviteErr) {
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === emailNorm);
+          if (existingUser) {
+            await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [existingUser.id, nuevoPersonal.id]);
+            await supabaseAdmin.auth.resetPasswordForEmail(emailNorm, {
+              redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html'
+            });
+            console.log(`📧 [EMAIL] Correo de acceso enviado a usuario existente: ${emailNorm}`);
+          }
+        }
+      } catch (authErr: any) {
+        console.warn('⚠️ Aviso Supabase Auth invite en personal:', authErr.message);
+      }
+    }
+
     return sendSuccess(res, nuevoPersonal, 201, { mensaje: `Personal '${nuevoPersonal.nombre_completo}' registrado con éxito.` });
   } catch (error) {
     next(error);

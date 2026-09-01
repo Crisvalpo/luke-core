@@ -14,7 +14,7 @@ export const proyectosRouter = Router();
  */
 proyectosRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const proyectos = await ProyectosService.listar(req.tenant!.id);
+    const proyectos = await ProyectosService.listar(req.tenant!.id, req.user?.id, req.user?.rol);
     return sendSuccess(res, proyectos);
   } catch (error) {
     next(error);

@@ -285,6 +285,9 @@ async function renderizarVistaProyectosTenant(tenant) {
             <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
               📊 Cargar Dotación
             </button>
+            <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+              👤 Invitar Admin
+            </button>
             <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
               ⚙️ Gestionar Faenas
             </button>
@@ -660,6 +663,99 @@ async function ejecutarCrearFaena(event) {
   } finally {
     btn.disabled = false;
     btn.innerText = 'Guardar Faena';
+  }
+}
+
+// -----------------------------------------------------------------------------
+// INVITACIÓN DE ADMINISTRADORES (PROYECTO O FUNDADOR)
+// -----------------------------------------------------------------------------
+async function abrirModalInvitarAdmin(tenantId, proyectoIdOpcional) {
+  document.getElementById('admin-tenant-id').value = tenantId;
+  const selectProy = document.getElementById('admin-proyecto-select');
+  selectProy.innerHTML = '<option value="">Cargando proyectos...</option>';
+
+  try {
+    const res = await fetch('/api/v1/proyectos', {
+      headers: { ...getAuthHeaders(), 'x-tenant-id': tenantId }
+    });
+    const json = await res.json();
+    const proyectos = json.data || [];
+
+    selectProy.innerHTML = '<option value="">Selecciona el proyecto...</option>' + 
+      proyectos.map(p => `<option value="${p.id}">${p.codigo} — ${p.nombre}</option>`).join('');
+
+    if (proyectoIdOpcional) {
+      selectProy.value = proyectoIdOpcional;
+    }
+  } catch {
+    selectProy.innerHTML = '<option value="">Error cargando proyectos</option>';
+  }
+
+  cambiarNivelRolAdmin();
+  document.getElementById('modal-invitar-admin').classList.add('active');
+}
+
+function cerrarModalInvitarAdmin() {
+  document.getElementById('modal-invitar-admin').classList.remove('active');
+}
+
+function cambiarNivelRolAdmin() {
+  const rol = document.getElementById('admin-rol').value;
+  const groupProy = document.getElementById('group-admin-proyecto');
+  const proySelect = document.getElementById('admin-proyecto-select');
+
+  if (rol === 'fundador') {
+    groupProy.style.display = 'none';
+    proySelect.required = false;
+  } else {
+    groupProy.style.display = 'block';
+    proySelect.required = true;
+  }
+}
+
+async function ejecutarInvitarAdmin(event) {
+  event.preventDefault();
+  const btn = document.getElementById('btn-submit-invitar-admin');
+  const tenantId = document.getElementById('admin-tenant-id').value;
+  const rol = document.getElementById('admin-rol').value;
+  const proyectoId = document.getElementById('admin-proyecto-select').value;
+
+  const payload = {
+    tenant_id: tenantId,
+    proyecto_id: rol === 'admin_proyecto' ? proyectoId : undefined,
+    nombre_completo: document.getElementById('admin-nombre').value.trim(),
+    rut: document.getElementById('admin-rut').value.trim(),
+    email: document.getElementById('admin-email').value.trim().toLowerCase(),
+    telefono_whatsapp: document.getElementById('admin-telefono').value.trim(),
+    rol_organizacional: rol,
+    cargo: document.getElementById('admin-cargo').value.trim() || 'Administrador',
+    usuario_windows: document.getElementById('admin-usuario-windows').value.trim() || undefined,
+    puede_sincronizar_excel: document.getElementById('admin-puede-sync').checked
+  };
+
+  btn.disabled = true;
+  btn.innerText = 'Enviando invitación...';
+
+  try {
+    const res = await fetch('/api/v1/personal', {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'x-tenant-id': tenantId },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al registrar administrador');
+
+    alert(`✅ Invitación enviada exitosamente a ${payload.email}.\n\nSe ha generado su acceso seguro para el rol de ${rol === 'fundador' ? 'Fundador / Gerente' : 'Administrador de Proyecto'}.`);
+    cerrarModalInvitarAdmin();
+    document.getElementById('form-invitar-admin').reset();
+    await cargarTenants();
+
+  } catch (error) {
+    alert(`❌ ${error.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Enviar Invitación';
   }
 }
 
