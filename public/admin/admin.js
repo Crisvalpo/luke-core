@@ -29,11 +29,21 @@ function verificarAutenticacion() {
       // Si no es Super-Admin, adaptar la vista a su Entorno de Empresa
       if (user.rol !== 'super_admin') {
         const btnNuevo = document.getElementById('btn-nuevo-cliente');
-        if (btnNuevo) btnNuevo.style.display = 'none';
+        if (btnNuevo) {
+          btnNuevo.innerText = '➕ Nuevo Proyecto';
+          btnNuevo.onclick = () => abrirModalFaenas(user.tenant_id, user.tenant_slug, user.tenant_razon_social);
+          btnNuevo.style.display = 'inline-flex';
+        }
+
+        const barBusqueda = document.getElementById('action-bar-busqueda');
+        if (barBusqueda) barBusqueda.style.display = 'none';
+
+        const navTenants = document.getElementById('nav-link-tenants');
+        if (navTenants) navTenants.innerText = '🏗️ Proyectos & Faenas';
 
         const topbarTitulo = document.getElementById('topbar-titulo');
         if (topbarTitulo) {
-          topbarTitulo.innerText = `Mi Entorno — ${user.tenant_razon_social || 'Panel de Empresa'}`;
+          topbarTitulo.innerText = `Mi Empresa — ${user.tenant_razon_social || user.tenant_slug || 'Panel de Proyectos'}`;
         }
 
         const kpiLabel = document.getElementById('kpi-label-tenants');
@@ -133,6 +143,18 @@ function actualizarKPIs(tenants) {
 
 function renderizarTenants(tenants) {
   const container = document.getElementById('tenants-container');
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
+  }
+
+  // Si el usuario es Administrador de una Empresa específica (no Super-Admin global)
+  if (user && user.rol !== 'super_admin' && tenants.length > 0) {
+    renderizarVistaProyectosTenant(tenants[0]);
+    return;
+  }
+
   document.getElementById('contador-mostrados').innerText = tenants.length;
 
   if (tenants.length === 0) {
@@ -205,6 +227,79 @@ function renderizarTenants(tenants) {
       </article>
     `;
   }).join('');
+}
+
+async function renderizarVistaProyectosTenant(tenant) {
+  const container = document.getElementById('tenants-container');
+  container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">Cargando proyectos y faenas...</div>';
+
+  try {
+    const res = await fetch('/api/v1/proyectos', {
+      headers: {
+        ...getAuthHeaders(),
+        'x-tenant-id': tenant.id
+      }
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al cargar proyectos');
+
+    const proyectos = json.data || [];
+
+    if (proyectos.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-container); border: 1px dashed var(--border-container); border-radius: 12px;">
+          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">No tienes proyectos o faenas registradas</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Crea tu primer proyecto para empezar a operar con Excel y WhatsApp.</p>
+          <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')">
+            ➕ Crear Primer Proyecto
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = proyectos.map(p => {
+      return `
+        <article class="tenant-card" style="border-top-color: #10b981;">
+          <div class="tenant-header">
+            <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+              <div class="brand-logo" style="width: 44px; height: 44px; font-size: 0.95rem; background: #059669; border-radius: 8px; flex-shrink: 0; font-weight: 700;">
+                ${p.codigo.substring(0, 4)}
+              </div>
+              <div class="tenant-title" style="min-width: 0;">
+                <h3 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.nombre}</h3>
+                <div class="tenant-rut">Código: <strong>${p.codigo}</strong> • CC: ${p.centro_costo || 'N/A'}</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex-shrink: 0;">
+              <span class="module-pill" style="background: #dcfce7; color: #16a34a; border-color: #86efac;">🟢 ${p.estado || 'Activo'}</span>
+            </div>
+          </div>
+
+          <div style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.5rem; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+            📍 <strong>Ubicación:</strong> ${p.ubicacion || 'Faena Principal'}
+          </div>
+
+          <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+            <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+              📊 Cargar Dotación
+            </button>
+            <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+              ⚙️ Gestionar Faenas
+            </button>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+  } catch (err) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; padding: 1.5rem; border-radius: 8px; text-align: center;">
+        ❌ Error al cargar proyectos: ${err.message}
+      </div>
+    `;
+  }
 }
 
 function filtrarTenants() {
