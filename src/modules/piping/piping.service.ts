@@ -252,81 +252,97 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista completa de Líneas con auditoría (17 columnas + auditoría)
+   * Obtiene la lista completa de Líneas con auditoría y variables de diseño
    */
   static async obtenerLineasProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         l.id AS uuid,
-        l.codigo AS codigo_linea,
-        c.codigo AS clase,
-        l.nps_codigo AS nps,
-        f.codigo AS servicio,
-        l.material,
-        COALESCE(l.plano_cliente, l.plano_codelco, '') AS plano_cliente,
-        l.metros,
-        l.origen,
-        l.destino,
-        l.temperatura_diseno AS temp_diseno,
-        l.presion_diseno,
-        l.tipo_prueba,
-        l.esquema_pintura,
-        l.ral,
-        l.revestimiento_interior,
-        l.aislacion,
-        l.observaciones,
-        l.vigente,
+        l.code AS line_tag,
+        l.code AS codigo_linea,
+        COALESCE(l.service_code, '') AS service_code,
+        COALESCE(l.nps_code, '') AS nominal_size,
+        COALESCE(l.pipe_class, '') AS piping_class,
+        COALESCE(l.material, '') AS material_base,
+        COALESCE(l.pid_reference, '') AS pid_reference,
+        COALESCE(l.system, '') AS sistema,
+        COALESCE(l.sub_system, '') AS sub_sistema,
+        COALESCE(l.origin_point, l.origin, '') AS origin_point,
+        COALESCE(l.destination_point, l.destination, '') AS destination_point,
+        COALESCE(l.route_description, l.remarks, '') AS route_description,
+        COALESCE(l.length_meters, 0) AS total_length,
+        COALESCE(l.design_pressure_bar, l.design_pressure, 0) AS design_pressure,
+        COALESCE(l.design_temperature, 0) AS design_temp,
+        COALESCE(l.test_pressure_bar, 0) AS test_pressure,
+        COALESCE(l.operating_pressure_normal, '') AS operating_pressure_normal,
+        COALESCE(l.operating_temp_normal, '') AS operating_temp_normal,
+        COALESCE(l.painting_spec, '') AS painting_spec,
+        COALESCE(l.internal_coating, '') AS internal_lining,
+        COALESCE(l.insulation, '') AS insulation_spec,
+        COALESCE(l.heat_tracing, '') AS tracing_spec,
+        COALESCE(l.ndt_level, '') AS ndt_level,
+        COALESCE(l.pwht_required, FALSE) AS pwht_required,
+        COALESCE(l.cwa, '') AS cwa,
+        COALESCE(l.cwp, '') AS cwp,
+        COALESCE(l.status, 'VIGENTE') AS line_status,
+        COALESCE(l.data_source, '') AS data_source,
+        l.is_current AS vigente,
         to_char(l.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(l.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
-      FROM piping.lineas l
-      JOIN core.proyectos pr ON pr.id = l.proyecto_id
-      LEFT JOIN piping.cat_fluidos_proyecto f ON f.id = l.fluido_proyecto_id
-      LEFT JOIN piping.cat_clases_proyecto c ON c.id = l.clase_proyecto_id
-      LEFT JOIN core.personal uc ON uc.id = l.created_by
-      LEFT JOIN core.personal uu ON uu.id = l.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY l.codigo ASC;
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.lines l
+      JOIN core.projects pr ON pr.id = l.project_id
+      LEFT JOIN core.personnel uc ON uc.id = l.created_by
+      LEFT JOIN core.personnel uu ON uu.id = l.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY l.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
 
   /**
-   * Obtiene la lista completa de Isométricos con atributos de faena y auditoría
+   * Obtiene la lista completa de Isométricos con atributos de plano y enlace documental
    */
   static async obtenerIsometricosProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         i.id AS uuid,
-        i.codigo AS codigo_iso,
-        COALESCE(l.codigo, '') AS codigo_linea,
-        i.hoja,
-        i.revision_vigente AS revision,
-        i.plano_contratista,
-        COALESCE(i.plano_cliente, i.plano_codelco, '') AS plano_cliente,
-        i.clase,
-        i.nps,
-        i.empresa_ingenieria AS ingenieria,
-        i.condicion,
-        i.spooleado,
-        i.estado_documental AS estado,
-        i.distribuido,
-        i.observacion AS observaciones,
-        i.vigente,
+        i.code AS iso_tag,
+        i.code AS codigo_iso,
+        COALESCE(l.code, i.line_code, '') AS line_tag,
+        COALESCE(l.code, i.line_code, '') AS codigo_linea,
+        i.sheet_no,
+        COALESCE(i.current_revision, '0') AS current_revision,
+        COALESCE(i.current_revision, '0') AS revision,
+        COALESCE(i.client_drawing_no, '') AS client_drawing_no,
+        COALESCE(i.contractor_drawing_no, '') AS contractor_drawing_no,
+        COALESCE(i.engineering_company, '') AS engineering_company,
+        COALESCE(i.line_segment, 'PR') AS line_segment,
+        COALESCE(i.condition, 'PREFABRICADO EN TALLER') AS condition,
+        COALESCE(i.spooling_status, 'SPOOLEADO') AS spooling_status,
+        COALESCE(i.distribution_status, 'EMITIDO_IFC') AS distribution_status,
+        COALESCE(i.test_pack_id, '') AS test_pack_id,
+        COALESCE(i.cwa, l.cwa, '') AS cwa,
+        COALESCE(i.cwp, l.cwp, '') AS cwp,
+        COALESCE(i.status, 'VIGENTE') AS iso_status,
+        COALESCE(i.status, 'VIGENTE') AS estado,
+        COALESCE(i.remarks, '') AS remarks,
+        COALESCE(i.document_url, '') AS document_url,
+        i.is_current AS vigente,
         to_char(i.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(i.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
-      FROM piping.isometricos i
-      JOIN core.proyectos pr ON pr.id = i.proyecto_id
-      LEFT JOIN piping.lineas l ON l.id = i.linea_id
-      LEFT JOIN core.personal uc ON uc.id = i.created_by
-      LEFT JOIN core.personal uu ON uu.id = i.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY i.codigo ASC, i.hoja ASC;
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
+      FROM piping.isometrics i
+      JOIN core.projects pr ON pr.id = i.project_id
+      LEFT JOIN piping.lines l ON l.id = i.line_id
+      LEFT JOIN core.personnel uc ON uc.id = i.created_by
+      LEFT JOIN core.personnel uu ON uu.id = i.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY i.code ASC, i.sheet_no ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
