@@ -337,3 +337,31 @@ pipingRouter.get('/eventos-spool', requireSyncAuth, async (req: Request, res: Re
   }
 });
 
+/**
+ * GET /api/piping/config — Obtiene la configuración Día 0 del proyecto (columnas activas y flags)
+ */
+pipingRouter.get('/config', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const idProyecto = req.query.id_proyecto ? String(req.query.id_proyecto).trim() : '501';
+    const { PipingConfigService } = await import('./piping-config.service.js');
+    const config = await PipingConfigService.obtenerConfiguracion(idProyecto);
+    return sendSuccess(res, config);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/piping/config — Guarda o actualiza la configuración Día 0 del proyecto
+ */
+pipingRouter.post('/config', requireSyncAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioWindows = req.user?.sub || 'DESCONOCIDO';
+    const { PipingConfigService } = await import('./piping-config.service.js');
+    const config = await PipingConfigService.guardarConfiguracion(usuarioWindows, req.body);
+    return sendSuccess(res, config, 200, { mensaje: 'Configuración de proyecto actualizada exitosamente.' });
+  } catch (error) {
+    next(error);
+  }
+});
+

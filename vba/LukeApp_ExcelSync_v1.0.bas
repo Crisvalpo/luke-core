@@ -127,7 +127,11 @@ Public Sub IrAPIDRibbon(control As IRibbonControl)
 End Sub
 
 Public Sub IrALineasRibbon(control As IRibbonControl)
-    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", "UUID,LINE_TAG,SERVICE_CODE,NOMINAL_SIZE,PIPING_CLASS,MATERIAL_BASE,PID_REFERENCE,SISTEMA,SUB_SISTEMA,ORIGIN_POINT,DESTINATION_POINT,ROUTE_DESCRIPTION,TOTAL_LENGTH,DESIGN_PRESSURE,DESIGN_TEMP,TEST_PRESSURE,PAINTING_SPEC,INTERNAL_LINING,INSULATION_SPEC,TRACING_SPEC,NDT_LEVEL,PWHT_REQUIRED,LINE_STATUS,DATA_SOURCE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+    Dim idProyecto As String, cols As String
+    idProyecto = LeerDeSistema("PROYECTO_CODIGO")
+    If idProyecto = "" Then idProyecto = "501"
+    cols = ObtenerColumnasLineasProyecto(idProyecto)
+    NavegarOCrearHoja "LIST_LINEAS", "tbl_lineas", cols
 End Sub
 
 Public Sub IrAIsometricosRibbon(control As IRibbonControl)
@@ -508,7 +512,9 @@ Public Sub ActualizarHojaActiva()
             
         Case "LIST_LINEAS"
             Application.StatusBar = "Sincronizando únicamente Líneas..."
-            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", "UUID,LINE_TAG,SERVICE_CODE,NOMINAL_SIZE,PIPING_CLASS,MATERIAL_BASE,PID_REFERENCE,SISTEMA,SUB_SISTEMA,ORIGIN_POINT,DESTINATION_POINT,ROUTE_DESCRIPTION,TOTAL_LENGTH,DESIGN_PRESSURE,DESIGN_TEMP,TEST_PRESSURE,PAINTING_SPEC,INTERNAL_LINING,INSULATION_SPEC,TRACING_SPEC,NDT_LEVEL,PWHT_REQUIRED,LINE_STATUS,DATA_SOURCE,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR", "line_tag", idProyecto)
+            Dim colsLines As String
+            colsLines = ObtenerColumnasLineasProyecto(idProyecto)
+            totalProcesados = DescargarYFusionarLista("/api/piping/lineas", "LIST_LINEAS", "tbl_lineas", colsLines, "line_tag", idProyecto)
             MsgBox "Tabla LIST_LINEAS actualizada exitosamente (" & totalProcesados & " registros).", vbInformation, "LukeApp Sync Rápido"
             
         Case "LIST_ISOMETRICOS"
@@ -1752,4 +1758,66 @@ Private Function LimpiarFechaChile(ByVal f As String) As String
     If InStr(f, ".") > 0 Then f = Left(f, InStr(f, ".") - 1)
     If InStr(f, "Z") > 0 Then f = Replace(f, "Z", "")
     LimpiarFechaChile = Trim(f)
+End Function
+
+Private Function ObtenerColumnasLineasProyecto(ByVal idProyecto As String) As String
+    Dim http As Object, jsonResp As String
+    Dim defaultCols As String, colList As String
+    
+    defaultCols = "UUID,LINE_TAG,SERVICE_CODE,NOMINAL_SIZE,PIPING_CLASS,MATERIAL_BASE,PID_REFERENCE,SISTEMA,ORIGIN_POINT,DESTINATION_POINT,TOTAL_LENGTH,DESIGN_PRESSURE,DESIGN_TEMP,TEST_PRESSURE,PAINTING_SPEC,NDT_LEVEL,LINE_STATUS,FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+    
+    If Trim(idProyecto) = "" Then
+        ObtenerColumnasLineasProyecto = defaultCols
+        Exit Function
+    End If
+    
+    On Error GoTo Fallback
+    If Not AsegurarTokenValido() Then
+        ObtenerColumnasLineasProyecto = defaultCols
+        Exit Function
+    End If
+    
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.setTimeouts 5000, 5000, 10000, 15000
+    http.Open "GET", API_BASE_URL & "/api/piping/config?id_proyecto=" & EscaparJson(idProyecto), False
+    http.setRequestHeader "Authorization", "Bearer " & m_JwtToken
+    http.send
+    
+    If http.Status = 200 Then
+        jsonResp = http.responseText
+        colList = ExtraerArrayJsonComoCsv(jsonResp, "columnas_lineas")
+        If colList <> "" Then
+            If InStr(1, colList, "UUID", vbTextCompare) = 0 Then colList = "UUID," & colList
+            If InStr(1, colList, "FECHA_CREACION", vbTextCompare) = 0 Then colList = colList & ",FECHA_CREACION,CREADO_POR,FECHA_EDICION,EDITADO_POR"
+            ObtenerColumnasLineasProyecto = colList
+            Set http = Nothing
+            Exit Function
+        End If
+    End If
+    
+Fallback:
+    Set http = Nothing
+    ObtenerColumnasLineasProyecto = defaultCols
+End Function
+
+Private Function ExtraerArrayJsonComoCsv(ByVal json As String, ByVal arrayKey As String) As String
+    Dim posKey As Long, posStart As Long, posEnd As Long
+    Dim arrayStr As String
+    
+    posKey = InStr(1, json, """" & arrayKey & """", vbTextCompare)
+    If posKey = 0 Then Exit Function
+    
+    posStart = InStr(posKey, json, "[")
+    If posStart = 0 Then Exit Function
+    
+    posEnd = InStr(posStart, json, "]")
+    If posEnd = 0 Then Exit Function
+    
+    arrayStr = Mid(json, posStart + 1, posEnd - posStart - 1)
+    arrayStr = Replace(arrayStr, """", "")
+    arrayStr = Replace(arrayStr, vbCr, "")
+    arrayStr = Replace(arrayStr, vbLf, "")
+    arrayStr = Replace(arrayStr, " ", "")
+    
+    ExtraerArrayJsonComoCsv = UCase(Trim(arrayStr))
 End Function
