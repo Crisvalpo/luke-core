@@ -470,55 +470,51 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista completa de MTO (Material Take-Off) con compras, bodega y AWP
+   * Obtiene la lista completa de MTO (Material Take-Off) con disponibilidad de materiales y colada
    */
   static async obtenerMtoProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         m.id AS uuid,
-        m.codigo AS codigo_mto,
-        m.item_numero,
-        m.cwa,
-        m.cwp,
-        m.ewp,
-        m.pwp,
-        COALESCE(l.codigo, m.codigo_linea, '') AS codigo_linea,
-        COALESCE(i.codigo, m.codigo_iso, '') AS codigo_iso,
-        COALESCE(s.codigo, m.codigo_spool, '') AS codigo_spool,
-        m.clase,
-        m.grupo_material,
-        m.descripcion,
-        m.diametro_nps AS nps,
-        m.cantidad,
-        m.unidad,
-        m.peso_kg,
-        m.suministro,
-        m.proveedor,
-        m.orden_compra,
-        m.recepcionado,
-        m.solicitado,
-        m.despachado,
-        m.cantidad_real,
-        m.ubicacion_actual,
-        m.estado_material,
-        m.prioridad_fab,
-        m.observaciones,
-        m.estado_actual AS estado,
+        m.code AS mto_tag,
+        m.code AS codigo_mto,
+        COALESCE(s.code, m.spool_code, '') AS spool_tag,
+        COALESCE(s.code, m.spool_code, '') AS codigo_spool,
+        COALESCE(i.code, m.iso_code, '') AS iso_tag,
+        COALESCE(i.code, m.iso_code, '') AS codigo_iso,
+        COALESCE(l.code, m.codigo_linea, '') AS line_tag,
+        COALESCE(l.code, m.codigo_linea, '') AS codigo_linea,
+        COALESCE(m.item_no, m.item_numero, '') AS item_no,
+        COALESCE(m.material_group, m.grupo_material, '') AS material_group,
+        COALESCE(m.description, '') AS description,
+        COALESCE(m.diametro_nps, '') AS nominal_size,
+        COALESCE(m.rating_schedule, m.clase, '') AS rating_schedule,
+        COALESCE(m.material_spec, '') AS material_spec,
+        COALESCE(m.quantity, 1) AS quantity,
+        COALESCE(m.unit_of_measure, m.unidad, 'un') AS unit,
+        COALESCE(m.peso_kg, 0) AS weight_kg,
+        COALESCE(m.suministro, 'COMPRA_CONTRATISTA') AS supply_scope,
+        COALESCE(m.purchase_order_no, m.orden_compra, '') AS purchase_order_no,
+        COALESCE(m.heat_number, '') AS heat_number,
+        COALESCE(m.warehouse_location, m.ubicacion_actual, 'BODEGA CENTRAL') AS warehouse_location,
+        COALESCE(m.material_status, m.estado_material, 'EN_BODEGA') AS material_status,
+        COALESCE(m.material_status, m.estado_material, 'EN_BODEGA') AS estado,
+        COALESCE(m.observaciones, '') AS remarks,
         m.vigente,
         to_char(m.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(m.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(m.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.mto m
-      JOIN core.proyectos pr ON pr.id = m.proyecto_id
-      LEFT JOIN piping.lineas l ON l.id = m.linea_id
-      LEFT JOIN piping.isometricos i ON i.id = m.isometrico_id
+      JOIN core.projects pr ON pr.id = m.project_id
       LEFT JOIN piping.spools s ON s.id = m.spool_id
-      LEFT JOIN core.personal uc ON uc.id = m.created_by
-      LEFT JOIN core.personal uu ON uu.id = m.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY m.codigo ASC;
+      LEFT JOIN piping.isometrics i ON i.id = m.isometric_id
+      LEFT JOIN piping.lines l ON l.id = m.line_id
+      LEFT JOIN core.personnel uc ON uc.id = m.created_by
+      LEFT JOIN core.personnel uu ON uu.id = m.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY m.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
