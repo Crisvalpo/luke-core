@@ -491,7 +491,7 @@ export class PipingService {
         COALESCE(m.rating_schedule, m.clase, '') AS rating_schedule,
         COALESCE(m.material_spec, '') AS material_spec,
         COALESCE(m.quantity, 1) AS quantity,
-        COALESCE(m.unit_of_measure, m.unidad, 'un') AS unit,
+        COALESCE(m.unit_of_measure, 'un') AS unit,
         COALESCE(m.peso_kg, 0) AS weight_kg,
         COALESCE(m.suministro, 'COMPRA_CONTRATISTA') AS supply_scope,
         COALESCE(m.purchase_order_no, m.orden_compra, '') AS purchase_order_no,
