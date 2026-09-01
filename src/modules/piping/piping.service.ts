@@ -252,7 +252,7 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista completa de Líneas con auditoría y variables de diseño
+   * Obtiene la lista completa de Líneas con auditoría y variables de diseño (Sin AWP)
    */
   static async obtenerLineasProyecto(idProyecto: string) {
     const result = await dbPool.query(`
@@ -282,8 +282,6 @@ export class PipingService {
         COALESCE(l.heat_tracing, '') AS tracing_spec,
         COALESCE(l.ndt_level, '') AS ndt_level,
         COALESCE(l.pwht_required, FALSE) AS pwht_required,
-        COALESCE(l.cwa, '') AS cwa,
-        COALESCE(l.cwp, '') AS cwp,
         COALESCE(l.status, 'VIGENTE') AS line_status,
         COALESCE(l.data_source, '') AS data_source,
         l.is_current AS vigente,
@@ -324,8 +322,6 @@ export class PipingService {
         COALESCE(i.spooling_status, 'SPOOLEADO') AS spooling_status,
         COALESCE(i.distribution_status, 'EMITIDO_IFC') AS distribution_status,
         COALESCE(i.test_pack_id, '') AS test_pack_id,
-        COALESCE(i.cwa, l.cwa, '') AS cwa,
-        COALESCE(i.cwp, l.cwp, '') AS cwp,
         COALESCE(i.status, 'VIGENTE') AS iso_status,
         COALESCE(i.status, 'VIGENTE') AS estado,
         COALESCE(i.remarks, '') AS remarks,
@@ -348,39 +344,40 @@ export class PipingService {
   }
 
   /**
-   * Obtiene la lista completa de Spools con atributos de faena y auditoría
+   * Obtiene la lista completa de Spools con AWP (CWA/CWP/IWP) y trazabilidad de taller
    */
   static async obtenerSpoolsProyecto(idProyecto: string) {
     const result = await dbPool.query(`
       SELECT 
         s.id AS uuid,
-        s.codigo AS codigo_spool,
-        COALESCE(i.codigo, '') AS codigo_iso,
-        s.tag_gestion,
-        s.sistema,
-        s.sub_sistema,
-        s.area,
-        s.codigo_linea,
-        s.spool_numero,
-        s.nps,
-        s.material,
-        s.servicio,
-        s.proceso,
-        s.ubicacion_actual AS ubicacion,
-        s.observaciones,
-        s.vigente,
+        s.code AS spool_tag,
+        s.code AS codigo_spool,
+        COALESCE(i.code, s.iso_code, '') AS iso_tag,
+        COALESCE(i.code, s.iso_code, '') AS codigo_iso,
+        COALESCE(s.spool_no, '') AS spool_no,
+        COALESCE(s.cwa, '') AS cwa,
+        COALESCE(s.cwp, '') AS cwp,
+        COALESCE(s.iwp, '') AS iwp,
+        COALESCE(s.spool_type, 'FIGURADO') AS spool_type,
+        COALESCE(s.weight_kg, 0) AS weight_kg,
+        COALESCE(s.length_meters, 0) AS length_meters,
+        COALESCE(s.current_location, s.ubicacion_actual, 'TALLER MAESTRANZA') AS current_location,
+        COALESCE(s.current_stage, s.estado_actual, 'PREFABRICADO') AS current_stage,
+        COALESCE(s.status, 'ACTIVO') AS spool_status,
+        COALESCE(s.remarks, '') AS remarks,
+        s.is_current AS vigente,
         to_char(s.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(s.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.spools s
-      JOIN core.proyectos pr ON pr.id = s.proyecto_id
-      LEFT JOIN piping.isometricos i ON i.id = s.isometrico_id
-      LEFT JOIN core.personal uc ON uc.id = s.created_by
-      LEFT JOIN core.personal uu ON uu.id = s.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY s.codigo ASC;
+      JOIN core.projects pr ON pr.id = s.project_id
+      LEFT JOIN piping.isometrics i ON i.id = s.isometric_id
+      LEFT JOIN core.personnel uc ON uc.id = s.created_by
+      LEFT JOIN core.personnel uu ON uu.id = s.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY s.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }

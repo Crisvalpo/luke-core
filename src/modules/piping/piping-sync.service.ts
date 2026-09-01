@@ -334,7 +334,7 @@ export class PipingSyncService {
   }
 
   /**
-   * Sincronizar Spools
+   * Sincronizar Spools con AWP y Trazabilidad
    */
   static async sincronizarSpools(usuarioWindows: string, payload: any): Promise<SincronizacionOutput> {
     const client = await dbPool.connect();
@@ -344,49 +344,49 @@ export class PipingSyncService {
       const resultado: Array<{ codigo: string; uuid: string }> = [];
 
       for (const reg of payload.registros || []) {
-        const cod = String(reg.codigo_spool || reg.codigo || '').trim().toUpperCase();
+        const cod = String(reg.spool_tag || reg.codigo_spool || reg.codigo || '').trim().toUpperCase();
         if (!cod) continue;
+        const codIso = String(reg.iso_tag || reg.codigo_iso || '').trim().toUpperCase();
 
         const res = await client.query(`
           INSERT INTO piping.spools (
-            id, tenant_id, proyecto_id, codigo, tag_gestion, sistema, sub_sistema,
-            area, codigo_linea, spool_numero, nps, material, servicio, proceso,
-            ubicacion_actual, observaciones, estado_actual, vigente, created_by, updated_by, created_at, updated_at
+            id, tenant_id, project_id, isometric_id, iso_code, code, spool_no,
+            cwa, cwp, iwp, spool_type, weight_kg, length_meters,
+            current_location, current_stage, status, remarks,
+            is_current, created_by, updated_by, created_at, updated_at
           )
           VALUES (
             COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
-            $2, $3, $4, $5, $6, $7,
-            $8, $9, $10, $11, $12, $13, $14,
-            $15, $16, COALESCE($17, 'EN_FABRICACION'), TRUE, $18, $18, NOW(), NOW()
+            $2, $3,
+            COALESCE((SELECT id FROM piping.isometrics WHERE (code = $4 OR id::text = $4) AND project_id = $3 LIMIT 1), '00000000-0000-0000-0000-000000000001'::uuid),
+            $4, $5, $6,
+            $7, $8, $9, $10, NULLIF($11, '')::numeric, NULLIF($12, '')::numeric,
+            $13, $14, COALESCE($15, 'ACTIVO'), $16,
+            TRUE, $17, $17, NOW(), NOW()
           )
-          ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
-            tag_gestion = EXCLUDED.tag_gestion, sistema = EXCLUDED.sistema,
-            sub_sistema = EXCLUDED.sub_sistema, area = EXCLUDED.area,
-            codigo_linea = EXCLUDED.codigo_linea, spool_numero = EXCLUDED.spool_numero,
-            nps = EXCLUDED.nps, material = EXCLUDED.material, servicio = EXCLUDED.servicio,
-            proceso = EXCLUDED.proceso, ubicacion_actual = EXCLUDED.ubicacion_actual,
-            observaciones = EXCLUDED.observaciones, vigente = TRUE,
+          ON CONFLICT (project_id, isometric_id, code) DO UPDATE SET
+            iso_code = EXCLUDED.iso_code, spool_no = EXCLUDED.spool_no,
+            cwa = EXCLUDED.cwa, cwp = EXCLUDED.cwp, iwp = EXCLUDED.iwp,
+            spool_type = EXCLUDED.spool_type, weight_kg = EXCLUDED.weight_kg,
+            length_meters = EXCLUDED.length_meters, current_location = EXCLUDED.current_location,
+            current_stage = EXCLUDED.current_stage, status = EXCLUDED.status,
+            remarks = EXCLUDED.remarks, is_current = TRUE,
             updated_by = EXCLUDED.updated_by, updated_at = NOW()
-          WHERE (
-            piping.spools.tag_gestion, piping.spools.sistema, piping.spools.sub_sistema,
-            piping.spools.area, piping.spools.codigo_linea, piping.spools.spool_numero,
-            piping.spools.nps, piping.spools.material, piping.spools.servicio,
-            piping.spools.proceso, piping.spools.ubicacion_actual,
-            piping.spools.observaciones, piping.spools.vigente
-          ) IS DISTINCT FROM (
-            EXCLUDED.tag_gestion, EXCLUDED.sistema, EXCLUDED.sub_sistema,
-            EXCLUDED.area, EXCLUDED.codigo_linea, EXCLUDED.spool_numero,
-            EXCLUDED.nps, EXCLUDED.material, EXCLUDED.servicio,
-            EXCLUDED.proceso, EXCLUDED.ubicacion_actual,
-            EXCLUDED.observaciones, TRUE
-          )
-          RETURNING codigo, id::text AS uuid;
+          RETURNING code AS codigo, id::text AS uuid;
         `, [
-          reg.uuid || null, tenantId, proyectoId, cod, reg.tag_gestion || null,
-          reg.sistema || null, reg.sub_sistema || null, reg.area || null,
-          reg.codigo_linea || null, reg.spool_numero || null, reg.nps || null,
-          reg.material || null, reg.servicio || null, reg.proceso || null,
-          reg.ubicacion || null, reg.observaciones || null, reg.estado || 'EN_FABRICACION', personalId
+          reg.uuid || null, tenantId, proyectoId, codIso, cod,
+          reg.spool_no || null,
+          reg.cwa || reg.cwa_id || null,
+          reg.cwp || reg.cwp_id || null,
+          reg.iwp || reg.iwp_id || null,
+          reg.spool_type || 'FIGURADO',
+          reg.total_weight_kg || reg.weight_kg || null,
+          reg.total_length_m || reg.length_meters || null,
+          reg.current_location || reg.ubicacion || 'TALLER MAESTRANZA',
+          reg.current_stage || reg.estado || 'PREFABRICADO',
+          reg.spool_status || 'ACTIVO',
+          reg.remarks || reg.observaciones || null,
+          personalId
         ]);
 
         if (res.rows[0]) {
