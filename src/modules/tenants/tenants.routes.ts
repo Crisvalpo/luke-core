@@ -51,7 +51,7 @@ tenantsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction
 
     if (razon_social) {
       params.push(razon_social.trim());
-      updates.push(`razon_social = $${params.length}`);
+      updates.push(`business_name = $${params.length}`);
     }
 
     if (rut) {
@@ -60,7 +60,7 @@ tenantsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction
         return sendError(res, 'RUT inválido', 400);
       }
       params.push(rutLimpio);
-      updates.push(`rut = $${params.length}`);
+      updates.push(`tax_id = $${params.length}`);
     }
 
     if (slug) {
@@ -75,7 +75,7 @@ tenantsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction
 
     if (typeof activo === 'boolean') {
       params.push(activo);
-      updates.push(`activo = $${params.length}`);
+      updates.push(`is_active = $${params.length}`);
     }
 
     if (updates.length === 0) {
@@ -138,7 +138,7 @@ tenantsRouter.delete('/:id', requireSuperAdmin, async (req: Request, res: Respon
 
     // 2. Obtener auth_user_id del personal para limpiar en Supabase Auth
     const personalRes = await query(
-      'SELECT auth_user_id FROM core.personal WHERE tenant_id = $1 AND auth_user_id IS NOT NULL',
+      'SELECT auth_user_id FROM core.personnel WHERE tenant_id = $1 AND auth_user_id IS NOT NULL',
       [id]
     );
 
@@ -174,9 +174,9 @@ tenantsRouter.delete('/:id', requireSuperAdmin, async (req: Request, res: Respon
     return sendSuccess(res, {
       id: tenant.id,
       slug: tenant.slug,
-      razon_social: tenant.razon_social,
+      razon_social: tenant.business_name || tenant.razon_social,
       eliminado: true
-    }, 200, { mensaje: `Empresa '${tenant.razon_social}' y todos sus datos fueron eliminados permanentemente.` });
+    }, 200, { mensaje: `Empresa '${tenant.business_name || tenant.razon_social}' y todos sus datos fueron eliminados permanentemente.` });
 
   } catch (error) {
     next(error);

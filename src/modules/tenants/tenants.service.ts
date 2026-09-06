@@ -38,7 +38,7 @@ export class TenantsService {
 
       // 1. Verificar unicidad de slug y RUT de empresa
       const slugCheck = await client.query(
-        'SELECT id FROM core.tenants WHERE slug = $1 OR rut = $2',
+        'SELECT id FROM core.tenants WHERE slug = $1 OR tax_id = $2',
         [input.slug.toLowerCase(), rutTenant]
       );
       if (slugCheck.rows.length > 0) {
@@ -48,7 +48,7 @@ export class TenantsService {
       // 2. Insertar Tenant Maestro
       const tenantRes = await client.query(
         `
-        INSERT INTO core.tenants (slug, razon_social, rut, config, activo)
+        INSERT INTO core.tenants (slug, business_name, tax_id, config, is_active)
         VALUES ($1, $2, $3, $4, TRUE)
         RETURNING *;
         `,
@@ -66,7 +66,7 @@ export class TenantsService {
 
       const projRes = await client.query(
         `
-        INSERT INTO core.proyectos (tenant_id, codigo, nombre, centro_costo, ubicacion, estado, metadata)
+        INSERT INTO core.projects (tenant_id, code, name, cost_center, location, status, metadata)
         VALUES ($1, $2, $3, $4, $5, 'en_ejecucion', '{}'::jsonb)
         RETURNING *;
         `,
@@ -77,9 +77,9 @@ export class TenantsService {
       // 3.1 Crear Frente de Trabajo Base
       await client.query(
         `
-        INSERT INTO core.frentes_trabajo (tenant_id, proyecto_id, codigo, nombre, disciplina)
+        INSERT INTO core.work_fronts (tenant_id, project_id, code, name, discipline)
         VALUES ($1, $2, 'FR-00', 'Frente General', 'GENERAL')
-        ON CONFLICT (proyecto_id, codigo) DO NOTHING;
+        ON CONFLICT (project_id, code) DO NOTHING;
         `,
         [tenant.id, proyecto.id]
       );
@@ -98,11 +98,11 @@ export class TenantsService {
       );
       const rolAdminId = rolAdminRes.rows[0]?.id || null;
 
-      // 5. Crear Administrador Inicial en core.personal vinculado al rol funcional
+      // 5. Crear Administrador Inicial en core.personnel vinculado al rol funcional
       const adminRes = await client.query(
         `
-        INSERT INTO core.personal (
-          tenant_id, proyecto_id, rol_funcional_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno, activo
+        INSERT INTO core.personnel (
+          tenant_id, project_id, rol_funcional_id, national_id, full_name, job_title, org_role, phone_number, email, shift, is_active
         )
         VALUES ($1, $2, $3, $4, $5, $6, 'admin', $7, $8, '5x2', TRUE)
         RETURNING *;
@@ -211,17 +211,17 @@ export class TenantsService {
         COUNT(DISTINCT per.id) AS total_personal,
         COUNT(DISTINCT eq.id) AS total_equipos
       FROM core.tenants t
-      LEFT JOIN core.proyectos p ON p.tenant_id = t.id AND p.activo = TRUE
-      LEFT JOIN core.personal per ON per.tenant_id = t.id AND per.activo = TRUE
-      LEFT JOIN core.equipos eq ON eq.tenant_id = t.id AND eq.activo = TRUE
-      WHERE t.activo = TRUE
+      LEFT JOIN core.projects p ON p.tenant_id = t.id AND p.is_active = TRUE
+      LEFT JOIN core.personnel per ON per.tenant_id = t.id AND per.is_active = TRUE
+      LEFT JOIN core.equipment eq ON eq.tenant_id = t.id AND eq.is_active = TRUE
+      WHERE t.is_active = TRUE
     `;
     const params: any[] = [];
     if (tenantId) {
       params.push(tenantId);
       sql += ` AND t.id = $1`;
     }
-    sql += ` GROUP BY t.id ORDER BY t.razon_social ASC;`;
+    sql += ` GROUP BY t.id ORDER BY t.business_name ASC;`;
 
     const res = await dbPool.query(sql, params);
     return res.rows;
