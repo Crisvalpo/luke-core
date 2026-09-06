@@ -133,7 +133,7 @@ export class TenantsService {
         });
 
         if (authData?.user) {
-          await client.query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [
+          await client.query('UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2', [
             authData.user.id,
             administrador.id
           ]);
@@ -146,7 +146,7 @@ export class TenantsService {
           const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === emailAdmin);
 
           if (existingUser) {
-            await client.query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [
+            await client.query('UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2', [
               existingUser.id,
               administrador.id
             ]);
