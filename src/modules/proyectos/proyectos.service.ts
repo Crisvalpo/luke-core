@@ -11,20 +11,45 @@ export class ProyectosService {
   static async listar(tenantId: string, userId?: string, userRol?: string) {
     let sql = `
       SELECT 
-        p.*,
-        COUNT(DISTINCT f.id) AS total_frentes,
-        COUNT(DISTINCT per.id) AS total_personal,
-        COUNT(DISTINCT eq.id) AS total_equipos
-      FROM core.proyectos p
-      LEFT JOIN core.work_fronts f ON f.project_id = p.id AND f.is_active = TRUE
-      LEFT JOIN core.personal per ON per.proyecto_id = p.id AND per.activo = TRUE
-      LEFT JOIN core.equipos eq ON eq.proyecto_id = p.id AND eq.activo = TRUE
-      WHERE p.tenant_id = $1 AND p.activo = TRUE
+        p.id,
+        p.tenant_id,
+        p.code AS codigo,
+        p.name AS nombre,
+        p.cost_center AS centro_costo,
+        p.location AS ubicacion,
+        p.status AS estado,
+        p.metadata,
+        p.is_active AS activo,
+        p.created_at,
+        p.updated_at,
+        COALESCE(f.total_frentes, 0) AS total_frentes,
+        COALESCE(per.total_personal, 0) AS total_personal,
+        COALESCE(eq.total_equipos, 0) AS total_equipos
+      FROM core.projects p
+      LEFT JOIN (
+        SELECT project_id, COUNT(*) AS total_frentes 
+        FROM core.work_fronts 
+        WHERE is_active = TRUE 
+        GROUP BY project_id
+      ) f ON f.project_id = p.id
+      LEFT JOIN (
+        SELECT project_id, COUNT(*) AS total_personal 
+        FROM core.personnel 
+        WHERE is_active = TRUE 
+        GROUP BY project_id
+      ) per ON per.project_id = p.id
+      LEFT JOIN (
+        SELECT project_id, COUNT(*) AS total_equipos 
+        FROM core.equipment 
+        WHERE is_active = TRUE 
+        GROUP BY project_id
+      ) eq ON eq.project_id = p.id
+      WHERE p.tenant_id = $1 AND p.is_active = TRUE
     `;
     const params: any[] = [tenantId];
 
-    // Si no es Super-Admin ni Fundador/Dueño de Empresa, filtrar solo los proyectos autorizados
-    const esAdminGlobalEmpresa = userRol === 'super_admin' || userRol === 'fundador' || userRol === 'owner' || userRol === 'admin_empresa';
+    // Si no es Super-Admin ni Fundador/Admin de Empresa, filtrar solo los proyectos autorizados
+    const esAdminGlobalEmpresa = userRol === 'super_admin' || userRol === 'fundador' || userRol === 'owner' || userRol === 'admin_empresa' || userRol === 'admin';
 
     if (!esAdminGlobalEmpresa && userId) {
       params.push(userId);
@@ -40,10 +65,7 @@ export class ProyectosService {
       `;
     }
 
-    sql += `
-      GROUP BY p.id
-      ORDER BY p.nombre ASC;
-    `;
+    sql += ` ORDER BY p.name ASC;`;
     const result = await dbPool.query(sql, params);
     return result.rows;
   }
@@ -53,9 +75,11 @@ export class ProyectosService {
    */
   static async obtenerDetalle(tenantId: string, proyectoId: string) {
     const proyectoRes = await dbPool.query(`
-      SELECT p.*
-      FROM core.proyectos p
-      WHERE p.id = $1 AND p.tenant_id = $2 AND p.activo = TRUE;
+      SELECT 
+        id, tenant_id, code AS codigo, name AS nombre, cost_center AS centro_costo,
+        location AS ubicacion, status AS estado, metadata, is_active AS activo, created_at, updated_at
+      FROM core.projects
+      WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE;
     `, [proyectoId, tenantId]);
 
     if (proyectoRes.rows.length === 0) return null;
