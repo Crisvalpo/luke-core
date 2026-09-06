@@ -96,14 +96,30 @@
         tokenHash: hashParams.get('token_hash') || queryParams.get('token_hash'),
         code: hashParams.get('code') || queryParams.get('code'),
         type: hashParams.get('type') || queryParams.get('type') || 'invite',
+        email: queryParams.get('email') || hashParams.get('email'),
+        errorCode: hashParams.get('error_code') || queryParams.get('error_code'),
         error: hashParams.get('error_description') || queryParams.get('error_description') || hashParams.get('error')
       };
     }
 
-    let { accessToken, refreshToken, tokenHash, code, type, error } = obtenerParametrosAuth();
+    let { accessToken, refreshToken, tokenHash, code, type, email, errorCode, error } = obtenerParametrosAuth();
 
     // Si viene un tokenHash o code, resolver sesión primero
     async function inicializarSesion() {
+      if (email) {
+        const emailInput = document.getElementById('email-usuario');
+        emailInput.value = email;
+      }
+
+      if (errorCode || error) {
+        const errBox = document.getElementById('status-error');
+        errBox.style.display = 'block';
+        errBox.style.background = '#fef3c7';
+        errBox.style.borderColor = '#fde68a';
+        errBox.style.color = '#92400e';
+        errBox.innerHTML = '⚠️ <strong>Enlace pre-escaneado o expirado:</strong> El sistema de seguridad de tu correo corporativo analizó el enlace de un solo uso. No te preocupes: ingresa tu correo y tu nueva contraseña para activar tu acceso inmediatamente.';
+      }
+
       if (accessToken) return;
 
       if (tokenHash) {

@@ -125,7 +125,7 @@ export class TenantsService {
       // 5.1 Enviar Invitación por Correo Oficial vía Supabase Auth & Resend
       try {
         const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailAdmin, {
-          redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html',
+          redirectTo: `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(emailAdmin)}`,
           data: {
             nombre: input.administrador_inicial.nombre_completo,
             role: 'admin',
@@ -153,7 +153,7 @@ export class TenantsService {
             ]);
 
             await supabaseAdmin.auth.resetPasswordForEmail(emailAdmin, {
-              redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html'
+              redirectTo: `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(emailAdmin)}`
             });
             console.log(`📧 [EMAIL] Correo de restablecimiento/creación de clave enviado a usuario existente: ${emailAdmin}`);
           }
