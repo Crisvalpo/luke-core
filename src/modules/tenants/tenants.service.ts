@@ -2,6 +2,7 @@ import { dbPool } from '../../config/database.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 import { normalizarRut, validarRut } from '../../shared/utils/rut.js';
 import { normalizarTelefonoChileno } from '../../shared/utils/phone.js';
+import { WhatsAppService } from '../../shared/utils/whatsapp.js';
 import { OnboardTenantInput } from './tenants.schema.js';
 
 export interface OnboardingResult {
@@ -119,10 +120,10 @@ export class TenantsService {
         ]
       );
       const administrador = adminRes.rows[0];
+      const emailAdmin = input.administrador_inicial.email.toLowerCase();
 
       // 5.1 Enviar Invitación por Correo Oficial vía Supabase Auth & Resend
       try {
-        const emailAdmin = input.administrador_inicial.email.toLowerCase();
         const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailAdmin, {
           redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html',
           data: {
@@ -174,7 +175,24 @@ export class TenantsService {
       );
       const sesion_whatsapp = sesionRes.rows[0];
 
-      // 6. Registrar en Audit Logs
+      // 7. Notificar al Administrador Fundador vía WhatsApp con enlace de activación
+      try {
+        const nombreAdmin = administrador.full_name || input.administrador_inicial.nombre_completo;
+        const msgWa = 
+          `🎉 *¡Bienvenido a LukeAPPs!*\n\n` +
+          `Hola *${nombreAdmin}*,\n` +
+          `Tu empresa *${tenant.business_name}* ha sido dada de alta exitosamente en la plataforma.\n\n` +
+          `🔐 *Activa tu usuario fundador y crea tu contraseña aquí:*\n` +
+          `👉 https://app.lukeapp.cl/admin/crear-clave.html\n\n` +
+          `_Correo: ${emailAdmin}_\n` +
+          `_Faena: ${proyecto.name}_`;
+
+        await WhatsAppService.enviarMensaje({ to: telWhatsApp, text: msgWa });
+      } catch (waErr: any) {
+        console.warn('⚠️ No se pudo enviar WhatsApp de bienvenida al fundador:', waErr.message);
+      }
+
+      // 8. Registrar en Audit Logs
       await client.query(
         `
         INSERT INTO core.audit_logs (tenant_id, tabla, registro_id, accion, payload_nuevo, ejecutado_por)
