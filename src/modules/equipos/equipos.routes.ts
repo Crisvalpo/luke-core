@@ -14,7 +14,7 @@ equiposRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
       SELECT 
         eq.*,
         t.slug AS tenant_slug,
-        t.razon_social AS tenant_razon_social,
+        t.business_name AS tenant_razon_social,
         pr.codigo AS proyecto_codigo,
         pr.nombre AS proyecto_nombre
       FROM core.equipos eq

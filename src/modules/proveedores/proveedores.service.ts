@@ -4,6 +4,7 @@ import { CrearProveedorInput, EditarProveedorInput } from './proveedores.schema.
 
 /**
  * Servicio de Proveedores / Subcontratistas — Aislado por Tenant
+ * Utiliza la tabla canónica core.vendors con alias de compatibilidad
  */
 export class ProveedoresService {
   /**
@@ -11,21 +12,24 @@ export class ProveedoresService {
    */
   static async listar(tenantId: string, busqueda?: string) {
     let sql = `
-      SELECT * FROM core.proveedores
-      WHERE tenant_id = $1 AND activo = TRUE
+      SELECT 
+        id, tenant_id, tax_id, business_name, industry_type, contact_name, phone_number, email, is_active, metadata, created_at, updated_at,
+        tax_id AS rut, business_name AS razon_social, industry_type AS giro, contact_name AS contacto_nombre, phone_number AS telefono, is_active AS activo
+      FROM core.vendors
+      WHERE tenant_id = $1 AND is_active = TRUE
     `;
     const params: any[] = [tenantId];
 
     if (busqueda) {
       params.push(`%${busqueda.toLowerCase()}%`);
       sql += ` AND (
-        LOWER(razon_social) LIKE $${params.length}
-        OR rut LIKE $${params.length}
-        OR LOWER(COALESCE(giro, '')) LIKE $${params.length}
+        LOWER(business_name) LIKE $${params.length}
+        OR tax_id LIKE $${params.length}
+        OR LOWER(COALESCE(industry_type, '')) LIKE $${params.length}
       )`;
     }
 
-    sql += ` ORDER BY razon_social ASC LIMIT 200;`;
+    sql += ` ORDER BY business_name ASC LIMIT 200;`;
     const result = await dbPool.query(sql, params);
     return result.rows;
   }
@@ -34,10 +38,13 @@ export class ProveedoresService {
    * Obtener detalle de un proveedor por ID
    */
   static async obtenerPorId(tenantId: string, proveedorId: string) {
-    const result = await dbPool.query(
-      'SELECT * FROM core.proveedores WHERE id = $1 AND tenant_id = $2',
-      [proveedorId, tenantId]
-    );
+    const result = await dbPool.query(`
+      SELECT 
+        id, tenant_id, tax_id, business_name, industry_type, contact_name, phone_number, email, is_active, metadata, created_at, updated_at,
+        tax_id AS rut, business_name AS razon_social, industry_type AS giro, contact_name AS contacto_nombre, phone_number AS telefono, is_active AS activo
+      FROM core.vendors 
+      WHERE id = $1 AND tenant_id = $2
+    `, [proveedorId, tenantId]);
     return result.rows[0] || null;
   }
 
@@ -52,7 +59,7 @@ export class ProveedoresService {
 
     // Verificar unicidad de RUT dentro del tenant
     const duplicado = await dbPool.query(
-      'SELECT id FROM core.proveedores WHERE tenant_id = $1 AND rut = $2',
+      'SELECT id FROM core.vendors WHERE tenant_id = $1 AND tax_id = $2',
       [tenantId, rutLimpio]
     );
     if (duplicado.rows.length > 0) {
@@ -60,11 +67,13 @@ export class ProveedoresService {
     }
 
     const result = await dbPool.query(`
-      INSERT INTO core.proveedores (
-        tenant_id, rut, razon_social, giro, contacto_nombre, telefono, email, metadata
+      INSERT INTO core.vendors (
+        tenant_id, tax_id, business_name, industry_type, contact_name, phone_number, email, metadata
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *;
+      RETURNING 
+        id, tenant_id, tax_id, business_name, industry_type, contact_name, phone_number, email, is_active, metadata, created_at, updated_at,
+        tax_id AS rut, business_name AS razon_social, industry_type AS giro, contact_name AS contacto_nombre, phone_number AS telefono, is_active AS activo;
     `, [
       tenantId,
       rutLimpio,
@@ -88,19 +97,19 @@ export class ProveedoresService {
 
     if (input.razon_social !== undefined) {
       params.push(input.razon_social);
-      updates.push(`razon_social = $${params.length}`);
+      updates.push(`business_name = $${params.length}`);
     }
     if (input.giro !== undefined) {
       params.push(input.giro);
-      updates.push(`giro = $${params.length}`);
+      updates.push(`industry_type = $${params.length}`);
     }
     if (input.contacto_nombre !== undefined) {
       params.push(input.contacto_nombre);
-      updates.push(`contacto_nombre = $${params.length}`);
+      updates.push(`contact_name = $${params.length}`);
     }
     if (input.telefono !== undefined) {
       params.push(input.telefono);
-      updates.push(`telefono = $${params.length}`);
+      updates.push(`phone_number = $${params.length}`);
     }
     if (input.email !== undefined) {
       params.push(input.email);
@@ -112,7 +121,7 @@ export class ProveedoresService {
     }
     if (typeof input.activo === 'boolean') {
       params.push(input.activo);
-      updates.push(`activo = $${params.length}`);
+      updates.push(`is_active = $${params.length}`);
     }
 
     if (updates.length === 0) {
@@ -123,10 +132,12 @@ export class ProveedoresService {
     params.push(tenantId);
 
     const sql = `
-      UPDATE core.proveedores
+      UPDATE core.vendors
       SET ${updates.join(', ')}
       WHERE id = $${params.length - 1} AND tenant_id = $${params.length}
-      RETURNING *;
+      RETURNING 
+        id, tenant_id, tax_id, business_name, industry_type, contact_name, phone_number, email, is_active, metadata, created_at, updated_at,
+        tax_id AS rut, business_name AS razon_social, industry_type AS giro, contact_name AS contacto_nombre, phone_number AS telefono, is_active AS activo;
     `;
 
     const result = await dbPool.query(sql, params);
@@ -139,9 +150,9 @@ export class ProveedoresService {
    */
   static async desactivar(tenantId: string, proveedorId: string) {
     const result = await dbPool.query(`
-      UPDATE core.proveedores SET activo = FALSE
+      UPDATE core.vendors SET is_active = FALSE
       WHERE id = $1 AND tenant_id = $2
-      RETURNING id, rut, razon_social;
+      RETURNING id, tax_id, business_name, tax_id AS rut, business_name AS razon_social;
     `, [proveedorId, tenantId]);
 
     if (result.rows.length === 0) return null;

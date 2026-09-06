@@ -16,7 +16,7 @@ export class TenantsController {
         res,
         resultado,
         201,
-        { mensaje: `Empresa '${resultado.tenant.razon_social}' dada de alta con éxito en Luke Core` }
+        { mensaje: `Empresa '${resultado.tenant.business_name || resultado.tenant.razon_social}' dada de alta con éxito en Luke Core` }
       );
     } catch (error: any) {
       if (error.message && error.message.includes('Ya existe')) {

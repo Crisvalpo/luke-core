@@ -5,7 +5,8 @@ import { sendError } from '../utils/response.js';
 export interface TenantContext {
   id: string;
   slug: string;
-  razon_social: string;
+  business_name: string;
+  razon_social?: string;
 }
 
 declare global {
@@ -30,9 +31,9 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
   try {
     let result;
     if (tenantId) {
-      result = await query('SELECT id, slug, razon_social FROM core.tenants WHERE id = $1 AND activo = TRUE', [tenantId]);
+      result = await query('SELECT id, slug, business_name, business_name AS razon_social FROM core.tenants WHERE id = $1 AND is_active = TRUE', [tenantId]);
     } else {
-      result = await query('SELECT id, slug, razon_social FROM core.tenants WHERE slug = $1 AND activo = TRUE', [tenantSlug.toLowerCase()]);
+      result = await query('SELECT id, slug, business_name, business_name AS razon_social FROM core.tenants WHERE slug = $1 AND is_active = TRUE', [tenantSlug.toLowerCase()]);
     }
 
     if (result.rows.length > 0) {

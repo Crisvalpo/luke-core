@@ -69,12 +69,12 @@ accessRouter.get('/solicitudes', async (req: Request, res: Response, next: NextF
     const result = await query(`
       SELECT 
         s.*,
-        t.razon_social AS tenant_nombre,
-        pr.codigo AS proyecto_codigo,
-        pr.nombre AS proyecto_nombre
-      FROM core.solicitudes_acceso s
+        t.business_name AS tenant_nombre,
+        pr.code AS proyecto_codigo,
+        pr.name AS proyecto_nombre
+      FROM core.access_requests s
       LEFT JOIN core.tenants t ON t.id = s.tenant_id
-      LEFT JOIN core.proyectos pr ON pr.id = s.proyecto_id
+      LEFT JOIN core.projects pr ON pr.id = s.proyecto_id
       ORDER BY s.created_at DESC
       LIMIT $1;
     `, [limite]);

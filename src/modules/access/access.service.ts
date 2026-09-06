@@ -22,14 +22,14 @@ export class AccessService {
     }
 
     if (!tenantId) {
-      const firstTenant = await query('SELECT id FROM core.tenants WHERE activo = TRUE ORDER BY created_at ASC LIMIT 1');
+      const firstTenant = await query('SELECT id FROM core.tenants WHERE is_active = TRUE ORDER BY created_at ASC LIMIT 1');
       tenantId = firstTenant.rows[0]?.id || null;
     }
 
-    // 2. Guardar solicitud en core.solicitudes_acceso
+    // 2. Guardar solicitud en core.access_requests
     const insertRes = await query(`
-      INSERT INTO core.solicitudes_acceso (
-        usuario_windows, telefono, nombre, equipo, tenant_id, estado, created_at, updated_at
+      INSERT INTO core.access_requests (
+        usuario_windows, telefono, nombre, equipo, tenant_id, status, created_at, updated_at
       )
       VALUES ($1, $2, $3, $4, $5, 'PENDIENTE', NOW(), NOW())
       RETURNING *;
@@ -109,8 +109,8 @@ export class AccessService {
 
       // 1. Buscar la última solicitud PENDIENTE
       const solRes = await query(`
-        SELECT * FROM core.solicitudes_acceso 
-        WHERE estado = 'PENDIENTE' 
+        SELECT * FROM core.access_requests 
+        WHERE status = 'PENDIENTE' 
         ORDER BY created_at DESC 
         LIMIT 1;
       `);
@@ -127,9 +127,9 @@ export class AccessService {
 
       // 2. Buscar el proyecto
       const proyRes = await query(`
-        SELECT id, tenant_id, codigo, nombre 
-        FROM core.proyectos 
-        WHERE (codigo = $1 OR id::text = $1) AND activo = TRUE 
+        SELECT id, tenant_id, code AS codigo, name AS nombre 
+        FROM core.projects 
+        WHERE (code = $1 OR id::text = $1) AND is_active = TRUE 
         LIMIT 1;
       `, [codigoProyecto]);
 
@@ -147,16 +147,16 @@ export class AccessService {
       try {
         await client.query('BEGIN');
 
-        // 3. Crear o actualizar core.personal
+        // 3. Crear o actualizar core.personnel
         const usuarioNorm = solicitud.usuario_windows.trim();
         const soloUser = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
 
         const persExist = await client.query(`
-          SELECT id FROM core.personal 
+          SELECT id FROM core.personnel 
           WHERE (
             UPPER(usuario_windows) = UPPER($1) 
             OR UPPER(usuario_windows) = UPPER($2) 
-            OR telefono_whatsapp = $3
+            OR phone_number = $3
           )
           LIMIT 1;
         `, [usuarioNorm, soloUser, solicitud.telefono]);
@@ -166,12 +166,12 @@ export class AccessService {
         if (persExist.rows.length > 0) {
           personalId = persExist.rows[0].id;
           await client.query(`
-            UPDATE core.personal SET 
+            UPDATE core.personnel SET 
               usuario_windows = $1,
-              telefono_whatsapp = $2,
-              nombre_completo = $3,
+              phone_number = $2,
+              full_name = $3,
               puede_sincronizar_excel = TRUE,
-              activo = TRUE,
+              is_active = TRUE,
               updated_at = NOW()
             WHERE id = $4;
           `, [usuarioNorm, solicitud.telefono, solicitud.nombre, personalId]);
@@ -179,9 +179,9 @@ export class AccessService {
           // Generar RUT identificador provisional único
           const rutTemp = `TEMP-${Date.now().toString().slice(-7)}`;
           const insertPers = await client.query(`
-            INSERT INTO core.personal (
-              tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional,
-              telefono_whatsapp, usuario_windows, puede_sincronizar_excel, activo, created_at, updated_at
+            INSERT INTO core.personnel (
+              tenant_id, project_id, national_id, full_name, job_title, org_role,
+              phone_number, usuario_windows, puede_sincronizar_excel, is_active, created_at, updated_at
             )
             VALUES ($1, $2, $3, $4, 'Cubicador Piping', 'operario', $5, $6, TRUE, TRUE, NOW(), NOW())
             RETURNING id;
@@ -196,17 +196,17 @@ export class AccessService {
           personalId = insertPers.rows[0].id;
         }
 
-        // 4. Vincular en core.personal_proyectos
+        // 4. Vincular en core.project_personnel
         await client.query(`
-          INSERT INTO core.personal_proyectos (personal_id, proyecto_id, puede_sincronizar, created_at)
+          INSERT INTO core.project_personnel (personnel_id, project_id, puede_sincronizar, created_at)
           VALUES ($1, $2, TRUE, NOW())
-          ON CONFLICT (personal_id, proyecto_id) DO UPDATE SET puede_sincronizar = TRUE;
+          ON CONFLICT (personnel_id, project_id) DO UPDATE SET puede_sincronizar = TRUE;
         `, [personalId, proyecto.id]);
 
         // 5. Actualizar la solicitud
         await client.query(`
-          UPDATE core.solicitudes_acceso SET 
-            estado = 'APROBADA',
+          UPDATE core.access_requests SET 
+            status = 'APROBADA',
             proyecto_id = $1,
             aprobado_por = $2,
             updated_at = NOW()
@@ -253,8 +253,8 @@ export class AccessService {
     // ─────────────────────────────────────────────────────────────
     if (texto.toUpperCase() === 'RECHAZAR') {
       const solRes = await query(`
-        SELECT * FROM core.solicitudes_acceso 
-        WHERE estado = 'PENDIENTE' 
+        SELECT * FROM core.access_requests 
+        WHERE status = 'PENDIENTE' 
         ORDER BY created_at DESC 
         LIMIT 1;
       `);
@@ -270,8 +270,8 @@ export class AccessService {
       const solicitud = solRes.rows[0];
 
       await query(`
-        UPDATE core.solicitudes_acceso SET 
-          estado = 'RECHAZADA',
+        UPDATE core.access_requests SET 
+          status = 'RECHAZADA',
           aprobado_por = $1,
           updated_at = NOW()
         WHERE id = $2;
@@ -301,17 +301,17 @@ export class AccessService {
     const usuarioNorm = usuarioWindows.trim();
     const soloUser = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
 
-    // 1. Resolver usuario en core.personal
+    // 1. Resolver usuario en core.personnel
     let personal: any = null;
     if (personalId) {
-      const pRes = await query('SELECT id, tenant_id, nombre_completo, usuario_windows, rol_organizacional FROM core.personal WHERE id = $1', [personalId]);
+      const pRes = await query('SELECT id, tenant_id, full_name AS nombre_completo, usuario_windows, org_role AS rol_organizacional FROM core.personnel WHERE id = $1', [personalId]);
       personal = pRes.rows[0];
     }
 
     if (!personal) {
       const pRes = await query(`
-        SELECT id, tenant_id, nombre_completo, usuario_windows, rol_organizacional 
-        FROM core.personal 
+        SELECT id, tenant_id, full_name AS nombre_completo, usuario_windows, org_role AS rol_organizacional 
+        FROM core.personnel 
         WHERE UPPER(usuario_windows) = UPPER($1) OR UPPER(usuario_windows) = UPPER($2) 
         LIMIT 1;
       `, [usuarioNorm, soloUser]);
@@ -327,20 +327,20 @@ export class AccessService {
     // 2. Si es super_admin o admin, tiene acceso a todos los proyectos del tenant
     if (personal.rol_organizacional === 'super_admin' || personal.rol_organizacional === 'admin') {
       const proyRes = await query(`
-        SELECT id, codigo, nombre, centro_costo, activo, TRUE AS puede_sincronizar
-        FROM core.proyectos
-        WHERE tenant_id = $1 AND activo = TRUE
-        ORDER BY codigo ASC;
+        SELECT id, code AS codigo, name AS nombre, cost_center AS centro_costo, is_active AS activo, TRUE AS puede_sincronizar
+        FROM core.projects
+        WHERE tenant_id = $1 AND is_active = TRUE
+        ORDER BY code ASC;
       `, [personal.tenant_id]);
       proyectos = proyRes.rows;
     } else {
-      // 3. Si es operario/cubicador, buscar en core.personal_proyectos
+      // 3. Si es operario/cubicador, buscar en core.project_personnel
       const proyRes = await query(`
-        SELECT DISTINCT pr.id, pr.codigo, pr.nombre, pr.centro_costo, pr.activo, pp.puede_sincronizar
-        FROM core.proyectos pr
-        JOIN core.personal_proyectos pp ON pp.proyecto_id = pr.id
-        WHERE pp.personal_id = $1 AND pr.activo = TRUE AND pp.puede_sincronizar = TRUE
-        ORDER BY pr.codigo ASC;
+        SELECT DISTINCT pr.id, pr.code AS codigo, pr.name AS nombre, pr.cost_center AS centro_costo, pr.is_active AS activo, pp.puede_sincronizar
+        FROM core.projects pr
+        JOIN core.project_personnel pp ON pp.project_id = pr.id
+        WHERE pp.personnel_id = $1 AND pr.is_active = TRUE AND pp.puede_sincronizar = TRUE
+        ORDER BY pr.code ASC;
       `, [personal.id]);
       proyectos = proyRes.rows;
     }

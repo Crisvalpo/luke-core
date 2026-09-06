@@ -39,7 +39,7 @@ export class AuthService {
       const personalRes = await query(`
         SELECT 
           p.id, p.nombre_completo, p.email, p.rol_organizacional,
-          t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+          t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
         FROM core.personal p
         LEFT JOIN core.tenants t ON t.id = p.tenant_id
         WHERE p.auth_user_id = $1 OR LOWER(p.email) = $2
@@ -116,7 +116,7 @@ export class AuthService {
     const personalRes = await query(`
       SELECT 
         p.id, p.nombre_completo, p.email, p.rol_organizacional, p.activo, p.auth_user_id,
-        t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social, t.activo AS tenant_activo
+        t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social, t.is_active AS tenant_activo
       FROM core.personal p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE (p.auth_user_id = $1 OR LOWER(p.email) = $2)
@@ -139,7 +139,7 @@ export class AuthService {
 
     // Vincular auth_user_id si aún no estaba asignado
     if (perfil && !perfil.auth_user_id) {
-      await query(`UPDATE core.personal SET auth_user_id = $1 WHERE id = $2`, [data.user.id, perfil.id]);
+      await query(`UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2`, [data.user.id, perfil.id]);
     }
 
     // Sincronizar App Metadata en Supabase Auth
@@ -177,7 +177,7 @@ export class AuthService {
 
     // 1. Buscar usuario en core.personal
     const personalRes = await query(`
-      SELECT p.id, p.auth_user_id, p.nombre_completo, p.rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.razon_social AS tenant_razon_social
+      SELECT p.id, p.auth_user_id, p.nombre_completo, p.rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
       FROM core.personal p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE LOWER(p.email) = $1
@@ -211,7 +211,7 @@ export class AuthService {
     }
 
     if (personalRes.rows[0]?.id && !personalRes.rows[0]?.auth_user_id) {
-      await query(`UPDATE core.personal SET auth_user_id = $1 WHERE id = $2`, [authUserId, personalRes.rows[0].id]);
+      await query(`UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2`, [authUserId, personalRes.rows[0].id]);
     }
 
     return this.login({ identificador: emailNorm, password });
