@@ -591,6 +591,8 @@ async function cargarFaenasTenant(tenantId) {
       return;
     }
 
+    window._faenasTenantActual = proyectos;
+
     container.innerHTML = `
       <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-container); border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
@@ -600,6 +602,7 @@ async function cargarFaenasTenant(tenantId) {
               <th style="padding: 0.5rem 0.75rem;">Proyecto / Faena</th>
               <th style="padding: 0.5rem 0.75rem;">Ubicación</th>
               <th style="padding: 0.5rem 0.75rem;">Estado</th>
+              <th style="padding: 0.5rem 0.75rem; text-align: center;">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -610,6 +613,11 @@ async function cargarFaenasTenant(tenantId) {
                 <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">${p.ubicacion || '-'}</td>
                 <td style="padding: 0.5rem 0.75rem;">
                   <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: ${p.estado === 'en_ejecucion' ? '#ecfdf5; color: #059669;' : '#f3f4f6; color: #4b5563;'}">${p.estado}</span>
+                </td>
+                <td style="padding: 0.5rem 0.75rem; text-align: center;">
+                  <button type="button" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="prepararEditarFaena('${p.id}')">
+                    ✏️ Editar
+                  </button>
                 </td>
               </tr>
             `).join('')}
@@ -622,26 +630,69 @@ async function cargarFaenasTenant(tenantId) {
   }
 }
 
+function prepararEditarFaena(proyectoId) {
+  const proyectos = window._faenasTenantActual || [];
+  const p = proyectos.find(item => item.id === proyectoId);
+  if (!p) return;
+
+  document.getElementById('faena-id').value = p.id;
+  const inputCodigo = document.getElementById('faena-codigo');
+  inputCodigo.value = p.codigo;
+  inputCodigo.setAttribute('readonly', 'true');
+  inputCodigo.style.background = '#f1f5f9';
+
+  document.getElementById('faena-nombre').value = p.nombre;
+  document.getElementById('faena-ubicacion').value = p.ubicacion || '';
+  document.getElementById('faena-centro-costo').value = p.centro_costo || '';
+
+  document.getElementById('faena-form-title').innerText = `✏️ Editar Faena / Proyecto (${p.codigo})`;
+  document.getElementById('btn-submit-faena').innerText = 'Guardar Cambios';
+  document.getElementById('btn-cancelar-faena').style.display = 'inline-block';
+}
+
+function cancelarEditarFaena() {
+  const tenantId = document.getElementById('faena-tenant-id').value;
+  document.getElementById('form-crear-faena').reset();
+  document.getElementById('faena-tenant-id').value = tenantId;
+  document.getElementById('faena-id').value = '';
+
+  const inputCodigo = document.getElementById('faena-codigo');
+  inputCodigo.removeAttribute('readonly');
+  inputCodigo.style.background = '';
+
+  document.getElementById('faena-form-title').innerText = '➕ Crear Nueva Faena / Proyecto';
+  document.getElementById('btn-submit-faena').innerText = 'Guardar Faena';
+  document.getElementById('btn-cancelar-faena').style.display = 'none';
+}
+
 async function ejecutarCrearFaena(event) {
   event.preventDefault();
   const btn = document.getElementById('btn-submit-faena');
   const tenantId = document.getElementById('faena-tenant-id').value;
+  const faenaId = document.getElementById('faena-id').value;
+  const isEditing = Boolean(faenaId);
 
   const payload = {
-    codigo: document.getElementById('faena-codigo').value.trim(),
     nombre: document.getElementById('faena-nombre').value.trim(),
-    ubicacion: document.getElementById('faena-ubicacion').value.trim() || undefined,
-    centro_costo: document.getElementById('faena-centro-costo').value.trim() || undefined,
-    estado: 'en_ejecucion',
-    metadata: {}
+    ubicacion: document.getElementById('faena-ubicacion').value.trim() || null,
+    centro_costo: document.getElementById('faena-centro-costo').value.trim() || null
   };
 
+  if (!isEditing) {
+    payload.codigo = document.getElementById('faena-codigo').value.trim();
+    payload.estado = 'en_ejecucion';
+    payload.metadata = {};
+  }
+
   btn.disabled = true;
-  btn.innerText = 'Guardando...';
+  btn.innerText = isEditing ? 'Actualizando...' : 'Guardando...';
 
   try {
-    const res = await fetch('/api/v1/proyectos', {
-      method: 'POST',
+    const url = isEditing ? `/api/v1/proyectos/${faenaId}` : '/api/v1/proyectos';
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
       headers: {
         ...getAuthHeaders(),
         'x-tenant-id': tenantId
@@ -650,11 +701,10 @@ async function ejecutarCrearFaena(event) {
     });
 
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'Error al crear la faena');
+    if (!json.ok) throw new Error(json.error || 'Error al procesar la faena');
 
-    document.getElementById('form-crear-faena').reset();
-    document.getElementById('faena-tenant-id').value = tenantId;
-    alert(`✅ Proyecto / Faena '${payload.nombre}' creado exitosamente.`);
+    cancelarEditarFaena();
+    alert(isEditing ? `✅ Proyecto / Faena actualizado exitosamente.` : `✅ Proyecto / Faena '${payload.nombre}' creado exitosamente.`);
     await cargarFaenasTenant(tenantId);
     await cargarTenants();
 
@@ -662,7 +712,7 @@ async function ejecutarCrearFaena(event) {
     alert(`❌ ${error.message}`);
   } finally {
     btn.disabled = false;
-    btn.innerText = 'Guardar Faena';
+    btn.innerText = isEditing ? 'Guardar Cambios' : 'Guardar Faena';
   }
 }
 

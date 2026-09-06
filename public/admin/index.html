@@ -331,11 +331,12 @@
           </div>
         </div>
 
-        <!-- Formulario para agregar nueva faena -->
+        <!-- Formulario para agregar / editar faena -->
         <div style="border-top: 1px solid var(--border-container); padding-top: 1rem;">
-          <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text);">➕ Crear Nueva Faena / Proyecto</h4>
+          <h4 id="faena-form-title" style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text);">➕ Crear Nueva Faena / Proyecto</h4>
           <form id="form-crear-faena" onsubmit="ejecutarCrearFaena(event)">
             <input type="hidden" id="faena-tenant-id">
+            <input type="hidden" id="faena-id">
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Código de Faena / Proyecto *</label>
@@ -355,6 +356,9 @@
               </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+              <button type="button" class="btn btn-secondary" id="btn-cancelar-faena" style="display: none; padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="cancelarEditarFaena()">
+                Cancelar
+              </button>
               <button type="submit" class="btn btn-primary" id="btn-submit-faena" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
                 Guardar Faena
               </button>
