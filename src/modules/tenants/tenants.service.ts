@@ -57,21 +57,19 @@ export class TenantsService {
       );
       const tenant = tenantRes.rows[0];
 
-      // 3. Crear Proyecto / Faena Inicial (si viene especificado o por defecto)
+      // 3. Crear Proyecto Inicial (Entorno de Entrenamiento / Sandbox)
       let proyecto = null;
       const projInput = input.proyecto_inicial || {
         codigo: 'BASE-01',
-        nombre: 'Faena Principal / Casa Matriz',
-        ubicacion: 'Nacional'
+        nombre: 'Proyecto Base (Entrenamiento / Sandbox)',
+        ubicacion: 'Entorno de Pruebas y Aprendizaje'
       };
+      const projMeta = { es_entrenamiento: true, nota: 'Entorno controlado para pruebas' };
 
       const projRes = await client.query(
-        `
-        INSERT INTO core.projects (tenant_id, code, name, cost_center, location, status, metadata)
-        VALUES ($1, $2, $3, $4, $5, 'en_ejecucion', '{}'::jsonb)
-        RETURNING *;
-        `,
-        [tenant.id, projInput.codigo, projInput.nombre, projInput.centro_costo || null, projInput.ubicacion || null]
+        `INSERT INTO core.projects (tenant_id, code, name, cost_center, location, status, metadata)
+         VALUES ($1, $2, $3, $4, $5, 'en_ejecucion', $6::jsonb) RETURNING *;`,
+        [tenant.id, projInput.codigo, projInput.nombre, projInput.centro_costo || null, projInput.ubicacion || null, JSON.stringify(projMeta)]
       );
       proyecto = projRes.rows[0];
 

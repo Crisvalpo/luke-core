@@ -137,24 +137,24 @@ export class ProyectosService {
     const updates: string[] = [];
     const params: any[] = [];
 
-    if (input.nombre !== undefined) { params.push(input.nombre); updates.push(`nombre = $${params.length}`); }
-    if (input.centro_costo !== undefined) { params.push(input.centro_costo); updates.push(`centro_costo = $${params.length}`); }
-    if (input.ubicacion !== undefined) { params.push(input.ubicacion); updates.push(`ubicacion = $${params.length}`); }
-    if (input.estado !== undefined) { params.push(input.estado); updates.push(`estado = $${params.length}`); }
+    if (input.nombre !== undefined) { params.push(input.nombre); updates.push(`name = $${params.length}`); }
+    if (input.centro_costo !== undefined) { params.push(input.centro_costo); updates.push(`cost_center = $${params.length}`); }
+    if (input.ubicacion !== undefined) { params.push(input.ubicacion); updates.push(`location = $${params.length}`); }
+    if (input.estado !== undefined) { params.push(input.estado); updates.push(`status = $${params.length}`); }
     if (input.metadata !== undefined) { params.push(JSON.stringify(input.metadata)); updates.push(`metadata = metadata || $${params.length}::jsonb`); }
-    if (typeof input.activo === 'boolean') { params.push(input.activo); updates.push(`activo = $${params.length}`); }
+    if (typeof input.activo === 'boolean') { params.push(input.activo); updates.push(`is_active = $${params.length}`); }
 
     if (updates.length === 0) throw new Error('No se enviaron campos para actualizar.');
 
     params.push(proyectoId, tenantId);
-    const sql = `UPDATE core.proyectos SET ${updates.join(', ')} WHERE id = $${params.length - 1} AND tenant_id = $${params.length} RETURNING *;`;
+    const sql = `UPDATE core.projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length - 1} AND tenant_id = $${params.length} RETURNING id, code AS codigo, name AS nombre, location AS ubicacion, cost_center AS centro_costo, status AS estado, metadata, is_active AS activo;`;
     const result = await dbPool.query(sql, params);
     return result.rows[0] || null;
   }
 
   static async desactivar(tenantId: string, proyectoId: string) {
     const result = await dbPool.query(
-      'UPDATE core.proyectos SET activo = FALSE WHERE id = $1 AND tenant_id = $2 RETURNING id, codigo, nombre;',
+      'UPDATE core.projects SET is_active = FALSE, updated_at = NOW() WHERE id = $1 AND tenant_id = $2 RETURNING id, code AS codigo, name AS nombre;',
       [proyectoId, tenantId]
     );
     return result.rows[0] || null;

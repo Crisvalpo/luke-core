@@ -39,7 +39,7 @@ function verificarAutenticacion() {
         if (barBusqueda) barBusqueda.style.display = 'none';
 
         const navTenants = document.getElementById('nav-link-tenants');
-        if (navTenants) navTenants.innerText = '🏗️ Proyectos & Faenas';
+        if (navTenants) navTenants.innerText = '📁 Proyectos';
 
         const topbarTitulo = document.getElementById('topbar-titulo');
         if (topbarTitulo) {
@@ -196,7 +196,7 @@ function renderizarTenants(tenants) {
 
         <div class="tenant-stats">
           <div class="stat-item">
-            <span>Faenas</span>
+            <span>Proyectos</span>
             <span>${t.total_proyectos || 0}</span>
           </div>
           <div class="stat-item">
@@ -221,7 +221,7 @@ function renderizarTenants(tenants) {
             📊 Cargar Excel
           </button>
           <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${t.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
-            🔍 Faenas
+            📁 Proyectos
           </button>
         </div>
       </article>
@@ -231,7 +231,7 @@ function renderizarTenants(tenants) {
 
 async function renderizarVistaProyectosTenant(tenant) {
   const container = document.getElementById('tenants-container');
-  container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">Cargando proyectos y faenas...</div>';
+  container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">Cargando proyectos...</div>';
 
   try {
     const res = await fetch('/api/v1/proyectos', {
@@ -249,7 +249,7 @@ async function renderizarVistaProyectosTenant(tenant) {
     if (proyectos.length === 0) {
       container.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-container); border: 1px dashed var(--border-container); border-radius: 12px;">
-          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">No tienes proyectos o faenas registradas</h3>
+          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">No tienes proyectos registrados</h3>
           <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Crea tu primer proyecto para empezar a operar con Excel y WhatsApp.</p>
           <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')">
             ➕ Crear Primer Proyecto
@@ -260,6 +260,16 @@ async function renderizarVistaProyectosTenant(tenant) {
     }
 
     container.innerHTML = proyectos.map(p => {
+      const esEntrenamiento = p.codigo === 'BASE-01' || 
+        (p.metadata && (p.metadata.es_entrenamiento || p.metadata.sandbox)) || 
+        (p.nombre && (p.nombre.toLowerCase().includes('entrenamiento') || p.nombre.toLowerCase().includes('sandbox') || p.nombre.toLowerCase().includes('pruebas')));
+
+      const trainingBanner = esEntrenamiento ? `
+        <div style="font-size: 0.75rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; padding: 0.4rem 0.6rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>🧪</span>
+          <span><strong>Proyecto de Entrenamiento:</strong> Entorno controlado para aprender y crear sin afectar datos reales.</span>
+        </div>
+      ` : '';
       return `
         <article class="tenant-card" style="border-top-color: #10b981;">
           <div class="tenant-header">
@@ -277,8 +287,10 @@ async function renderizarVistaProyectosTenant(tenant) {
             </div>
           </div>
 
+          ${trainingBanner}
+
           <div style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.5rem; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-            📍 <strong>Ubicación:</strong> ${p.ubicacion || 'Faena Principal'}
+            📍 <strong>Ubicación:</strong> ${p.ubicacion || 'Proyecto Principal'}
           </div>
 
           <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
@@ -289,7 +301,7 @@ async function renderizarVistaProyectosTenant(tenant) {
               👤 Invitar Admin
             </button>
             <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-              ⚙️ Gestionar Faenas
+              ⚙️ Gestionar Proyectos
             </button>
           </div>
         </article>
@@ -527,7 +539,7 @@ async function eliminarTenantActual() {
   const slug = document.getElementById('edit-slug').value;
 
   const confirmacion = prompt(
-    `⚠️ PELIGRO: Esto eliminará permanentemente la empresa "${razonSocial}" y TODOS sus proyectos, faenas, personal, flota de maquinaria, roles y canales de WhatsApp.\n\nEscribe el slug "${slug}" para confirmar la eliminación:`
+    `⚠️ PELIGRO: Esto eliminará permanentemente la empresa "${razonSocial}" y TODOS sus proyectos, personal, flota de maquinaria, roles y canales de WhatsApp.\n\nEscribe el slug "${slug}" para confirmar la eliminación:`
   );
 
   if (confirmacion !== slug) {
@@ -571,7 +583,7 @@ function cerrarModalFaenas() {
 
 async function cargarFaenasTenant(tenantId) {
   const container = document.getElementById('faenas-lista-container');
-  container.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">Cargando faenas...</div>';
+  container.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">Cargando proyectos...</div>';
 
   try {
     const res = await fetch('/api/v1/proyectos', {
@@ -582,12 +594,12 @@ async function cargarFaenasTenant(tenantId) {
     });
 
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'Error al cargar faenas');
+    if (!json.ok) throw new Error(json.error || 'Error al cargar proyectos');
 
     const proyectos = json.data || [];
 
     if (proyectos.length === 0) {
-      container.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--color-text-muted);">No hay faenas registradas para esta empresa. Crea la primera abajo.</div>';
+      container.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--color-text-muted);">No hay proyectos registrados para esta empresa. Crea el primero abajo.</div>';
       return;
     }
 
@@ -599,28 +611,47 @@ async function cargarFaenasTenant(tenantId) {
           <thead>
             <tr style="background: #f8fafc; text-align: left; border-bottom: 1px solid var(--border-container);">
               <th style="padding: 0.5rem 0.75rem;">Código</th>
-              <th style="padding: 0.5rem 0.75rem;">Proyecto / Faena</th>
+              <th style="padding: 0.5rem 0.75rem;">Proyecto</th>
               <th style="padding: 0.5rem 0.75rem;">Ubicación</th>
               <th style="padding: 0.5rem 0.75rem;">Estado</th>
               <th style="padding: 0.5rem 0.75rem; text-align: center;">Acción</th>
             </tr>
           </thead>
           <tbody>
-            ${proyectos.map(p => `
+            ${proyectos.map(p => {
+              const esEntrenamiento = p.codigo === 'BASE-01' || 
+                (p.metadata && (p.metadata.es_entrenamiento || p.metadata.sandbox)) || 
+                (p.nombre && (p.nombre.toLowerCase().includes('entrenamiento') || p.nombre.toLowerCase().includes('sandbox') || p.nombre.toLowerCase().includes('pruebas')));
+
+              const badgeEntrenamiento = esEntrenamiento ? `
+                <div style="margin-top: 3px;">
+                  <span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Entorno controlado no real para aprender y crear sin afectar operaciones">🧪 Entrenamiento / Sandbox</span>
+                </div>
+              ` : '';
+
+              return `
               <tr style="border-bottom: 1px solid #f1f5f9;">
                 <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: var(--color-primary);">${p.codigo}</td>
-                <td style="padding: 0.5rem 0.75rem;">${p.nombre}</td>
+                <td style="padding: 0.5rem 0.75rem;">
+                  <div style="font-weight: 500;">${p.nombre}</div>
+                  ${badgeEntrenamiento}
+                </td>
                 <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">${p.ubicacion || '-'}</td>
                 <td style="padding: 0.5rem 0.75rem;">
                   <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: ${p.estado === 'en_ejecucion' ? '#ecfdf5; color: #059669;' : '#f3f4f6; color: #4b5563;'}">${p.estado}</span>
                 </td>
                 <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                  <button type="button" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="prepararEditarFaena('${p.id}')">
-                    ✏️ Editar
-                  </button>
+                  <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
+                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
+                      ✏️ Editar
+                    </button>
+                    <button type="button" class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;" onclick="ejecutarEliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo}')" title="Eliminar proyecto">
+                      🗑️ Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
-            `).join('')}
+            `;}).join('')}
           </tbody>
         </table>
       </div>
@@ -645,7 +676,7 @@ function prepararEditarFaena(proyectoId) {
   document.getElementById('faena-ubicacion').value = p.ubicacion || '';
   document.getElementById('faena-centro-costo').value = p.centro_costo || '';
 
-  document.getElementById('faena-form-title').innerText = `✏️ Editar Faena / Proyecto (${p.codigo})`;
+  document.getElementById('faena-form-title').innerText = `✏️ Editar Proyecto (${p.codigo})`;
   document.getElementById('btn-submit-faena').innerText = 'Guardar Cambios';
   document.getElementById('btn-cancelar-faena').style.display = 'inline-block';
 }
@@ -660,9 +691,51 @@ function cancelarEditarFaena() {
   inputCodigo.removeAttribute('readonly');
   inputCodigo.style.background = '';
 
-  document.getElementById('faena-form-title').innerText = '➕ Crear Nueva Faena / Proyecto';
-  document.getElementById('btn-submit-faena').innerText = 'Guardar Faena';
+  document.getElementById('faena-form-title').innerText = '➕ Crear Nuevo Proyecto';
+  document.getElementById('btn-submit-faena').innerText = 'Guardar Proyecto';
   document.getElementById('btn-cancelar-faena').style.display = 'none';
+}
+
+async function ejecutarEliminarProyecto(proyectoId, nombre, codigo) {
+  const esBase = codigo === 'BASE-01' || nombre.toLowerCase().includes('entrenamiento');
+  const advertencia = esBase
+    ? `⚠️ Este es el Entorno de Entrenamiento/Sandbox.\n\n¿Estás seguro de que deseas eliminar "${nombre}" (${codigo})?\n\nAl eliminarlo podrás crear tus propios proyectos reales de producción.`
+    : `¿Estás seguro de que deseas eliminar el proyecto "${nombre}" (${codigo})?\n\nEsta acción desactivará el proyecto de la plataforma.`;
+
+  if (!confirm(advertencia)) return;
+
+  const tenantId = (tenantActualFaenas && tenantActualFaenas.id) || '';
+
+  try {
+    const res = await fetch(`/api/v1/proyectos/${proyectoId}`, {
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeaders(),
+        'x-tenant-id': tenantId
+      }
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar el proyecto');
+
+    alert(`✅ Proyecto "${nombre}" eliminado exitosamente.`);
+    if (tenantId) {
+      await cargarFaenasTenant(tenantId);
+    }
+
+    const userStr = localStorage.getItem('luke_core_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.rol !== 'super_admin' && user.tenant) {
+          await renderizarVistaProyectosTenant(user.tenant);
+        }
+      } catch {}
+    }
+    await cargarTenants();
+  } catch (error) {
+    alert(`❌ Error al eliminar proyecto: ${error.message}`);
+  }
 }
 
 async function ejecutarCrearFaena(event) {
@@ -701,10 +774,10 @@ async function ejecutarCrearFaena(event) {
     });
 
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'Error al procesar la faena');
+    if (!json.ok) throw new Error(json.error || 'Error al procesar el proyecto');
 
     cancelarEditarFaena();
-    alert(isEditing ? `✅ Proyecto / Faena actualizado exitosamente.` : `✅ Proyecto / Faena '${payload.nombre}' creado exitosamente.`);
+    alert(isEditing ? `✅ Proyecto actualizado exitosamente.` : `✅ Proyecto '${payload.nombre}' creado exitosamente.`);
     await cargarFaenasTenant(tenantId);
     await cargarTenants();
 
@@ -712,7 +785,7 @@ async function ejecutarCrearFaena(event) {
     alert(`❌ ${error.message}`);
   } finally {
     btn.disabled = false;
-    btn.innerText = isEditing ? 'Guardar Cambios' : 'Guardar Faena';
+    btn.innerText = isEditing ? 'Guardar Cambios' : 'Guardar Proyecto';
   }
 }
 

@@ -74,7 +74,7 @@
             <div class="kpi-value" id="kpi-tenants">-</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Obras / Faenas</div>
+            <div class="kpi-label">Proyectos Activos</div>
             <div class="kpi-value" id="kpi-proyectos">-</div>
           </div>
           <div class="kpi-card">
@@ -312,34 +312,34 @@
     </div>
   </div>
 
-  <!-- MODAL: GESTIÓN DE FAENAS / PROYECTOS -->
+  <!-- MODAL: GESTIÓN DE PROYECTOS -->
   <div class="modal-overlay" id="modal-faenas">
     <div class="modal-card" style="max-width: 680px;">
       <div class="modal-header">
         <div>
-          <h3 style="font-size: 1.15rem; font-weight: 700;">Gestión de Obras & Faenas</h3>
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Gestión de Proyectos</h3>
           <p id="faenas-subtitle" style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px;">Empresa: -</p>
         </div>
         <button class="modal-close" onclick="cerrarModalFaenas()">✕</button>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-        <!-- Lista de Faenas / Proyectos -->
+        <!-- Lista de Proyectos -->
         <div id="faenas-lista-container">
           <div style="text-align: center; padding: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem;">
-            Cargando faenas...
+            Cargando proyectos...
           </div>
         </div>
 
-        <!-- Formulario para agregar / editar faena -->
+        <!-- Formulario para agregar / editar proyecto -->
         <div style="border-top: 1px solid var(--border-container); padding-top: 1rem;">
-          <h4 id="faena-form-title" style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text);">➕ Crear Nueva Faena / Proyecto</h4>
+          <h4 id="faena-form-title" style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--color-text);">➕ Crear Nuevo Proyecto</h4>
           <form id="form-crear-faena" onsubmit="ejecutarCrearFaena(event)">
             <input type="hidden" id="faena-tenant-id">
             <input type="hidden" id="faena-id">
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">Código de Faena / Proyecto *</label>
+                <label class="form-label">Código de Proyecto *</label>
                 <input class="form-input" type="text" id="faena-codigo" required placeholder="Ej: 602, ANDINA-2026, SPENCE">
               </div>
               <div class="form-group">
@@ -347,7 +347,7 @@
                 <input class="form-input" type="text" id="faena-nombre" required placeholder="Ej: Montaje Concentradora Fase II">
               </div>
               <div class="form-group">
-                <label class="form-label">Ubicación / Faena</label>
+                <label class="form-label">Ubicación del Proyecto</label>
                 <input class="form-input" type="text" id="faena-ubicacion" placeholder="Ej: Los Andes, V Región">
               </div>
               <div class="form-group">
@@ -360,7 +360,7 @@
                 Cancelar
               </button>
               <button type="submit" class="btn btn-primary" id="btn-submit-faena" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                Guardar Faena
+                Guardar Proyecto
               </button>
             </div>
           </form>
@@ -406,13 +406,13 @@
           <div class="form-group">
             <label class="form-label">Nivel de Acceso (Rol) *</label>
             <select class="form-input" id="admin-rol" required onchange="cambiarNivelRolAdmin()">
-              <option value="admin_proyecto">🏗️ Administrador de Proyecto (Solo 1 faena)</option>
-              <option value="fundador">🏢 Fundador / Admin General (Todas las faenas)</option>
+              <option value="admin_proyecto">🏗️ Administrador de Proyecto (Solo 1 proyecto)</option>
+              <option value="fundador">🏢 Fundador / Admin General (Todos los proyectos)</option>
             </select>
           </div>
 
           <div class="form-group" id="group-admin-proyecto">
-            <label class="form-label">Proyecto / Faena Asignada *</label>
+            <label class="form-label">Proyecto Asignado *</label>
             <select class="form-input" id="admin-proyecto-select">
               <option value="">Selecciona el proyecto...</option>
             </select>
