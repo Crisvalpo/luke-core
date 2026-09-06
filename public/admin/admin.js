@@ -46,8 +46,8 @@ function verificarAutenticacion() {
           topbarTitulo.innerText = `Mi Empresa — ${user.tenant_razon_social || user.tenant_slug || 'Panel de Proyectos'}`;
         }
 
-        const kpiLabel = document.getElementById('kpi-label-tenants');
-        if (kpiLabel) kpiLabel.innerText = 'Mi Empresa';
+        const kpiCardTenants = document.getElementById('kpi-card-tenants');
+        if (kpiCardTenants) kpiCardTenants.style.display = 'none';
       }
     } catch {}
   }
@@ -135,7 +135,14 @@ function actualizarKPIs(tenants) {
     try { esSuperAdmin = JSON.parse(userJson).rol === 'super_admin'; } catch {}
   }
 
-  document.getElementById('kpi-tenants').innerText = esSuperAdmin ? tenants.length : (tenants[0]?.slug?.toUpperCase() || 'ACTIVO');
+  const kpiCardTenants = document.getElementById('kpi-card-tenants');
+  if (kpiCardTenants) {
+    kpiCardTenants.style.display = esSuperAdmin ? 'block' : 'none';
+  }
+
+  if (esSuperAdmin) {
+    document.getElementById('kpi-tenants').innerText = tenants.length;
+  }
   document.getElementById('kpi-proyectos').innerText = totalProyectos;
   document.getElementById('kpi-personal').innerText = totalPersonal;
   document.getElementById('kpi-equipos').innerText = totalEquipos;
@@ -831,7 +838,7 @@ function cambiarNivelRolAdmin() {
     groupProy.style.display = 'none';
     proySelect.required = false;
   } else {
-    groupProy.style.display = 'block';
+    groupProy.style.display = 'flex';
     proySelect.required = true;
   }
 }
