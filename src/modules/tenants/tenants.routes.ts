@@ -142,67 +142,8 @@ tenantsRouter.delete('/:id', requireSuperAdmin, async (req: Request, res: Respon
       [id]
     );
 
-    // 3. Borrado seguro en Cascada en PostgreSQL (Leaf-to-root)
-    const client = await dbPool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // 3.1 Tablas de Calidad y Ensayos
-      await client.query('DELETE FROM quality.joint_repairs WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM quality.ndt_inspections WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM quality.visual_inspections WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM quality.joint_executions WHERE tenant_id = $1', [id]).catch(() => {});
-
-      // 3.2 Tablas Documentales
-      await client.query('DELETE FROM documents.revisions WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM documents.documents WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM documents.transmittals WHERE tenant_id = $1', [id]).catch(() => {});
-
-      // 3.3 Tablas de Piping (de hojas hacia raíces)
-      await client.query('DELETE FROM piping.mto_items WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.tie_ins WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.supports WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.valves WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.joints WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.spool_events WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.spools WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.isometrics WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.pid_lines WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.lines WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.pid WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_configs WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_joint_types WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_diameters WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_pipe_classes WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_fluids WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.project_painting_specs WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.catalog_joint_types WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM piping.catalog_diameters WHERE tenant_id = $1', [id]).catch(() => {});
-
-      // 3.4 Staging e Ingesta
-      await client.query('DELETE FROM staging.raw_excel_imports WHERE tenant_id = $1', [id]).catch(() => {});
-
-      // 3.5 Core dependientes
-      await client.query('DELETE FROM core.audit_sync WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.audit_logs WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.sesiones_canal WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.access_requests WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.project_personnel WHERE personal_id IN (SELECT id FROM core.personnel WHERE tenant_id = $1)', [id]).catch(() => {});
-      await client.query('DELETE FROM core.project_roles WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.company_roles WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.work_fronts WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.equipment WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.personnel WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.projects WHERE tenant_id = $1', [id]).catch(() => {});
-      await client.query('DELETE FROM core.tenants WHERE id = $1', [id]);
-
-      await client.query('COMMIT');
-    } catch (dbErr) {
-      await client.query('ROLLBACK');
-      throw dbErr;
-    } finally {
-      client.release();
-    }
+    // 3. Borrado en Cascada Nativo en PostgreSQL
+    await query('DELETE FROM core.tenants WHERE id = $1', [id]);
 
     // 4. Limpiar usuarios en Supabase Auth y archivo de logo en Supabase Storage
     const { supabaseAdmin } = await import('../../config/supabase.js');
