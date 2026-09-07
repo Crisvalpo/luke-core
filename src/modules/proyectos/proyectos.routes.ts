@@ -46,6 +46,26 @@ proyectosRouter.get('/:id', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
+ * GET /api/v1/proyectos/:id/plantilla/piping — Descargar plantilla personalizada de Piping
+ */
+proyectosRouter.get('/:id/plantilla/piping', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const proyectoId = String(req.params.id);
+    const tenantId = req.tenant!.id;
+
+    const { PlantillaService } = await import('./plantilla.service.js');
+    const { filename, buffer } = await PlantillaService.generarPlantillaPiping(proyectoId, tenantId, req.user);
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel.sheet.macroEnabled.12');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    return res.end(buffer);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Error al generar la plantilla de Piping', 400);
+  }
+});
+
+/**
  * POST /api/v1/proyectos — Crear nuevo proyecto/faena
  */
 proyectosRouter.post('/', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {

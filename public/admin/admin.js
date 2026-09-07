@@ -74,12 +74,22 @@ function cerrarSesion() {
   window.location.href = '/admin/login.html';
 }
 
-function getAuthHeaders() {
+function getAuthHeaders(tenantIdOpcional) {
   const token = localStorage.getItem('luke_core_token');
-  return {
+  const userJson = localStorage.getItem('luke_core_user');
+  let tenantId = tenantIdOpcional;
+  if (!tenantId && userJson) {
+    try {
+      const u = JSON.parse(userJson);
+      tenantId = u.tenant_id;
+    } catch {}
+  }
+  const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`
   };
+  if (tenantId) headers['x-tenant-id'] = tenantId;
+  return headers;
 }
 
 async function cargarTenants() {
@@ -327,9 +337,14 @@ async function renderizarVistaProyectosTenant(tenant) {
           </div>
 
           ${esOperario ? `
-            <div style="margin-top: 1rem; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: #475569; display: flex; align-items: center; justify-content: space-between;">
-              <span>⚡ <strong>Rol Operativo:</strong> Proyecto Asignado</span>
-              <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Sincronizado con Excel</span>
+            <div style="margin-top: 1rem; padding: 0.75rem 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; flex-direction: column; gap: 0.6rem;">
+              <div style="font-size: 0.8rem; color: #475569; display: flex; align-items: center; justify-content: space-between;">
+                <span>⚡ <strong>Rol Operativo:</strong> Proyecto Asignado</span>
+                <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Sincronizado con Excel</span>
+              </div>
+              <button class="btn btn-primary" onclick="descargarPlantillaPiping('${p.id}', '${p.codigo}')" style="width: 100%; font-size: 0.8rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #059669;">
+                📥 Descargar Planilla Excel (Piping)
+              </button>
             </div>
           ` : `
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
@@ -341,6 +356,9 @@ async function renderizarVistaProyectosTenant(tenant) {
               </button>
               <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
                 ⚙️ Gestionar Proyectos
+              </button>
+              <button class="btn btn-secondary" onclick="descargarPlantillaPiping('${p.id}', '${p.codigo}')" style="width: 100%; font-size: 0.75rem; padding: 0.45rem; margin-top: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                📥 Descargar Planilla Excel (Piping)
               </button>
             </div>
           `}
@@ -354,6 +372,43 @@ async function renderizarVistaProyectosTenant(tenant) {
         ❌ Error al cargar proyectos: ${err.message}
       </div>
     `;
+  }
+}
+
+async function descargarPlantillaPiping(proyectoId, codigoProyecto) {
+  const btn = event?.currentTarget;
+  const textoOriginal = btn ? btn.innerText : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Generando planilla personalizada...';
+  }
+
+  try {
+    const res = await fetch(`/api/v1/proyectos/${proyectoId}/plantilla/piping`, {
+      headers: getAuthHeaders()
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Error del servidor (${res.status})`);
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LukeAPP_Piping_${codigoProyecto || 'Faena'}.xlsm`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(`❌ No se pudo descargar la planilla: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = textoOriginal;
+    }
   }
 }
 
