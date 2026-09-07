@@ -40,7 +40,7 @@ function verificarAutenticacion() {
         }
 
         const btnIngesta = document.getElementById('btn-topbar-ingesta');
-        if (btnIngesta && user.rol === 'operario') {
+        if (btnIngesta && (user.rol === 'operario' || user.rol === 'admin_proyecto')) {
           btnIngesta.style.display = 'none';
         }
 
@@ -348,17 +348,16 @@ async function renderizarVistaProyectosTenant(tenant) {
             </div>
           ` : `
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-              <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                📊 Cargar Dotación
-              </button>
+              ${user && (user.rol === 'fundador' || user.rol === 'admin_empresa' || user.rol === 'super_admin') ? `
+                <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+                  📊 Cargar Dotación
+                </button>
+              ` : ''}
               <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
                 👤 Invitar Usuarios
               </button>
               <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
                 ⚙️ Gestionar Proyectos
-              </button>
-              <button class="btn btn-secondary" onclick="descargarPlantillaPiping('${p.id}', '${p.codigo}')" style="width: 100%; font-size: 0.75rem; padding: 0.45rem; margin-top: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-                📥 Descargar Planilla Excel (Piping)
               </button>
             </div>
           `}
