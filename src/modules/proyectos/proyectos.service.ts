@@ -48,10 +48,10 @@ export class ProyectosService {
     `;
     const params: any[] = [tenantId];
 
-    // Si no es Super-Admin ni Fundador/Admin de Empresa, filtrar solo los proyectos autorizados
-    const esAdminGlobalEmpresa = userRol === 'super_admin' || userRol === 'fundador' || userRol === 'owner' || userRol === 'admin_empresa' || userRol === 'admin';
+    // Solo los roles estrictamente operativos de terreno (operario/worker) tienen visión restringida a proyectos asignados
+    const esOperario = userRol === 'operario' || userRol === 'worker';
 
-    if (!esAdminGlobalEmpresa && userId) {
+    if (esOperario && userId) {
       params.push(userId);
       sql += `
         AND (
@@ -85,15 +85,19 @@ export class ProyectosService {
     if (proyectoRes.rows.length === 0) return null;
 
     const frentesRes = await dbPool.query(`
-      SELECT id, tenant_id, project_id, code, name, discipline, is_active, metadata, created_at, updated_at,
-        project_id AS proyecto_id, code AS codigo, name AS nombre, discipline AS disciplina, is_active AS activo
-      FROM core.work_fronts WHERE project_id = $1 AND tenant_id = $2 AND is_active = TRUE ORDER BY code ASC;
+      SELECT id, code AS codigo, name AS nombre, discipline AS disciplina, is_active AS activo
+      FROM core.work_fronts
+      WHERE project_id = $1 AND tenant_id = $2 AND is_active = TRUE
+      ORDER BY code ASC;
     `, [proyectoId, tenantId]);
 
-    return { ...proyectoRes.rows[0], frentes: frentesRes.rows };
+    return {
+      ...proyectoRes.rows[0],
+      frentes: frentesRes.rows
+    };
   }
 
-  static async crear(tenantId: string, input: CrearProyectoInput) {
+  static async crear(tenantId: string, input: CrearProyectoInput, creadorUserId?: string) {
     const client = await dbPool.connect();
     try {
       await client.query('BEGIN');
@@ -116,12 +120,23 @@ export class ProyectosService {
         VALUES ($1, $2, 'FR-00', 'Frente General', 'GENERAL') ON CONFLICT (project_id, code) DO NOTHING;
       `, [tenantId, proyecto.id]);
 
+      // Auto-vincular al creador del proyecto con rol de administrador
+      if (creadorUserId) {
+        await client.query(`
+          INSERT INTO core.project_personnel (project_id, personnel_id, puede_sincronizar, is_active, rol_proyecto)
+          SELECT $1, p.id, TRUE, TRUE, 'administrador'
+          FROM core.personnel p
+          WHERE (p.id::text = $2 OR p.auth_user_id::text = $2) AND p.tenant_id = $3
+          ON CONFLICT (project_id, personnel_id) DO NOTHING;
+        `, [proyecto.id, creadorUserId, tenantId]);
+      }
+
       await client.query('SELECT core.clonar_roles_a_proyecto($1, $2)', [tenantId, proyecto.id]);
 
       await client.query(`
         INSERT INTO core.audit_logs (tenant_id, tabla, registro_id, accion, payload_nuevo, ejecutado_por)
         VALUES ($1, 'core.proyectos', $2, 'INSERT', $3, $4)
-      `, [tenantId, proyecto.id, JSON.stringify(proyecto), 'api']);
+      `, [tenantId, proyecto.id, JSON.stringify(proyecto), creadorUserId || 'api']);
 
       await client.query('COMMIT');
       return proyecto;

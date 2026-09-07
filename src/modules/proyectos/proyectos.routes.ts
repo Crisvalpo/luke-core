@@ -71,7 +71,7 @@ proyectosRouter.get('/:id/plantilla/piping', async (req: Request, res: Response,
 proyectosRouter.post('/', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input = crearProyectoSchema.parse(req.body);
-    const proyecto = await ProyectosService.crear(req.tenant!.id, input);
+    const proyecto = await ProyectosService.crear(req.tenant!.id, input, req.user?.id);
     return sendSuccess(res, proyecto, 201, { mensaje: `Proyecto '${proyecto.nombre}' creado con éxito.` });
   } catch (error: any) {
     if (error.name === 'ZodError') {
