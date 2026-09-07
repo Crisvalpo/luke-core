@@ -229,24 +229,24 @@ export class PipingService {
     const result = await dbPool.query(`
       SELECT 
         p.id AS uuid,
-        p.codigo AS codigo_pid,
-        p.titulo,
-        p.revision_vigente AS revision,
-        p.estado_documental AS estado,
+        p.code AS codigo_pid,
+        p.title AS titulo,
+        p.current_revision AS revision,
+        p.document_status AS estado,
         p.metadata->>'archivo_pdf' AS archivo_pdf,
-        COALESCE(p.metadata->>'responsable', uc.nombre_completo, 'Sistema') AS responsable,
-        p.vigente,
+        COALESCE(p.metadata->>'responsable', uc.full_name, 'Sistema') AS responsable,
+        p.is_current AS vigente,
         to_char(p.created_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_creacion,
-        COALESCE(uc.nombre_completo, uc.usuario_windows, 'Sistema') AS creado_por,
+        COALESCE(uc.full_name, uc.usuario_windows, 'Sistema') AS creado_por,
         to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_edicion,
         to_char(p.updated_at AT TIME ZONE 'America/Santiago', 'YYYY-MM-DD HH24:MI:SS') AS fecha_sync,
-        COALESCE(uu.nombre_completo, uu.usuario_windows, 'Sistema') AS editado_por
+        COALESCE(uu.full_name, uu.usuario_windows, 'Sistema') AS editado_por
       FROM piping.pid p
-      JOIN core.proyectos pr ON pr.id = p.proyecto_id
-      LEFT JOIN core.personal uc ON uc.id = p.created_by
-      LEFT JOIN core.personal uu ON uu.id = p.updated_by
-      WHERE (pr.codigo = $1 OR pr.id::text = $1)
-      ORDER BY p.codigo ASC;
+      JOIN core.projects pr ON pr.id = p.project_id
+      LEFT JOIN core.personnel uc ON uc.id = p.created_by
+      LEFT JOIN core.personnel uu ON uu.id = p.updated_by
+      WHERE (pr.code = $1 OR pr.id::text = $1)
+      ORDER BY p.code ASC;
     `, [idProyecto.trim()]);
     return result.rows;
   }
