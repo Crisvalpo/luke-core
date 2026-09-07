@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../modules/auth/auth.service.js';
 import { sendError } from '../utils/response.js';
+import { env } from '../../config/env.js';
 
 declare global {
   namespace Express {
@@ -18,7 +19,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   const adminKey = req.headers['x-admin-key'];
 
   // Soporte para API Key directa en llamadas programáticas o bots
-  if (adminKey && adminKey === process.env.CORE_ADMIN_API_KEY) {
+  if (adminKey && adminKey === env.CORE_ADMIN_API_KEY) {
     req.user = {
       id: '00000000-0000-0000-0000-000000000000',
       nombre_completo: 'API Key Admin',
@@ -59,7 +60,7 @@ export async function requireSyncAuth(req: Request, res: Response, next: NextFun
   const authHeader = req.headers.authorization;
   const adminKey = req.headers['x-admin-key'];
 
-  if (adminKey && adminKey === process.env.CORE_ADMIN_API_KEY) {
+  if (adminKey && adminKey === env.CORE_ADMIN_API_KEY) {
     req.user = { sub: 'ADMIN_KEY', nombre: 'API Master', perm: 'sync' };
     return next();
   }
