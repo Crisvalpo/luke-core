@@ -77,6 +77,14 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
       return sendError(res, 'RUT inválido', 400);
     }
 
+    // Prevenir escalamiento de privilegios: solo super_admin o fundador pueden crear fundadores
+    const userRole = (req as any).user?.rol;
+    if (body.rol_organizacional === 'fundador' || body.rol_organizacional === 'admin_empresa') {
+      if (userRole !== 'super_admin' && userRole !== 'fundador' && userRole !== 'admin_empresa' && userRole !== 'admin') {
+        return sendError(res, 'No tienes permisos para otorgar el rol de Fundador / Gerencia General', 403);
+      }
+    }
+
     const telefonoNorm = body.telefono_whatsapp ? normalizarTelefonoChileno(body.telefono_whatsapp) : null;
     const usuarioWindowsNorm = body.usuario_windows ? body.usuario_windows.trim() : null;
 

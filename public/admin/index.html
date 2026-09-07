@@ -374,8 +374,8 @@
     <div class="modal-card" style="max-width: 620px;">
       <div class="modal-header">
         <div>
-          <h3 style="font-size: 1.15rem; font-weight: 700;">Invitar Administrador</h3>
-          <p id="invitar-admin-subtitle" style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px;">Configuración de Accesos</p>
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Invitar Personal / Administrador</h3>
+          <p id="invitar-admin-subtitle" style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px;">Asignación de Roles y Accesos a Proyecto</p>
         </div>
         <button class="modal-close" onclick="cerrarModalInvitarAdmin()">✕</button>
       </div>
@@ -406,8 +406,9 @@
           <div class="form-group">
             <label class="form-label">Nivel de Acceso (Rol) *</label>
             <select class="form-input" id="admin-rol" required onchange="cambiarNivelRolAdmin()">
-              <option value="admin_proyecto">🏗️ Administrador de Proyecto (Solo 1 proyecto)</option>
-              <option value="fundador">🏢 Fundador / Admin General (Todos los proyectos)</option>
+              <option value="operario" selected>📐 Personal Técnico / Cubicador (Excel)</option>
+              <option value="admin_proyecto">🏗️ Administrador de Proyecto (Co-Admin)</option>
+              <option value="fundador" id="opt-rol-fundador">🏢 Fundador / Admin General (Todos los proyectos)</option>
             </select>
           </div>
 
@@ -424,8 +425,8 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Cargo / Función</label>
-            <input class="form-input" type="text" id="admin-cargo" placeholder="Ej: Administrador de Proyecto / Contrato" value="Administrador de Proyecto">
+            <label class="form-label">Cargo / Función *</label>
+            <input class="form-input" type="text" id="admin-cargo" required placeholder="Ej: Cubicador de Terreno / Oficina Técnica" value="Cubicador de Terreno">
           </div>
 
           <div class="form-group full" style="display: flex; flex-direction: row; align-items: center; gap: 0.6rem; margin-top: 0.35rem;">

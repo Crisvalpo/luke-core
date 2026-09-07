@@ -797,12 +797,30 @@ async function ejecutarCrearFaena(event) {
 }
 
 // -----------------------------------------------------------------------------
-// INVITACIÓN DE ADMINISTRADORES (PROYECTO O FUNDADOR)
+// -----------------------------------------------------------------------------
+// INVITACIÓN DE ADMINISTRADORES Y PERSONAL DE PROYECTO
 // -----------------------------------------------------------------------------
 async function abrirModalInvitarAdmin(tenantId, proyectoIdOpcional) {
   document.getElementById('admin-tenant-id').value = tenantId;
   const selectProy = document.getElementById('admin-proyecto-select');
   selectProy.innerHTML = '<option value="">Cargando proyectos...</option>';
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let userRol = 'admin_proyecto';
+  if (userJson) {
+    try { userRol = JSON.parse(userJson).rol; } catch {}
+  }
+
+  // Si el usuario es admin_proyecto, ocultar opción de crear Fundador (prevenir escalamiento)
+  const optFundador = document.getElementById('opt-rol-fundador');
+  const rolSelect = document.getElementById('admin-rol');
+  const puedeCrearFundador = userRol === 'super_admin' || userRol === 'fundador' || userRol === 'admin_empresa';
+  if (optFundador) {
+    optFundador.style.display = puedeCrearFundador ? 'block' : 'none';
+  }
+  if (!puedeCrearFundador && rolSelect.value === 'fundador') {
+    rolSelect.value = 'operario';
+  }
 
   try {
     const res = await fetch('/api/v1/proyectos', {
@@ -816,6 +834,8 @@ async function abrirModalInvitarAdmin(tenantId, proyectoIdOpcional) {
 
     if (proyectoIdOpcional) {
       selectProy.value = proyectoIdOpcional;
+    } else if (proyectos.length === 1) {
+      selectProy.value = proyectos[0].id;
     }
   } catch {
     selectProy.innerHTML = '<option value="">Error cargando proyectos</option>';
@@ -833,13 +853,27 @@ function cambiarNivelRolAdmin() {
   const rol = document.getElementById('admin-rol').value;
   const groupProy = document.getElementById('group-admin-proyecto');
   const proySelect = document.getElementById('admin-proyecto-select');
+  const cargoInput = document.getElementById('admin-cargo');
 
   if (rol === 'fundador') {
     groupProy.style.display = 'none';
     proySelect.required = false;
-  } else {
+    if (cargoInput.value === 'Cubicador de Terreno' || cargoInput.value === 'Administrador de Proyecto') {
+      cargoInput.value = 'Gerente / Fundador';
+    }
+  } else if (rol === 'admin_proyecto') {
     groupProy.style.display = 'flex';
     proySelect.required = true;
+    if (cargoInput.value === 'Cubicador de Terreno' || cargoInput.value === 'Gerente / Fundador') {
+      cargoInput.value = 'Administrador de Proyecto';
+    }
+  } else {
+    // Personal técnico / cubicador
+    groupProy.style.display = 'flex';
+    proySelect.required = true;
+    if (cargoInput.value === 'Administrador de Proyecto' || cargoInput.value === 'Gerente / Fundador') {
+      cargoInput.value = 'Cubicador de Terreno';
+    }
   }
 }
 
@@ -852,13 +886,13 @@ async function ejecutarInvitarAdmin(event) {
 
   const payload = {
     tenant_id: tenantId,
-    proyecto_id: rol === 'admin_proyecto' ? proyectoId : undefined,
+    proyecto_id: rol === 'fundador' ? undefined : proyectoId,
     nombre_completo: document.getElementById('admin-nombre').value.trim(),
     rut: document.getElementById('admin-rut').value.trim(),
     email: document.getElementById('admin-email').value.trim().toLowerCase(),
     telefono_whatsapp: document.getElementById('admin-telefono').value.trim(),
     rol_organizacional: rol,
-    cargo: document.getElementById('admin-cargo').value.trim() || 'Administrador',
+    cargo: document.getElementById('admin-cargo').value.trim() || (rol === 'operario' ? 'Cubicador' : 'Administrador'),
     usuario_windows: document.getElementById('admin-usuario-windows').value.trim() || undefined,
     puede_sincronizar_excel: document.getElementById('admin-puede-sync').checked
   };
@@ -874,9 +908,10 @@ async function ejecutarInvitarAdmin(event) {
     });
 
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'Error al registrar administrador');
+    if (!json.ok) throw new Error(json.error || 'Error al registrar personal');
 
-    alert(`✅ Invitación enviada exitosamente a ${payload.email}.\n\nSe ha generado su acceso seguro para el rol de ${rol === 'fundador' ? 'Fundador / Gerente' : 'Administrador de Proyecto'}.`);
+    const descRol = rol === 'fundador' ? 'Fundador / Gerente' : (rol === 'admin_proyecto' ? 'Administrador de Proyecto' : 'Personal Técnico / Cubicador');
+    alert(`✅ Invitación enviada exitosamente a ${payload.email}.\n\nSe ha configurado su acceso para el rol de ${descRol}.`);
     cerrarModalInvitarAdmin();
     document.getElementById('form-invitar-admin').reset();
     await cargarTenants();
