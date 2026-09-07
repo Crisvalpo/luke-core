@@ -1042,16 +1042,95 @@ async function ejecutarInvitarAdmin(event) {
     if (!json.ok) throw new Error(json.error || 'Error al registrar personal');
 
     const descRol = rol === 'fundador' ? 'Fundador / Gerente' : (rol === 'admin_proyecto' ? 'Administrador de Proyecto' : 'Personal Técnico / Cubicador');
-    alert(`✅ Invitación enviada exitosamente a ${payload.email}.\n\nSe ha configurado su acceso para el rol de ${descRol}.`);
+    const inviteUrl = json.data?.invite_url || `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(payload.email)}`;
+
     cerrarModalInvitarAdmin();
     document.getElementById('form-invitar-admin').reset();
     await cargarTenants();
+
+    // Abrir modal detallado con el enlace directo infalible
+    abrirModalInvitacionExitosa(payload.email, descRol, payload.telefono_whatsapp, inviteUrl);
 
   } catch (error) {
     alert(`❌ ${error.message}`);
   } finally {
     btn.disabled = false;
     btn.innerText = 'Enviar Invitación';
+  }
+}
+
+function abrirModalInvitacionExitosa(email, rolDesc, telefono, inviteUrl) {
+  const modal = document.getElementById('modal-invitacion-exitosa');
+  if (!modal) return;
+
+  const sub = document.getElementById('invitacion-exitosa-sub');
+  if (sub) sub.innerText = `Acceso configurado para rol de ${rolDesc}.`;
+
+  const emailSpan = document.getElementById('invitacion-email-dest');
+  if (emailSpan) emailSpan.innerText = email;
+
+  const waBox = document.getElementById('invitacion-wa-box');
+  if (waBox) {
+    waBox.style.display = telefono ? 'flex' : 'none';
+  }
+
+  const linkInput = document.getElementById('invitacion-link-input');
+  if (linkInput) {
+    linkInput.value = inviteUrl;
+  }
+
+  const btnCopiar = document.getElementById('btn-copiar-invitacion');
+  if (btnCopiar) {
+    btnCopiar.innerHTML = '<span>📋</span> Copiar Enlace';
+    btnCopiar.classList.remove('btn-success');
+    btnCopiar.classList.add('btn-primary');
+  }
+
+  modal.classList.add('active');
+}
+
+function cerrarModalInvitacionExitosa() {
+  const modal = document.getElementById('modal-invitacion-exitosa');
+  if (modal) modal.classList.remove('active');
+}
+
+async function copiarEnlaceInvitacionDirecto() {
+  const linkInput = document.getElementById('invitacion-link-input');
+  const btn = document.getElementById('btn-copiar-invitacion');
+  if (!linkInput || !linkInput.value) return;
+
+  try {
+    await navigator.clipboard.writeText(linkInput.value);
+    if (btn) {
+      btn.innerHTML = '<span>✅</span> ¡Copiado!';
+      setTimeout(() => {
+        btn.innerHTML = '<span>📋</span> Copiar Enlace';
+      }, 3000);
+    }
+  } catch {
+    linkInput.select();
+    document.execCommand('copy');
+    if (btn) {
+      btn.innerHTML = '<span>✅</span> ¡Copiado!';
+      setTimeout(() => {
+        btn.innerHTML = '<span>📋</span> Copiar Enlace';
+      }, 3000);
+    }
+  }
+}
+
+async function copiarEnlacePersonal(personalId) {
+  try {
+    const res = await fetch(`/api/v1/personal/${personalId}/enlace-invitacion`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'No se pudo generar enlace');
+
+    abrirModalInvitacionExitosa(json.data.email, 'Colaborador', null, json.data.invite_url);
+  } catch (err) {
+    alert(`❌ ${err.message}`);
   }
 }
 

@@ -124,46 +124,73 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
       `, [nuevoPersonal.id, body.proyecto_id, body.puede_sincronizar_excel]);
     }
 
-    // Si se especificó email, enviar invitación oficial de Supabase Auth y WhatsApp
+    // Si se especificó email, generar enlace directo, enviar invitación y WhatsApp
+    let inviteUrl = '';
     if (body.email) {
       try {
         const { supabaseAdmin } = await import('../../config/supabase.js');
         const emailNorm = body.email.toLowerCase().trim();
         const redirectUrl = `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(emailNorm)}`;
 
-        const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailNorm, {
-          redirectTo: redirectUrl,
-          data: {
-            nombre: body.nombre_completo,
-            role: body.rol_organizacional,
-            tenant_id: body.tenant_id
-          }
-        });
+        // 1. Intentar generar enlace directo de invitación
+        try {
+          const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'invite',
+            email: emailNorm,
+            options: {
+              redirectTo: redirectUrl,
+              data: {
+                nombre: body.nombre_completo,
+                role: body.rol_organizacional,
+                tenant_id: body.tenant_id
+              }
+            }
+          });
 
-        if (authData?.user) {
-          await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [authData.user.id, nuevoPersonal.id]);
-          console.log(`📧 [EMAIL] Invitación enviada a ${emailNorm} para rol ${body.rol_organizacional}`);
-        } else if (inviteErr) {
-          const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-          const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === emailNorm);
-          if (existingUser) {
-            await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [existingUser.id, nuevoPersonal.id]);
-            await supabaseAdmin.auth.resetPasswordForEmail(emailNorm, {
-              redirectTo: redirectUrl
+          if (linkData?.properties?.action_link) {
+            inviteUrl = linkData.properties.action_link;
+            if (linkData.user) {
+              await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [linkData.user.id, nuevoPersonal.id]);
+            }
+          } else if (linkErr) {
+            // Si el usuario ya existe, generar enlace de recuperación/activación directa
+            const { data: recovData } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'recovery',
+              email: emailNorm,
+              options: { redirectTo: redirectUrl }
             });
-            console.log(`📧 [EMAIL] Correo de acceso enviado a usuario existente: ${emailNorm}`);
+            if (recovData?.properties?.action_link) {
+              inviteUrl = recovData.properties.action_link;
+              if (recovData.user) {
+                await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [recovData.user.id, nuevoPersonal.id]);
+              }
+            }
           }
+        } catch (genErr: any) {
+          console.warn('⚠️ Error al generar action_link de invitación:', genErr.message);
         }
 
-        // Si se indicó teléfono WhatsApp, enviar mensaje de bienvenida con enlace
+        // 2. Despachar correo oficial de invitación por Supabase / Resend
+        try {
+          await supabaseAdmin.auth.admin.inviteUserByEmail(emailNorm, {
+            redirectTo: redirectUrl,
+            data: { nombre: body.nombre_completo, role: body.rol_organizacional, tenant_id: body.tenant_id }
+          });
+          console.log(`📧 [EMAIL] Invitación enviada a ${emailNorm} para rol ${body.rol_organizacional}`);
+        } catch (mailErr: any) {
+          console.warn('⚠️ Aviso al enviar correo invite:', mailErr.message);
+        }
+
+        // 3. Si se indicó teléfono WhatsApp, enviar mensaje con enlace directo infalible
         if (body.telefono_whatsapp) {
           try {
+            const urlParaAcceso = inviteUrl || redirectUrl;
             const msgWa =
               `🎉 *¡Invitación a LukeAPPs!*\n\n` +
               `Hola *${body.nombre_completo}*,\n` +
-              `Has sido invitado/a como *${body.cargo || 'Administrador de Proyecto'}* en LukeAPPs.\n\n` +
-              `🔐 *Activa tu cuenta y crea tu contraseña aquí:*\n` +
-              `👉 ${redirectUrl}\n\n` +
+              `Has sido invitado/a como *${body.cargo || 'Administrador'}* en LukeAPPs.\n\n` +
+              `🔐 *Activa tu cuenta y crea tu contraseña aquí con un solo toque:*\n` +
+              `👉 ${urlParaAcceso}\n\n` +
               `_Usuario: ${emailNorm}_`;
 
             await WhatsAppService.enviarMensaje({ to: body.telefono_whatsapp, text: msgWa });
@@ -172,11 +199,49 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
           }
         }
       } catch (authErr: any) {
-        console.warn('⚠️ Aviso Supabase Auth invite en personal:', authErr.message);
+        console.warn('⚠️ Aviso Supabase Auth en personal:', authErr.message);
       }
     }
 
-    return sendSuccess(res, nuevoPersonal, 201, { mensaje: `Personal '${nuevoPersonal.nombre_completo}' registrado con éxito.` });
+    const respuestaData = { ...nuevoPersonal, invite_url: inviteUrl };
+    return sendSuccess(res, respuestaData, 201, { mensaje: `Personal '${nuevoPersonal.nombre_completo}' registrado con éxito.` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Endpoint para generar enlace de activación directo bajo demanda para un personal existente
+personalRouter.post('/:id/enlace-invitacion', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const persRes = await query('SELECT * FROM core.personal WHERE id = $1', [id]);
+    if (persRes.rowCount === 0) return sendError(res, 'Personal no encontrado', 404);
+    const persona = persRes.rows[0];
+    if (!persona.email) return sendError(res, 'Este personal no tiene email registrado', 400);
+
+    const { supabaseAdmin } = await import('../../config/supabase.js');
+    const emailNorm = persona.email.toLowerCase().trim();
+    const redirectUrl = `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(emailNorm)}`;
+
+    let inviteUrl = '';
+    const { data: recovData, error: recovErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: emailNorm,
+      options: { redirectTo: redirectUrl }
+    });
+
+    if (recovData?.properties?.action_link) {
+      inviteUrl = recovData.properties.action_link;
+    } else {
+      const { data: invData } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'invite',
+        email: emailNorm,
+        options: { redirectTo: redirectUrl }
+      });
+      inviteUrl = invData?.properties?.action_link || redirectUrl;
+    }
+
+    return sendSuccess(res, { invite_url: inviteUrl, email: emailNorm, nombre: persona.nombre_completo });
   } catch (error) {
     next(error);
   }

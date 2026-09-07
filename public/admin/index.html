@@ -451,6 +451,66 @@
     </div>
   </div>
 
+  <!-- MODAL: INVITACIÓN EXITOSA Y ENLACE DIRECTO -->
+  <div class="modal-overlay" id="modal-invitacion-exitosa">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header" style="align-items: center;">
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--color-primary, #0f766e); display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎉</span> ¡Usuario Invitado Exitosamente!
+          </h3>
+          <p id="invitacion-exitosa-sub" style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 3px;">
+            El acceso ha sido configurado en el sistema.
+          </p>
+        </div>
+        <button class="modal-close" onclick="cerrarModalInvitacionExitosa()">✕</button>
+      </div>
+
+      <div style="padding: 0.5rem 0 1rem 0; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Canal Email -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <span style="font-size: 1.25rem; line-height: 1;">📧</span>
+          <div style="font-size: 0.83rem; color: #166534; line-height: 1.4;">
+            <strong>Correo oficial despachado:</strong> Se envió la invitación a <span id="invitacion-email-dest" style="font-weight: 600;"></span>.
+            <div style="margin-top: 0.35rem; color: #15803d; font-size: 0.78rem; background: rgba(255,255,255,0.7); padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px dashed #86efac;">
+              ⚠️ <em>Nota importante:</em> En cuentas corporativas (Outlook / Microsoft 365), recuérdale revisar la carpeta <strong>"Correo no deseado" (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Canal WhatsApp -->
+        <div id="invitacion-wa-box" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <span style="font-size: 1.25rem; line-height: 1;">📱</span>
+          <div style="font-size: 0.83rem; color: #075985; line-height: 1.4;">
+            <strong>Notificación por WhatsApp:</strong> Se envió un mensaje con el enlace directo al teléfono registrado para que active su cuenta con 1 toque.
+          </div>
+        </div>
+
+        <!-- Enlace Directo Copiable -->
+        <div style="background: var(--bg-card, #f8fafc); border: 1px solid var(--border-container, #e2e8f0); border-radius: 8px; padding: 1rem;">
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--color-text, #1e293b); display: block; margin-bottom: 0.4rem;">
+            🔗 Enlace de Activación Directo (Infalible)
+          </label>
+          <p style="font-size: 0.76rem; color: var(--color-text-muted, #64748b); margin-bottom: 0.6rem; line-height: 1.35;">
+            Si el usuario no revisa su correo o tiene bloqueos corporativos, cópiale y pégale este enlace por Teams, Slack o chat interno:
+          </p>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="invitacion-link-input" readonly style="flex: 1; font-family: monospace; font-size: 0.78rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border-container, #cbd5e1); border-radius: 6px; background: #fff; color: #0f172a;" onclick="this.select()">
+            <button type="button" class="btn btn-primary" id="btn-copiar-invitacion" onclick="copiarEnlaceInvitacionDirecto()" style="white-space: nowrap; padding: 0.55rem 0.9rem; font-size: 0.82rem; display: flex; align-items: center; gap: 0.35rem;">
+              <span>📋</span> Copiar Enlace
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalInvitacionExitosa()" style="min-width: 100px;">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal WhatsApp Bot & Escaneo QR -->
   <div class="modal-overlay" id="modal-whatsapp" style="display: none;">
     <div class="modal-card" style="max-width: 480px; text-align: center;">
