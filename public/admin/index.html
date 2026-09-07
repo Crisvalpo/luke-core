@@ -41,7 +41,8 @@
       </div>
 
       <nav class="nav-links">
-        <a class="nav-item active" id="nav-link-tenants" href="#">🏢 Empresas (Tenants)</a>
+        <a class="nav-item active" id="nav-link-tenants" href="javascript:void(0)" onclick="navegarASeccion('proyectos')">📁 Proyectos</a>
+        <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')">👥 Dotación de Personal</a>
         <a class="nav-item" id="nav-link-whatsapp" href="javascript:void(0)" onclick="abrirModalWhatsApp()" style="display: flex; align-items: center; justify-content: space-between;">
           <span>📱 WhatsApp Bot</span>
           <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block;"></span>
@@ -81,11 +82,11 @@
             <div class="kpi-label" id="kpi-label-tenants">Empresas Activas</div>
             <div class="kpi-value" id="kpi-tenants">-</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card" id="kpi-card-proyectos" onclick="navegarASeccion('proyectos')" style="cursor: pointer;" title="Ver Proyectos">
             <div class="kpi-label">Proyectos Activos</div>
             <div class="kpi-value" id="kpi-proyectos">-</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card" id="kpi-card-personal" onclick="navegarASeccion('dotacion')" style="cursor: pointer;" title="Ver y Gestionar Dotación">
             <div class="kpi-label">Dotación Indexada</div>
             <div class="kpi-value" id="kpi-personal">-</div>
           </div>
@@ -106,10 +107,52 @@
           </div>
         </section>
 
-        <!-- Grid de Clientes -->
+        <!-- Grid de Clientes / Proyectos -->
         <section class="tenants-grid" id="tenants-container">
           <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">
             Cargando empresas desde el Core...
+          </div>
+        </section>
+
+        <!-- Sección de Dotación de Personal (Faenera) -->
+        <section id="dotacion-container" style="display: none;">
+          <div style="background: var(--bg-container); border: 1px solid var(--border-container); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem;">👥 Dotación de Personal</h3>
+                <p style="color: var(--color-text-muted); font-size: 0.85rem; margin: 0;">Gestiona las cuentas, roles y asignaciones del equipo de tu empresa.</p>
+              </div>
+              <div style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-secondary" onclick="abrirModalIngesta()" style="font-size: 0.85rem;">
+                  📊 Carga Masiva (Excel)
+                </button>
+                <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
+                  ➕ Invitar Personal
+                </button>
+              </div>
+            </div>
+
+            <!-- Tabla de Dotación -->
+            <div style="overflow-x: auto; border: 1px solid var(--border-container); border-radius: 8px;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                <thead>
+                  <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-container); color: var(--color-text-muted); font-weight: 600;">
+                    <th style="padding: 0.75rem 1rem;">Colaborador</th>
+                    <th style="padding: 0.75rem 1rem;">RUT</th>
+                    <th style="padding: 0.75rem 1rem;">Cargo</th>
+                    <th style="padding: 0.75rem 1rem;">Rol Plataforma</th>
+                    <th style="padding: 0.75rem 1rem;">Contacto</th>
+                    <th style="padding: 0.75rem 1rem;">Proyecto Asignado</th>
+                    <th style="padding: 0.75rem 1rem; text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-dotacion-body">
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Cargando dotación...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>

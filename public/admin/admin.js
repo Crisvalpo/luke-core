@@ -57,6 +57,11 @@ function verificarAutenticacion() {
           navTenants.innerText = user.rol === 'operario' ? '📁 Mis Proyectos' : '📁 Proyectos';
         }
 
+        const navDotacion = document.getElementById('nav-link-dotacion');
+        if (navDotacion && user.rol === 'operario') {
+          navDotacion.style.display = 'none';
+        }
+
         const topbarTitulo = document.getElementById('topbar-titulo');
         if (topbarTitulo) {
           if (user.rol === 'operario') {
@@ -994,14 +999,14 @@ function cambiarNivelRolAdmin() {
     }
   } else if (rol === 'admin_proyecto') {
     groupProy.style.display = 'flex';
-    proySelect.required = true;
+    proySelect.required = proySelect.options.length > 1;
     if (cargoInput.value === 'Cubicador de Terreno' || cargoInput.value === 'Gerente / Fundador') {
       cargoInput.value = 'Administrador de Proyecto';
     }
   } else {
     // Personal técnico / cubicador
     groupProy.style.display = 'flex';
-    proySelect.required = true;
+    proySelect.required = proySelect.options.length > 1;
     if (cargoInput.value === 'Administrador de Proyecto' || cargoInput.value === 'Gerente / Fundador') {
       cargoInput.value = 'Cubicador de Terreno';
     }
@@ -1017,7 +1022,7 @@ async function ejecutarInvitarAdmin(event) {
 
   const payload = {
     tenant_id: tenantId,
-    proyecto_id: rol === 'fundador' ? undefined : proyectoId,
+    proyecto_id: (rol === 'fundador' || !proyectoId) ? undefined : proyectoId,
     nombre_completo: document.getElementById('admin-nombre').value.trim(),
     rut: document.getElementById('admin-rut').value.trim(),
     email: document.getElementById('admin-email').value.trim().toLowerCase(),
@@ -1408,5 +1413,181 @@ async function desvincularWhatsApp() {
     alert('Error al desvincular: ' + err.message);
     consultarEstadoYQrWhatsApp();
   }
+}
+
+// =============================================================================
+// GESTIÓN Y NAVEGACIÓN DE DOTACIÓN DE PERSONAL
+// =============================================================================
+let seccionActual = 'proyectos';
+
+function navegarASeccion(seccion) {
+  seccionActual = seccion;
+  const tenantsGrid = document.getElementById('tenants-container');
+  const dotacionSec = document.getElementById('dotacion-container');
+  const navTenants = document.getElementById('nav-link-tenants');
+  const navDotacion = document.getElementById('nav-link-dotacion');
+  const topbarTitulo = document.getElementById('topbar-titulo');
+  const btnNuevo = document.getElementById('btn-nuevo-cliente');
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
+  const nombreEmpresa = user?.tenant_razon_social || user?.tenant_slug || (todosLosTenants[0]?.razon_social) || 'Mi Empresa';
+
+  if (seccion === 'dotacion') {
+    if (tenantsGrid) tenantsGrid.style.display = 'none';
+    if (dotacionSec) dotacionSec.style.display = 'block';
+    if (navTenants) navTenants.classList.remove('active');
+    if (navDotacion) navDotacion.classList.add('active');
+    if (topbarTitulo) topbarTitulo.innerText = `Dotación de Personal — ${nombreEmpresa}`;
+    if (btnNuevo && user?.rol !== 'super_admin') {
+      btnNuevo.innerText = '➕ Invitar Personal';
+      btnNuevo.onclick = () => abrirModalInvitarAdminDirecto();
+      btnNuevo.style.display = 'inline-flex';
+    }
+    cargarDotacionEmpresa();
+  } else {
+    if (tenantsGrid) tenantsGrid.style.display = 'grid';
+    if (dotacionSec) dotacionSec.style.display = 'none';
+    if (navTenants) navTenants.classList.add('active');
+    if (navDotacion) navDotacion.classList.remove('active');
+    if (topbarTitulo) {
+      if (user?.rol === 'super_admin') {
+        topbarTitulo.innerText = 'Gestión de Empresas & Marcas Blancas';
+      } else {
+        topbarTitulo.innerText = `Mi Empresa — ${nombreEmpresa}`;
+      }
+    }
+    if (btnNuevo && user?.rol !== 'super_admin') {
+      btnNuevo.innerText = '➕ Nuevo Proyecto';
+      btnNuevo.onclick = () => {
+        const t = todosLosTenants[0] || {};
+        abrirModalFaenas(t.id, t.slug, t.razon_social);
+      };
+      btnNuevo.style.display = 'inline-flex';
+    }
+    cargarTenants();
+  }
+}
+
+async function cargarDotacionEmpresa() {
+  const tbody = document.getElementById('tabla-dotacion-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Cargando dotación...</td></tr>';
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
+  const tenantId = user?.tenant_id || (todosLosTenants[0]?.id) || '';
+
+  try {
+    const res = await fetch(`/api/v1/personal?tenant=${tenantId}`, {
+      headers: getAuthHeaders(tenantId)
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al obtener personal');
+
+    const personal = json.data || [];
+    const kpiEl = document.getElementById('kpi-personal');
+    if (kpiEl) kpiEl.innerText = personal.length;
+
+    if (personal.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">
+            No hay personal registrado en la dotación de esta empresa.<br><br>
+            <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
+              ➕ Invitar al Primer Integrante
+            </button>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = personal.map(p => {
+      const iniciales = (p.nombre_completo || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+      let badgeRol = '<span class="module-pill" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">Cubicador / Operario</span>';
+      if (p.rol_organizacional === 'fundador' || p.rol_organizacional === 'admin_empresa') {
+        badgeRol = '<span class="module-pill" style="background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;">👑 Fundador</span>';
+      } else if (p.rol_organizacional === 'admin_proyecto' || p.rol_organizacional === 'admin') {
+        badgeRol = '<span class="module-pill" style="background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe;">🛡️ Admin Proyecto</span>';
+      }
+
+      const proyAsignado = p.proyecto_codigo ? `<strong>${p.proyecto_codigo}</strong>` : '<span style="color: var(--color-text-muted);">— Nivel Empresa</span>';
+
+      return `
+        <tr style="border-bottom: 1px solid var(--border-container); transition: background 0.15s ease;">
+          <td style="padding: 0.85rem 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #059669; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">
+                ${iniciales}
+              </div>
+              <div>
+                <strong style="display: block; color: var(--color-text-main);">${p.nombre_completo}</strong>
+                ${p.usuario_windows ? `<span style="font-size: 0.75rem; color: var(--color-text-muted);">Win: ${p.usuario_windows}</span>` : ''}
+              </div>
+            </div>
+          </td>
+          <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.82rem; color: var(--color-text-muted);">${p.rut || '—'}</td>
+          <td style="padding: 0.85rem 1rem; color: var(--color-text-main);">${p.cargo || 'Personal'}</td>
+          <td style="padding: 0.85rem 1rem;">${badgeRol}</td>
+          <td style="padding: 0.85rem 1rem;">
+            <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem;">
+              ${p.email ? `<span>✉️ ${p.email}</span>` : ''}
+              ${p.telefono_whatsapp ? `<span>📱 ${p.telefono_whatsapp}</span>` : ''}
+            </div>
+          </td>
+          <td style="padding: 0.85rem 1rem; font-size: 0.82rem;">${proyAsignado}</td>
+          <td style="padding: 0.85rem 1rem; text-align: right;">
+            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
+              <button class="btn btn-secondary" onclick="obtenerEnlaceActivacion('${p.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" title="Generar / Ver Enlace de Activación Directo">
+                🔗 Enlace
+              </button>
+              <button class="btn btn-secondary" onclick="eliminarPersonalDeDotacion('${p.id}', '${(p.nombre_completo || '').replace(/'/g, "\\'")}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" title="Eliminar de la Dotación">
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">Error al cargar dotación: ${err.message}</td></tr>`;
+  }
+}
+
+async function eliminarPersonalDeDotacion(id, nombre) {
+  if (!confirm(`⚠️ ¿Estás seguro de que deseas eliminar a "${nombre}" de la dotación de la empresa?\n\nEsta acción revocará su acceso a LukeAPPs y lo eliminará de la base de datos.`)) {
+    return;
+  }
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
+  const tenantId = user?.tenant_id || (todosLosTenants[0]?.id) || '';
+
+  try {
+    const res = await fetch(`/api/v1/personal/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(tenantId)
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al eliminar personal');
+
+    alert(`✅ ${json.meta?.mensaje || `Personal "${nombre}" eliminado de la dotación exitosamente.`}`);
+    await cargarDotacionEmpresa();
+    await cargarTenants();
+  } catch (err) {
+    alert(`❌ ${err.message}`);
+  }
+}
+
+function abrirModalInvitarAdminDirecto() {
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
+  const tenantId = user?.tenant_id || (todosLosTenants[0]?.id) || '';
+  abrirModalInvitarAdmin(tenantId);
 }
 
