@@ -42,6 +42,10 @@
 
       <nav class="nav-links">
         <a class="nav-item active" id="nav-link-tenants" href="#">🏢 Empresas (Tenants)</a>
+        <a class="nav-item" id="nav-link-whatsapp" href="javascript:void(0)" onclick="abrirModalWhatsApp()" style="display: flex; align-items: center; justify-content: space-between;">
+          <span>📱 WhatsApp Bot</span>
+          <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block;"></span>
+        </a>
       </nav>
 
       <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--border-sidebar); padding-top: 1rem;">
@@ -57,6 +61,10 @@
       <header class="topbar">
         <h2 id="topbar-titulo">Gestión de Empresas & Marcas Blancas</h2>
         <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-secondary" id="btn-topbar-whatsapp" onclick="abrirModalWhatsApp()" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+            <span id="wa-topbar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block;"></span>
+            📱 WhatsApp Bot
+          </button>
           <button class="btn btn-secondary" id="btn-topbar-ingesta" onclick="abrirModalIngesta()">
             📊 Ingesta Masiva (Excel)
           </button>
@@ -440,6 +448,72 @@
           <button type="submit" class="btn btn-primary" id="btn-submit-invitar-admin">Enviar Invitación</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal WhatsApp Bot & Escaneo QR -->
+  <div class="modal-overlay" id="modal-whatsapp" style="display: none;">
+    <div class="modal-card" style="max-width: 480px; text-align: center;">
+      <div class="modal-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 1rem;">
+        <h3 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+          📱 WhatsApp Bot Puente
+        </h3>
+        <button class="modal-close" onclick="cerrarModalWhatsApp()">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem 0;">
+        <!-- Indicador de Estado -->
+        <div id="wa-modal-status-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.9rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.25rem; background: #fef9c3; color: #854d0e;">
+          <span id="wa-modal-badge-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308;"></span>
+          <span id="wa-modal-badge-text">Consultando estado...</span>
+        </div>
+
+        <!-- Contenedor QR (Cuando está desconectado o esperando escaneo) -->
+        <div id="wa-qr-container" style="display: none; flex-direction: column; align-items: center;">
+          <div style="background: #ffffff; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: inline-block;">
+            <img id="wa-qr-image" src="" alt="Código QR WhatsApp" style="width: 250px; height: 250px; display: block;">
+          </div>
+          <div style="margin: 1.25rem auto 0 auto; font-size: 0.85rem; color: #475569; line-height: 1.5; max-width: 360px; text-align: left; background: #f8fafc; padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-weight: 600; color: #0f172a; margin-bottom: 0.35rem;">📱 Pasos para escanear:</div>
+            <ol style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #475569;">
+              <li>Abre <strong>WhatsApp</strong> en tu teléfono</li>
+              <li>Ve a <strong>Ajustes / Configuración > Dispositivos vinculados</strong></li>
+              <li>Toca <strong>Vincular un dispositivo</strong> y apunta la cámara a este código QR</li>
+            </ol>
+          </div>
+          <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8;">
+            El código se actualiza automáticamente cada 4 segundos.
+          </div>
+        </div>
+
+        <!-- Contenedor Conectado -->
+        <div id="wa-connected-container" style="display: none; flex-direction: column; align-items: center; padding: 1rem 0;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem;">
+            ✓
+          </div>
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #0f172a;">¡Bot Conectado y Operativo!</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: #64748b; max-width: 320px;">
+            El servicio de autenticación OTP y notificaciones de Piping está activo.
+          </p>
+          <div style="margin-top: 1.25rem; background: #f1f5f9; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.85rem; color: #334155; text-align: left; width: 100%; max-width: 340px;">
+            <div><strong>Número vinculado:</strong> <span id="wa-bot-number">+56 9 ...</span></div>
+            <div><strong>Sesión:</strong> <span id="wa-bot-session">subastas</span></div>
+          </div>
+          <button class="btn btn-secondary" onclick="desvincularWhatsApp()" style="margin-top: 1.5rem; color: #dc2626; border-color: #fca5a5;">
+            🔴 Desvincular Teléfono
+          </button>
+        </div>
+
+        <!-- Spinner de Carga -->
+        <div id="wa-loading-spinner" style="display: flex; flex-direction: column; align-items: center; padding: 2rem 0;">
+          <div style="width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <span style="margin-top: 1rem; font-size: 0.85rem; color: #64748b;">Consultando puente WhatsApp...</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 1rem;">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalWhatsApp()">Cerrar</button>
+      </div>
     </div>
   </div>
 

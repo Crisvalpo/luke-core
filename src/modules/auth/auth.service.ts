@@ -303,6 +303,8 @@ export class AuthService {
       VALUES ($1, $2, NOW() + INTERVAL '5 minutes', FALSE, $3)
     `, [usuario.id, otp, ipOrigen || null]);
 
+    console.log(`🔐 [AUTH OTP] PIN generado para ${usuario.nombre_completo} (${usuario.usuario_windows}): ${otp}`);
+
     // 5. Enviar WhatsApp vía microservicio Baileys
     const { WhatsAppService } = await import('../../shared/utils/whatsapp.js');
     await WhatsAppService.enviarOtpExcel(usuario.telefono_whatsapp, usuario.nombre_completo, otp);

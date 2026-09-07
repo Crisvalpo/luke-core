@@ -19,6 +19,7 @@ import { storageRouter } from './modules/storage/storage.routes.js';
 import { ingestaRouter } from './modules/ingesta/ingesta.routes.js';
 import { rolesRouter } from './modules/roles/roles.routes.js';
 import { pipingRouter } from './modules/piping/piping.routes.js';
+import { whatsappRouter } from './modules/whatsapp/whatsapp.routes.js';
 
 export const app = express();
 
@@ -68,6 +69,7 @@ apiV1.use('/access', accessRouter);
 // 🔒 Capa 1: Exclusiva Equipo LukeAPP (Super-Admin) y Gestión Multi-Tenant
 apiV1.use('/tenants', requireAuth, tenantsRouter);
 apiV1.use('/ingesta', requireAuth, requireSuperAdmin, ingestaRouter);
+apiV1.use('/whatsapp', requireAuth, requireSuperAdmin, whatsappRouter);
 
 // 🔐 Capa 2: Rutas con Auth + Tenant (Admins de Empresa y sus operaciones)
 apiV1.use('/proyectos', requireAuth, requireTenant, proyectosRouter);
