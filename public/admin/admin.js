@@ -1343,7 +1343,7 @@ async function consultarEstadoYQrWhatsApp() {
       if (connectedContainer) {
         connectedContainer.style.display = 'flex';
         const numElem = document.getElementById('wa-bot-number');
-        if (numElem) numElem.innerText = data.botNumber ? `+${data.botNumber}` : 'Activo (Sesión)';
+        if (numElem) numElem.innerText = data.botNumber ? (data.botNumber.startsWith('+') ? data.botNumber : `+${data.botNumber}`) : 'Activo / Vinculado';
       }
       
       const topDot = document.getElementById('wa-topbar-dot');
