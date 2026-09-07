@@ -1,4 +1,5 @@
 import { env } from '../../config/env.js';
+import { normalizarTelefonoChileno } from './phone.js';
 
 export interface EnviarMensajeWhatsappOptions {
   to: string;
@@ -17,8 +18,9 @@ export class WhatsAppService {
     const sessionId = options.sessionId || env.WA_SESSION_ID || 'subastas';
     const url = `${env.WA_BRIDGE_URL}/${sessionId}/send`;
 
-    // Sanitizar destinatario: solo números con código de país (sin + para Baileys)
-    let telefono = options.to.replace(/[^0-9]/g, '');
+    // Normalizar a estándar internacional chileno (+569...) y sanitizar para Baileys
+    const telNormalizado = normalizarTelefonoChileno(options.to) || options.to;
+    let telefono = telNormalizado.replace(/[^0-9]/g, '');
     if (!telefono.endsWith('@s.whatsapp.net')) {
       telefono = `${telefono}@s.whatsapp.net`;
     }

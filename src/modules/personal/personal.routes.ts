@@ -193,7 +193,7 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
               `👉 ${urlParaAcceso}\n\n` +
               `_Usuario: ${emailNorm}_`;
 
-            await WhatsAppService.enviarMensaje({ to: body.telefono_whatsapp, text: msgWa });
+            await WhatsAppService.enviarMensaje({ to: telefonoNorm || body.telefono_whatsapp, text: msgWa });
           } catch (waErr: any) {
             console.warn('⚠️ No se pudo enviar WhatsApp al usuario invitado:', waErr.message);
           }
