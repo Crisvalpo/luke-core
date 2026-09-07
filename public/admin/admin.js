@@ -355,6 +355,9 @@ async function renderizarVistaProyectosTenant(tenant) {
                 <span>⚡ <strong>Rol Operativo:</strong> Proyecto Asignado</span>
                 <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Sincronizado con Excel</span>
               </div>
+              <button class="btn btn-secondary" onclick="abrirVisorPiping('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #0284c7; color: #ffffff; border: none; font-weight: 600;">
+                📊 Explorar Tablas de Piping (P&ID, Líneas, Juntas...)
+              </button>
               <button class="btn btn-primary" onclick="descargarPlantillaPiping('${p.id}', '${p.codigo}')" style="width: 100%; font-size: 0.8rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #059669;">
                 📥 Descargar Planilla Excel (Piping)
               </button>
@@ -379,16 +382,19 @@ async function renderizarVistaProyectosTenant(tenant) {
             </div>
           ` : `
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+              <button class="btn btn-secondary" onclick="abrirVisorPiping('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #f0fdf4; color: #15803d; border-color: #86efac; font-weight: 600;">
+                📊 Piping
+              </button>
               ${user && (user.rol === 'fundador' || user.rol === 'admin_empresa' || user.rol === 'super_admin') ? `
                 <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                  📊 Cargar Dotación
+                  📊 Dotación
                 </button>
               ` : ''}
               <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                👤 Invitar Usuarios
+                👤 Invitar
               </button>
               <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                ⚙️ Gestionar Proyectos
+                ⚙️ Gestionar
               </button>
             </div>
           `}
@@ -1424,6 +1430,7 @@ function navegarASeccion(seccion) {
   seccionActual = seccion;
   const tenantsGrid = document.getElementById('tenants-container');
   const dotacionSec = document.getElementById('dotacion-container');
+  const visorSec = document.getElementById('visor-piping-container');
   const navTenants = document.getElementById('nav-link-tenants');
   const navDotacion = document.getElementById('nav-link-dotacion');
   const topbarTitulo = document.getElementById('topbar-titulo');
@@ -1433,6 +1440,8 @@ function navegarASeccion(seccion) {
   let user = null;
   if (userJson) { try { user = JSON.parse(userJson); } catch {} }
   const nombreEmpresa = user?.tenant_razon_social || user?.tenant_slug || (todosLosTenants[0]?.razon_social) || 'Mi Empresa';
+
+  if (visorSec) visorSec.style.display = 'none';
 
   if (seccion === 'dotacion') {
     if (tenantsGrid) tenantsGrid.style.display = 'none';
