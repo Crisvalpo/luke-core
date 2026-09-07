@@ -222,12 +222,12 @@ export class AuthService {
    * Aplica Rate Limiting: Máximo 3 solicitudes cada 10 minutos
    * Consulta directamente la tabla de Personal del Tenant (core.personal)
    */
-  static async solicitarOtpExcel(usuarioWindows: string, ipOrigen?: string) {
+  static async solicitarOtpExcel(usuarioWindows: string, ipOrigen?: string, identificador?: string) {
     const usuarioNorm = usuarioWindows.trim();
     const soloUsername = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
 
-    // 1. Buscar usuario autorizado en core.personal
-    const userRes = await query(`
+    // 1. Buscar usuario autorizado en core.personal por usuario_windows
+    let userRes = await query(`
       SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
       FROM core.personal p
       WHERE (
@@ -239,6 +239,37 @@ export class AuthService {
       AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
       LIMIT 1;
     `, [usuarioNorm, soloUsername]);
+
+    // 2. Si no fue encontrado por usuario_windows, intentar auto-vincular por identificador (personal_id, email, teléfono o RUT)
+    if (userRes.rows.length === 0 && identificador) {
+      const identNorm = identificador.trim();
+      const bindRes = await query(`
+        SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+        FROM core.personal p
+        WHERE (
+          p.id::text = $1 
+          OR LOWER(p.email) = LOWER($1) 
+          OR REPLACE(p.telefono_whatsapp, '+', '') LIKE '%' || REPLACE($1, '+', '')
+          OR REPLACE(p.rut, '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
+        )
+        AND p.activo = TRUE 
+        AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
+        LIMIT 1;
+      `, [identNorm]);
+
+      if (bindRes.rows.length > 0) {
+        const u = bindRes.rows[0];
+        await query(`
+          UPDATE core.personal 
+          SET usuario_windows = $1, updated_at = NOW() 
+          WHERE id = $2;
+        `, [usuarioNorm, u.id]);
+
+        u.usuario_windows = usuarioNorm;
+        userRes = { rows: [u] } as any;
+        console.log(`🔗 [AUTO-BIND] Usuario de Windows '${usuarioNorm}' vinculado automáticamente a personal '${u.nombre_completo}' (${u.id})`);
+      }
+    }
 
     if (userRes.rows.length === 0) {
       throw new Error(`El usuario de Windows '${usuarioNorm}' no está registrado o habilitado como personal de la empresa.`);

@@ -8,7 +8,9 @@ export const loginSchema = z.object({
 export const requestOtpSchema = z.object({
   usuario_windows: z.string()
     .min(2, 'Usuario de Windows requerido')
-    .transform(v => v.trim().toUpperCase())
+    .transform(v => v.trim().toUpperCase()),
+  identificador: z.string().optional().nullable(),
+  personal_id: z.string().optional().nullable()
 });
 
 export const verifyOtpSchema = z.object({

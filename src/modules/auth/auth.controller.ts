@@ -40,7 +40,8 @@ export class AuthController {
       const { requestOtpSchema } = await import('./auth.schema.js');
       const input = requestOtpSchema.parse(req.body);
       const ip = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
-      const resultado = await AuthService.solicitarOtpExcel(input.usuario_windows, ip);
+      const ident = input.identificador || input.personal_id || undefined;
+      const resultado = await AuthService.solicitarOtpExcel(input.usuario_windows, ip, ident);
       return sendSuccess(res, resultado, 200, { mensaje: resultado.mensaje });
     } catch (error: any) {
       return sendError(res, error.message || 'Error al solicitar OTP', 400);
