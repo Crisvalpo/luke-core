@@ -82,10 +82,10 @@ export class PipingService {
 
       const resultadoJuntas: JuntaSincronizadaOutput[] = [];
 
-      // 3. Ejecutar Upsert masivo en el esquema dedicado: piping.lista_juntas
+      // 3. Ejecutar Upsert masivo en el esquema dedicado: piping.legacy_joint_list
       for (const junta of registros) {
         const res = await client.query(`
-          INSERT INTO piping.lista_juntas (
+          INSERT INTO piping.legacy_joint_list (
             uuid, id_proyecto, id_junta, tag, estado, vigente, fecha_sync, updated_at
           )
           VALUES (
@@ -99,9 +99,9 @@ export class PipingService {
             fecha_sync = NOW(),
             updated_at = NOW()
           WHERE (
-            piping.lista_juntas.tag,
-            piping.lista_juntas.estado,
-            piping.lista_juntas.vigente
+            piping.legacy_joint_list.tag,
+            piping.legacy_joint_list.estado,
+            piping.legacy_joint_list.vigente
           ) IS DISTINCT FROM (
             EXCLUDED.tag,
             EXCLUDED.estado,
@@ -138,7 +138,7 @@ export class PipingService {
       `, [
         usuarioWindowsJwt,
         idProyecto,
-        'piping.lista_juntas',
+        'piping.legacy_joint_list',
         registros.length,
         JSON.stringify({
           total: registros.length,
