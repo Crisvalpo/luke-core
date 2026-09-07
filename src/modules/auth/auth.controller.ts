@@ -41,6 +41,7 @@ export class AuthController {
       const input = requestOtpSchema.parse(req.body);
       const ip = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
       const ident = input.identificador || input.personal_id || undefined;
+      console.log(`📥 [REQUEST-OTP] Intento recibido: Windows='${input.usuario_windows}', Identificador='${ident || 'ninguno'}'`);
       const resultado = await AuthService.solicitarOtpExcel(input.usuario_windows, ip, ident);
       return sendSuccess(res, resultado, 200, { mensaje: resultado.mensaje });
     } catch (error: any) {

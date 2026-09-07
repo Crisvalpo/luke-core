@@ -271,7 +271,46 @@ export class AuthService {
       }
     }
 
+    // 2.5 Smart-Bind: Coincidencia inteligente por email prefix o nombre/apellido para usuarios recién invitados
+    if (userRes.rows.length === 0 && soloUsername.length >= 3) {
+      const smartRes = await query(`
+        SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+        FROM core.personal p
+        WHERE (
+          LOWER(SPLIT_PART(p.email, '@', 1)) = LOWER($1)
+          OR LOWER(REPLACE(SPLIT_PART(p.email, '@', 1), '.', '')) = LOWER(REPLACE($1, '.', ''))
+          OR LOWER(REPLACE(SPLIT_PART(p.email, '@', 1), '_', '')) = LOWER(REPLACE($1, '_', ''))
+          OR LOWER(REPLACE(SPLIT_PART(p.email, '@', 1), '-', '')) = LOWER(REPLACE($1, '-', ''))
+          OR (
+            LENGTH($1) >= 4 AND (
+              LOWER(SPLIT_PART(p.nombre_completo, ' ', 1)) = LOWER($1)
+              OR LOWER(SPLIT_PART(p.nombre_completo, ' ', 2)) = LOWER($1)
+              OR LOWER(p.nombre_completo) LIKE '%' || LOWER($1) || '%'
+            )
+          )
+        )
+        AND p.activo = TRUE 
+        AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
+        AND (p.usuario_windows IS NULL OR TRIM(p.usuario_windows) = '')
+        LIMIT 1;
+      `, [soloUsername]);
+
+      if (smartRes.rows.length > 0) {
+        const u = smartRes.rows[0];
+        await query(`
+          UPDATE core.personal 
+          SET usuario_windows = $1, updated_at = NOW() 
+          WHERE id = $2;
+        `, [usuarioNorm, u.id]);
+
+        u.usuario_windows = usuarioNorm;
+        userRes = { rows: [u] } as any;
+        console.log(`🧠 [SMART-BIND] Usuario de Windows '${usuarioNorm}' vinculado inteligentemente a personal '${u.nombre_completo}' (${u.id})`);
+      }
+    }
+
     if (userRes.rows.length === 0) {
+      console.warn(`⚠️ [OTP-FALLIDO] Intento de acceso de Windows no reconocido: '${usuarioNorm}' (soloUsername: '${soloUsername}')`);
       throw new Error(`El usuario de Windows '${usuarioNorm}' no está registrado o habilitado como personal de la empresa.`);
     }
 

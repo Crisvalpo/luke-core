@@ -1203,11 +1203,19 @@ Private Function AsegurarTokenValido(ByVal usuarioWindows As String) As Boolean
         Exit Function
     End If
     
+    Dim persId As String
+    persId = LeerDeSistema("PERSONAL_ID")
+
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.setTimeouts 10000, 30000, 60000, 120000
     http.Open "POST", API_BASE_URL & "/api/auth/request-otp", False
     http.setRequestHeader "Content-Type", "application/json"
-    http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """}"
+    
+    If persId <> "" Then
+        http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """, ""personal_id"": """ & EscaparJson(persId) & """}"
+    Else
+        http.send "{""usuario_windows"": """ & EscaparJson(usuarioWindows) & """}"
+    End If
     
     If http.Status <> 200 Then
         MsgBox "No fue posible solicitar el PIN de seguridad:" & vbCrLf & vbCrLf & http.responseText & vbCrLf & vbCrLf & _
