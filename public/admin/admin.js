@@ -305,7 +305,7 @@ async function renderizarVistaProyectosTenant(tenant) {
               📊 Cargar Dotación
             </button>
             <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-              👤 Invitar Admin
+              👤 Invitar Usuarios
             </button>
             <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
               ⚙️ Gestionar Proyectos
