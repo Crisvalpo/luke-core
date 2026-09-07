@@ -830,8 +830,8 @@ function cancelarEditarFaena() {
 async function ejecutarEliminarProyecto(proyectoId, nombre, codigo) {
   const esBase = codigo === 'BASE-01' || nombre.toLowerCase().includes('entrenamiento');
   const advertencia = esBase
-    ? `⚠️ Este es el Entorno de Entrenamiento/Sandbox.\n\n¿Estás seguro de que deseas eliminar "${nombre}" (${codigo})?\n\nAl eliminarlo podrás crear tus propios proyectos reales de producción.`
-    : `¿Estás seguro de que deseas eliminar el proyecto "${nombre}" (${codigo})?\n\nEsta acción desactivará el proyecto de la plataforma.`;
+    ? `⚠️ Este es el Entorno de Entrenamiento/Sandbox.\n\n¿Estás seguro de que deseas eliminar permanentemente "${nombre}" (${codigo})?\n\nEsta acción borrará definitivamente el proyecto y todos sus planos PID, líneas y datos asociados.`
+    : `⚠️ ATENCIÓN: ¿Estás seguro de que deseas eliminar permanentemente el proyecto "${nombre}" (${codigo})?\n\nEsta acción eliminará definitivamente el proyecto y todos sus planos PID, isométricos, juntas, líneas y cubicaciones asociadas de la base de datos.`;
 
   if (!confirm(advertencia)) return;
 

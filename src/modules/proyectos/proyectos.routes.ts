@@ -108,19 +108,19 @@ proyectosRouter.put('/:id', verificarPermisoProyecto, async (req: Request, res: 
 });
 
 /**
- * DELETE /api/v1/proyectos/:id — Desactivar proyecto (soft delete)
+ * DELETE /api/v1/proyectos/:id — Eliminar proyecto definitivamente (hard delete en cascada)
  */
 proyectosRouter.delete('/:id', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
-    const resultado = await ProyectosService.desactivar(req.tenant!.id, id);
+    const resultado = await ProyectosService.eliminar(req.tenant!.id, id);
     if (!resultado) {
       return sendError(res, 'Proyecto no encontrado', 404);
     }
     return sendSuccess(res, {
       ...resultado,
-      desactivado: true
-    }, 200, { mensaje: `Proyecto '${resultado.nombre}' desactivado.` });
+      eliminado: true
+    }, 200, { mensaje: `Proyecto '${resultado.nombre}' eliminado definitivamente junto con todos sus datos asociados.` });
   } catch (error) {
     next(error);
   }

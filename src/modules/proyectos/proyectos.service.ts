@@ -167,9 +167,9 @@ export class ProyectosService {
     return result.rows[0] || null;
   }
 
-  static async desactivar(tenantId: string, proyectoId: string) {
+  static async eliminar(tenantId: string, proyectoId: string) {
     const result = await dbPool.query(
-      'UPDATE core.projects SET is_active = FALSE, updated_at = NOW() WHERE id = $1 AND tenant_id = $2 RETURNING id, code AS codigo, name AS nombre;',
+      'DELETE FROM core.projects WHERE id = $1 AND tenant_id = $2 RETURNING id, code AS codigo, name AS nombre;',
       [proyectoId, tenantId]
     );
     return result.rows[0] || null;
