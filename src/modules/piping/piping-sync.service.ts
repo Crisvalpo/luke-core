@@ -53,8 +53,8 @@ export class PipingSyncService {
 
         const res = await client.query(`
           INSERT INTO piping.pid (
-            id, tenant_id, proyecto_id, codigo, titulo, revision_vigente, estado_documental,
-            metadata, vigente, created_by, updated_by, created_at, updated_at
+            id, tenant_id, project_id, code, title, current_revision, document_status,
+            metadata, is_current, created_by, updated_by, created_at, updated_at
           )
           VALUES (
             COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
@@ -62,28 +62,28 @@ export class PipingSyncService {
             jsonb_build_object('archivo_pdf', $8::text, 'responsable', $9::text),
             TRUE, $10, $10, NOW(), NOW()
           )
-          ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
-            titulo = COALESCE(EXCLUDED.titulo, piping.pid.titulo),
-            revision_vigente = COALESCE(EXCLUDED.revision_vigente, piping.pid.revision_vigente),
-            estado_documental = COALESCE(EXCLUDED.estado_documental, piping.pid.estado_documental),
+          ON CONFLICT (project_id, code) DO UPDATE SET
+            title = COALESCE(EXCLUDED.title, piping.pid.title),
+            current_revision = COALESCE(EXCLUDED.current_revision, piping.pid.current_revision),
+            document_status = COALESCE(EXCLUDED.document_status, piping.pid.document_status),
             metadata = piping.pid.metadata || EXCLUDED.metadata,
-            vigente = TRUE,
+            is_current = TRUE,
             updated_by = EXCLUDED.updated_by,
             updated_at = NOW()
           WHERE (
-            piping.pid.titulo,
-            piping.pid.revision_vigente,
-            piping.pid.estado_documental,
+            piping.pid.title,
+            piping.pid.current_revision,
+            piping.pid.document_status,
             piping.pid.metadata,
-            piping.pid.vigente
+            piping.pid.is_current
           ) IS DISTINCT FROM (
-            COALESCE(EXCLUDED.titulo, piping.pid.titulo),
-            COALESCE(EXCLUDED.revision_vigente, piping.pid.revision_vigente),
-            COALESCE(EXCLUDED.estado_documental, piping.pid.estado_documental),
+            COALESCE(EXCLUDED.title, piping.pid.title),
+            COALESCE(EXCLUDED.current_revision, piping.pid.current_revision),
+            COALESCE(EXCLUDED.document_status, piping.pid.document_status),
             piping.pid.metadata || EXCLUDED.metadata,
             TRUE
           )
-          RETURNING codigo, id::text AS uuid;
+          RETURNING code AS codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.titulo || null,
           reg.revision || null, reg.estado || 'VIGENTE', reg.archivo_pdf || null,
@@ -427,9 +427,9 @@ export class PipingSyncService {
 
         const res = await client.query(`
           INSERT INTO piping.mto (
-            id, tenant_id, proyecto_id, codigo, item_numero, cwa, cwp, ewp, pwp,
-            codigo_linea, codigo_iso, codigo_spool, clase, grupo_material, descripcion,
-            diametro_nps, cantidad, unidad, peso_kg, suministro, proveedor, orden_compra,
+            id, tenant_id, project_id, code, item_numero, cwa, cwp, ewp, pwp,
+            codigo_linea, codigo_iso, codigo_spool, clase, grupo_material, description,
+            diametro_nps, quantity, unit_of_measure, peso_kg, suministro, proveedor, orden_compra,
             recepcionado, solicitado, despachado, cantidad_real, ubicacion_actual,
             estado_material, prioridad_fab, observaciones, estado_actual, vigente,
             created_by, updated_by, created_at, updated_at
@@ -443,13 +443,13 @@ export class PipingSyncService {
             COALESCE($28, 'SIN REVISAR'), $29, $30, COALESCE($31, 'EMITIDO'), TRUE,
             $32, $32, NOW(), NOW()
           )
-          ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
+          ON CONFLICT (project_id, code) DO UPDATE SET
             item_numero = EXCLUDED.item_numero, cwa = EXCLUDED.cwa, cwp = EXCLUDED.cwp,
             ewp = EXCLUDED.ewp, pwp = EXCLUDED.pwp, codigo_linea = EXCLUDED.codigo_linea,
             codigo_iso = EXCLUDED.codigo_iso, codigo_spool = EXCLUDED.codigo_spool,
             clase = EXCLUDED.clase, grupo_material = EXCLUDED.grupo_material,
-            descripcion = EXCLUDED.descripcion, diametro_nps = EXCLUDED.diametro_nps,
-            cantidad = EXCLUDED.cantidad, unidad = EXCLUDED.unidad, peso_kg = EXCLUDED.peso_kg,
+            description = EXCLUDED.description, diametro_nps = EXCLUDED.diametro_nps,
+            quantity = EXCLUDED.quantity, unit_of_measure = EXCLUDED.unit_of_measure, peso_kg = EXCLUDED.peso_kg,
             suministro = EXCLUDED.suministro, proveedor = EXCLUDED.proveedor,
             orden_compra = EXCLUDED.orden_compra, recepcionado = EXCLUDED.recepcionado,
             solicitado = EXCLUDED.solicitado, despachado = EXCLUDED.despachado,
@@ -461,8 +461,8 @@ export class PipingSyncService {
             piping.mto.item_numero, piping.mto.cwa, piping.mto.cwp, piping.mto.ewp,
             piping.mto.pwp, piping.mto.codigo_linea, piping.mto.codigo_iso,
             piping.mto.codigo_spool, piping.mto.clase, piping.mto.grupo_material,
-            piping.mto.descripcion, piping.mto.diametro_nps, piping.mto.cantidad,
-            piping.mto.unidad, piping.mto.peso_kg, piping.mto.suministro,
+            piping.mto.description, piping.mto.diametro_nps, piping.mto.quantity,
+            piping.mto.unit_of_measure, piping.mto.peso_kg, piping.mto.suministro,
             piping.mto.proveedor, piping.mto.orden_compra, piping.mto.recepcionado,
             piping.mto.solicitado, piping.mto.despachado, piping.mto.cantidad_real,
             piping.mto.ubicacion_actual, piping.mto.estado_material,
@@ -471,14 +471,14 @@ export class PipingSyncService {
             EXCLUDED.item_numero, EXCLUDED.cwa, EXCLUDED.cwp, EXCLUDED.ewp,
             EXCLUDED.pwp, EXCLUDED.codigo_linea, EXCLUDED.codigo_iso,
             EXCLUDED.codigo_spool, EXCLUDED.clase, EXCLUDED.grupo_material,
-            EXCLUDED.descripcion, EXCLUDED.diametro_nps, EXCLUDED.cantidad,
-            EXCLUDED.unidad, EXCLUDED.peso_kg, EXCLUDED.suministro,
+            EXCLUDED.description, EXCLUDED.diametro_nps, EXCLUDED.quantity,
+            EXCLUDED.unit_of_measure, EXCLUDED.peso_kg, EXCLUDED.suministro,
             EXCLUDED.proveedor, EXCLUDED.orden_compra, EXCLUDED.recepcionado,
             EXCLUDED.solicitado, EXCLUDED.despachado, EXCLUDED.cantidad_real,
             EXCLUDED.ubicacion_actual, EXCLUDED.estado_material,
             EXCLUDED.prioridad_fab, EXCLUDED.observaciones, TRUE
           )
-          RETURNING codigo, id::text AS uuid;
+          RETURNING code AS codigo, id::text AS uuid;
         `, [
           reg.uuid || null, tenantId, proyectoId, cod, reg.item_numero || null,
           reg.cwa || null, reg.cwp || null, reg.ewp || null, reg.pwp || null,
@@ -527,43 +527,47 @@ export class PipingSyncService {
         const cod = String(reg.codigo_valvula || reg.codigo || '').trim().toUpperCase();
         if (!cod) continue;
 
+        const codLinea = String(reg.codigo_linea || reg.line_tag || '').trim().toUpperCase();
+
         const res = await client.query(`
-          INSERT INTO piping.valvulas (
-            id, tenant_id, proyecto_id, codigo, id_mto, clase, tag_piping, tag_instrumentacion,
-            diametro_nps, cantidad, descripcion, correlativo_maqueta, numero_aconex, diagrama,
-            estado_actual, vigente, created_by, updated_by, created_at, updated_at
+          INSERT INTO piping.valves (
+            id, tenant_id, project_id, line_id, code, mto_item_id, pipe_class, piping_tag, instrumentation_tag,
+            nps_diameter, quantity, description, model_ref_no, external_transmittal_no, diagram_no,
+            current_status, is_current, created_by, updated_by, created_at, updated_at
           )
           VALUES (
             COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
-            $2, $3, $4, $5, $6, $7, $8,
-            $9, COALESCE(NULLIF($10, '')::numeric, 1), $11, $12, $13, $14,
-            COALESCE($15, 'POR_MONTAR'), TRUE, $16, $16, NOW(), NOW()
+            $2, $3,
+            (SELECT id FROM piping.lines WHERE (code = $4 OR id::text = $4) AND project_id = $3 LIMIT 1),
+            $5, $6, $7, $8, $9,
+            $10, COALESCE(NULLIF($11, '')::numeric, 1), $12, $13, $14, $15,
+            COALESCE($16, 'POR_MONTAR'), TRUE, $17, $17, NOW(), NOW()
           )
-          ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
-            id_mto = EXCLUDED.id_mto, clase = EXCLUDED.clase, tag_piping = EXCLUDED.tag_piping,
-            tag_instrumentacion = EXCLUDED.tag_instrumentacion, diametro_nps = EXCLUDED.diametro_nps,
-            cantidad = EXCLUDED.cantidad, descripcion = EXCLUDED.descripcion,
-            correlativo_maqueta = EXCLUDED.correlativo_maqueta, numero_aconex = EXCLUDED.numero_aconex,
-            diagrama = EXCLUDED.diagrama, estado_actual = EXCLUDED.estado_actual,
-            vigente = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
+          ON CONFLICT (project_id, code) DO UPDATE SET
+            mto_item_id = EXCLUDED.mto_item_id, pipe_class = EXCLUDED.pipe_class, piping_tag = EXCLUDED.piping_tag,
+            instrumentation_tag = EXCLUDED.instrumentation_tag, nps_diameter = EXCLUDED.nps_diameter,
+            quantity = EXCLUDED.quantity, description = EXCLUDED.description,
+            model_ref_no = EXCLUDED.model_ref_no, external_transmittal_no = EXCLUDED.external_transmittal_no,
+            diagram_no = EXCLUDED.diagram_no, current_status = EXCLUDED.current_status,
+            is_current = TRUE, updated_by = EXCLUDED.updated_by, updated_at = NOW()
           WHERE (
-            piping.valvulas.id_mto, piping.valvulas.clase, piping.valvulas.tag_piping,
-            piping.valvulas.tag_instrumentacion, piping.valvulas.diametro_nps,
-            piping.valvulas.cantidad, piping.valvulas.descripcion,
-            piping.valvulas.correlativo_maqueta, piping.valvulas.numero_aconex,
-            piping.valvulas.diagrama, piping.valvulas.estado_actual,
-            piping.valvulas.vigente
+            piping.valves.mto_item_id, piping.valves.pipe_class, piping.valves.piping_tag,
+            piping.valves.instrumentation_tag, piping.valves.nps_diameter,
+            piping.valves.quantity, piping.valves.description,
+            piping.valves.model_ref_no, piping.valves.external_transmittal_no,
+            piping.valves.diagram_no, piping.valves.current_status,
+            piping.valves.is_current
           ) IS DISTINCT FROM (
-            EXCLUDED.id_mto, EXCLUDED.clase, EXCLUDED.tag_piping,
-            EXCLUDED.tag_instrumentacion, EXCLUDED.diametro_nps,
-            EXCLUDED.cantidad, EXCLUDED.descripcion,
-            EXCLUDED.correlativo_maqueta, EXCLUDED.numero_aconex,
-            EXCLUDED.diagrama, EXCLUDED.estado_actual,
+            EXCLUDED.mto_item_id, EXCLUDED.pipe_class, EXCLUDED.piping_tag,
+            EXCLUDED.instrumentation_tag, EXCLUDED.nps_diameter,
+            EXCLUDED.quantity, EXCLUDED.description,
+            EXCLUDED.model_ref_no, EXCLUDED.external_transmittal_no,
+            EXCLUDED.diagram_no, EXCLUDED.current_status,
             TRUE
           )
-          RETURNING codigo, id::text AS uuid;
+          RETURNING code AS codigo, id::text AS uuid;
         `, [
-          reg.uuid || null, tenantId, proyectoId, cod, reg.id_mto || null, reg.clase || null,
+          reg.uuid || null, tenantId, proyectoId, codLinea, cod, reg.id_mto || null, reg.clase || null,
           reg.tag_piping || null, reg.tag_instrumentacion || null, reg.nps || null,
           reg.cantidad || null, reg.descripcion || null, reg.correlativo_maqueta || null,
           reg.numero_aconex || null, reg.diagrama || null, reg.estado || 'POR_MONTAR', personalId
@@ -605,48 +609,53 @@ export class PipingSyncService {
         const cod = String(reg.codigo_soporte || reg.codigo || '').trim().toUpperCase();
         if (!cod) continue;
 
+        const codLinea = String(reg.codigo_linea || reg.line_tag || '').trim().toUpperCase();
+        const codIso = String(reg.codigo_iso || reg.iso_tag || '').trim().toUpperCase();
+
         const res = await client.query(`
-          INSERT INTO piping.soportes (
-            id, tenant_id, proyecto_id, codigo, item_numero, cwa, cwp, ewp, pwp,
-            codigo_linea, codigo_iso, clase, tipo_soporte, diametro_nps, cantidad,
-            unidad, peso_kg, suministro, observaciones, estado_actual, vigente,
+          INSERT INTO piping.supports (
+            id, tenant_id, project_id, line_id, code, item_no, cwa, cwp, ewp, pwp,
+            line_code, iso_code, pipe_class, support_type, nps_diameter, quantity,
+            unit_of_measure, weight_kg, supply_scope, remarks, current_status, is_current,
             created_by, updated_by, created_at, updated_at
           )
           VALUES (
             COALESCE(NULLIF($1, '')::uuid, gen_random_uuid()),
-            $2, $3, $4, $5, $6, $7, $8, $9,
-            $10, $11, $12, $13, $14, COALESCE(NULLIF($15, '')::numeric, 1),
+            $2, $3,
+            (SELECT id FROM piping.lines WHERE (code = $4 OR id::text = $4) AND project_id = $3 LIMIT 1),
+            $5, $6, $7, $8, $9, $10,
+            $4, $11, $12, $13, $14, COALESCE(NULLIF($15, '')::numeric, 1),
             COALESCE($16, 'un'), NULLIF($17, '')::numeric, $18, $19, COALESCE($20, 'POR_FABRICAR'),
             TRUE, $21, $21, NOW(), NOW()
           )
-          ON CONFLICT (proyecto_id, codigo) DO UPDATE SET
-            item_numero = EXCLUDED.item_numero, cwa = EXCLUDED.cwa, cwp = EXCLUDED.cwp,
-            ewp = EXCLUDED.ewp, pwp = EXCLUDED.pwp, codigo_linea = EXCLUDED.codigo_linea,
-            codigo_iso = EXCLUDED.codigo_iso, clase = EXCLUDED.clase,
-            tipo_soporte = EXCLUDED.tipo_soporte, diametro_nps = EXCLUDED.diametro_nps,
-            cantidad = EXCLUDED.cantidad, unidad = EXCLUDED.unidad, peso_kg = EXCLUDED.peso_kg,
-            suministro = EXCLUDED.suministro, observaciones = EXCLUDED.observaciones,
-            estado_actual = EXCLUDED.estado_actual, vigente = TRUE,
+          ON CONFLICT (project_id, code) DO UPDATE SET
+            item_no = EXCLUDED.item_no, cwa = EXCLUDED.cwa, cwp = EXCLUDED.cwp,
+            ewp = EXCLUDED.ewp, pwp = EXCLUDED.pwp, line_code = EXCLUDED.line_code,
+            iso_code = EXCLUDED.iso_code, pipe_class = EXCLUDED.pipe_class,
+            support_type = EXCLUDED.support_type, nps_diameter = EXCLUDED.nps_diameter,
+            quantity = EXCLUDED.quantity, unit_of_measure = EXCLUDED.unit_of_measure, weight_kg = EXCLUDED.weight_kg,
+            supply_scope = EXCLUDED.supply_scope, remarks = EXCLUDED.remarks,
+            current_status = EXCLUDED.current_status, is_current = TRUE,
             updated_by = EXCLUDED.updated_by, updated_at = NOW()
           WHERE (
-            piping.soportes.item_numero, piping.soportes.cwa, piping.soportes.cwp,
-            piping.soportes.ewp, piping.soportes.pwp, piping.soportes.codigo_linea,
-            piping.soportes.codigo_iso, piping.soportes.clase, piping.soportes.tipo_soporte,
-            piping.soportes.diametro_nps, piping.soportes.cantidad, piping.soportes.unidad,
-            piping.soportes.peso_kg, piping.soportes.suministro, piping.soportes.observaciones,
-            piping.soportes.vigente
+            piping.supports.item_no, piping.supports.cwa, piping.supports.cwp,
+            piping.supports.ewp, piping.supports.pwp, piping.supports.line_code,
+            piping.supports.iso_code, piping.supports.pipe_class, piping.supports.support_type,
+            piping.supports.nps_diameter, piping.supports.quantity, piping.supports.unit_of_measure,
+            piping.supports.weight_kg, piping.supports.supply_scope, piping.supports.remarks,
+            piping.supports.is_current
           ) IS DISTINCT FROM (
-            EXCLUDED.item_numero, EXCLUDED.cwa, EXCLUDED.cwp, EXCLUDED.ewp,
-            EXCLUDED.pwp, EXCLUDED.codigo_linea, EXCLUDED.codigo_iso,
-            EXCLUDED.clase, EXCLUDED.tipo_soporte, EXCLUDED.diametro_nps,
-            EXCLUDED.cantidad, EXCLUDED.unidad, EXCLUDED.peso_kg,
-            EXCLUDED.suministro, EXCLUDED.observaciones, TRUE
+            EXCLUDED.item_no, EXCLUDED.cwa, EXCLUDED.cwp,
+            EXCLUDED.ewp, EXCLUDED.pwp, EXCLUDED.line_code,
+            EXCLUDED.iso_code, EXCLUDED.pipe_class, EXCLUDED.support_type,
+            EXCLUDED.nps_diameter, EXCLUDED.quantity, EXCLUDED.unit_of_measure,
+            EXCLUDED.weight_kg, EXCLUDED.supply_scope, EXCLUDED.remarks, TRUE
           )
-          RETURNING codigo, id::text AS uuid;
+          RETURNING code AS codigo, id::text AS uuid;
         `, [
-          reg.uuid || null, tenantId, proyectoId, cod, reg.item_numero || null,
+          reg.uuid || null, tenantId, proyectoId, codLinea, cod, reg.item_numero || null,
           reg.cwa || null, reg.cwp || null, reg.ewp || null, reg.pwp || null,
-          reg.codigo_linea || null, reg.codigo_iso || null, reg.clase || null,
+          codIso, reg.clase || null,
           reg.tipo_soporte || null, reg.nps || null, reg.cantidad || null,
           reg.unidad || 'un', reg.peso_kg || null, reg.suministro || null,
           reg.observaciones || null, reg.estado || 'POR_FABRICAR', personalId
