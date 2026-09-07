@@ -3,6 +3,7 @@ import { query } from '../../config/database.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
 import { normalizarRut, validarRut } from '../../shared/utils/rut.js';
 import { normalizarTelefonoChileno } from '../../shared/utils/phone.js';
+import { WhatsAppService } from '../../shared/utils/whatsapp.js';
 import { z } from 'zod';
 
 export const personalRouter = Router();
@@ -111,13 +112,15 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
       `, [nuevoPersonal.id, body.proyecto_id, body.puede_sincronizar_excel]);
     }
 
-    // Si se especificó email, enviar invitación oficial de Supabase Auth
+    // Si se especificó email, enviar invitación oficial de Supabase Auth y WhatsApp
     if (body.email) {
       try {
         const { supabaseAdmin } = await import('../../config/supabase.js');
         const emailNorm = body.email.toLowerCase().trim();
+        const redirectUrl = `https://app.lukeapp.cl/admin/crear-clave.html?email=${encodeURIComponent(emailNorm)}`;
+
         const { data: authData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailNorm, {
-          redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html',
+          redirectTo: redirectUrl,
           data: {
             nombre: body.nombre_completo,
             role: body.rol_organizacional,
@@ -134,9 +137,26 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
           if (existingUser) {
             await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [existingUser.id, nuevoPersonal.id]);
             await supabaseAdmin.auth.resetPasswordForEmail(emailNorm, {
-              redirectTo: 'https://app.lukeapp.cl/admin/crear-clave.html'
+              redirectTo: redirectUrl
             });
             console.log(`📧 [EMAIL] Correo de acceso enviado a usuario existente: ${emailNorm}`);
+          }
+        }
+
+        // Si se indicó teléfono WhatsApp, enviar mensaje de bienvenida con enlace
+        if (body.telefono_whatsapp) {
+          try {
+            const msgWa =
+              `🎉 *¡Invitación a LukeAPPs!*\n\n` +
+              `Hola *${body.nombre_completo}*,\n` +
+              `Has sido invitado/a como *${body.cargo || 'Administrador de Proyecto'}* en LukeAPPs.\n\n` +
+              `🔐 *Activa tu cuenta y crea tu contraseña aquí:*\n` +
+              `👉 ${redirectUrl}\n\n` +
+              `_Usuario: ${emailNorm}_`;
+
+            await WhatsAppService.enviarMensaje({ to: body.telefono_whatsapp, text: msgWa });
+          } catch (waErr: any) {
+            console.warn('⚠️ No se pudo enviar WhatsApp al usuario invitado:', waErr.message);
           }
         }
       } catch (authErr: any) {
