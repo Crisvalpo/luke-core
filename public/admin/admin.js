@@ -30,20 +30,35 @@ function verificarAutenticacion() {
       if (user.rol !== 'super_admin') {
         const btnNuevo = document.getElementById('btn-nuevo-cliente');
         if (btnNuevo) {
-          btnNuevo.innerText = '➕ Nuevo Proyecto';
-          btnNuevo.onclick = () => abrirModalFaenas(user.tenant_id, user.tenant_slug, user.tenant_razon_social);
-          btnNuevo.style.display = 'inline-flex';
+          if (user.rol === 'operario' || user.rol === 'admin_proyecto') {
+            btnNuevo.style.display = 'none';
+          } else {
+            btnNuevo.innerText = '➕ Nuevo Proyecto';
+            btnNuevo.onclick = () => abrirModalFaenas(user.tenant_id, user.tenant_slug, user.tenant_razon_social);
+            btnNuevo.style.display = 'inline-flex';
+          }
+        }
+
+        const btnIngesta = document.getElementById('btn-topbar-ingesta');
+        if (btnIngesta && user.rol === 'operario') {
+          btnIngesta.style.display = 'none';
         }
 
         const barBusqueda = document.getElementById('action-bar-busqueda');
         if (barBusqueda) barBusqueda.style.display = 'none';
 
         const navTenants = document.getElementById('nav-link-tenants');
-        if (navTenants) navTenants.innerText = '📁 Proyectos';
+        if (navTenants) {
+          navTenants.innerText = user.rol === 'operario' ? '📁 Mis Proyectos' : '📁 Proyectos';
+        }
 
         const topbarTitulo = document.getElementById('topbar-titulo');
         if (topbarTitulo) {
-          topbarTitulo.innerText = `Mi Empresa — ${user.tenant_razon_social || user.tenant_slug || 'Panel de Proyectos'}`;
+          if (user.rol === 'operario') {
+            topbarTitulo.innerText = `Mis Proyectos — ${user.tenant_razon_social || user.tenant_slug || 'Panel Operativo'}`;
+          } else {
+            topbarTitulo.innerText = `Mi Empresa — ${user.tenant_razon_social || user.tenant_slug || 'Panel de Proyectos'}`;
+          }
         }
 
         const kpiCardTenants = document.getElementById('kpi-card-tenants');
@@ -240,6 +255,13 @@ async function renderizarVistaProyectosTenant(tenant) {
   const container = document.getElementById('tenants-container');
   container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--color-text-muted);">Cargando proyectos...</div>';
 
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
+  }
+  const esOperario = user && user.rol === 'operario';
+
   try {
     const res = await fetch('/api/v1/proyectos', {
       headers: {
@@ -257,10 +279,14 @@ async function renderizarVistaProyectosTenant(tenant) {
       container.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-container); border: 1px dashed var(--border-container); border-radius: 12px;">
           <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">No tienes proyectos registrados</h3>
-          <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Crea tu primer proyecto para empezar a operar con Excel y WhatsApp.</p>
-          <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')">
-            ➕ Crear Primer Proyecto
-          </button>
+          <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            ${esOperario ? 'No tienes proyectos asignados actualmente.' : 'Crea tu primer proyecto para empezar a operar con Excel y WhatsApp.'}
+          </p>
+          ${!esOperario ? `
+            <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')">
+              ➕ Crear Primer Proyecto
+            </button>
+          ` : ''}
         </div>
       `;
       return;
@@ -300,17 +326,24 @@ async function renderizarVistaProyectosTenant(tenant) {
             📍 <strong>Ubicación:</strong> ${p.ubicacion || 'Proyecto Principal'}
           </div>
 
-          <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-            <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-              📊 Cargar Dotación
-            </button>
-            <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-              👤 Invitar Usuarios
-            </button>
-            <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-              ⚙️ Gestionar Proyectos
-            </button>
-          </div>
+          ${esOperario ? `
+            <div style="margin-top: 1rem; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; color: #475569; display: flex; align-items: center; justify-content: space-between;">
+              <span>⚡ <strong>Rol Operativo:</strong> Proyecto Asignado</span>
+              <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Sincronizado con Excel</span>
+            </div>
+          ` : `
+            <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+              <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+                📊 Cargar Dotación
+              </button>
+              <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+                👤 Invitar Usuarios
+              </button>
+              <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
+                ⚙️ Gestionar Proyectos
+              </button>
+            </div>
+          `}
         </article>
       `;
     }).join('');
@@ -577,6 +610,17 @@ async function eliminarTenantActual() {
 let tenantActualFaenas = null;
 
 async function abrirModalFaenas(tenantId, slug, razonSocial) {
+  const userJson = localStorage.getItem('luke_core_user');
+  if (userJson) {
+    try {
+      const u = JSON.parse(userJson);
+      if (u.rol === 'operario') {
+        alert('Los usuarios con rol de Operario no tienen permisos para gestionar proyectos.');
+        return;
+      }
+    } catch {}
+  }
+
   tenantActualFaenas = { id: tenantId, slug: slug, razonSocial: razonSocial };
   document.getElementById('faenas-subtitle').innerText = `Empresa: ${razonSocial || slug}`;
   document.getElementById('faena-tenant-id').value = tenantId;
@@ -801,15 +845,22 @@ async function ejecutarCrearFaena(event) {
 // INVITACIÓN DE ADMINISTRADORES Y PERSONAL DE PROYECTO
 // -----------------------------------------------------------------------------
 async function abrirModalInvitarAdmin(tenantId, proyectoIdOpcional) {
-  document.getElementById('admin-tenant-id').value = tenantId;
-  const selectProy = document.getElementById('admin-proyecto-select');
-  selectProy.innerHTML = '<option value="">Cargando proyectos...</option>';
-
   const userJson = localStorage.getItem('luke_core_user');
   let userRol = 'admin_proyecto';
   if (userJson) {
-    try { userRol = JSON.parse(userJson).rol; } catch {}
+    try { 
+      const u = JSON.parse(userJson);
+      userRol = u.rol;
+      if (userRol === 'operario') {
+        alert('Los usuarios con rol de Operario no tienen permisos para invitar usuarios.');
+        return;
+      }
+    } catch {}
   }
+
+  document.getElementById('admin-tenant-id').value = tenantId;
+  const selectProy = document.getElementById('admin-proyecto-select');
+  selectProy.innerHTML = '<option value="">Cargando proyectos...</option>';
 
   // Si el usuario es admin_proyecto, ocultar opción de crear Fundador (prevenir escalamiento)
   const optFundador = document.getElementById('opt-rol-fundador');
@@ -928,6 +979,17 @@ async function ejecutarInvitarAdmin(event) {
 // INGESTA MASIVA DE EXCEL / CSV
 // -----------------------------------------------------------------------------
 function abrirModalIngesta(tenantIdOpcional) {
+  const userJson = localStorage.getItem('luke_core_user');
+  if (userJson) {
+    try {
+      const u = JSON.parse(userJson);
+      if (u.rol === 'operario') {
+        alert('Los usuarios con rol de Operario no tienen permisos para realizar cargas masivas.');
+        return;
+      }
+    } catch {}
+  }
+
   const selectTenant = document.getElementById('ingesta-tenant');
   selectTenant.innerHTML = '<option value="">Selecciona una empresa...</option>' + 
     todosLosTenants.map(t => `<option value="${t.id}">${t.razon_social} (${t.slug})</option>`).join('');

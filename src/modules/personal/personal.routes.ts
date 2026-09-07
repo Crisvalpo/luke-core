@@ -70,6 +70,11 @@ const createPersonalSchema = z.object({
 // Crear personal
 personalRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userRole = (req as any).user?.rol;
+    if (userRole === 'operario') {
+      return sendError(res, 'No tienes permisos para registrar o invitar personal al sistema.', 403);
+    }
+
     const body = createPersonalSchema.parse(req.body);
     const rutLimpio = normalizarRut(body.rut);
 
@@ -78,7 +83,6 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
     }
 
     // Prevenir escalamiento de privilegios: solo super_admin o fundador pueden crear fundadores
-    const userRole = (req as any).user?.rol;
     if (body.rol_organizacional === 'fundador' || body.rol_organizacional === 'admin_empresa') {
       if (userRole !== 'super_admin' && userRole !== 'fundador' && userRole !== 'admin_empresa' && userRole !== 'admin') {
         return sendError(res, 'No tienes permisos para otorgar el rol de Fundador / Gerencia General', 403);

@@ -5,6 +5,14 @@ import { sendSuccess, sendError } from '../../shared/utils/response.js';
 
 export const proyectosRouter = Router();
 
+// Middleware para restringir modificaciones a roles administrativos
+const verificarPermisoProyecto = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.rol === 'operario') {
+    return sendError(res, 'Los usuarios con rol de operario no tienen permisos para gestionar proyectos.', 403);
+  }
+  next();
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // CRUD de Proyectos / Faenas — Aislado por Tenant (req.tenant)
 // ═══════════════════════════════════════════════════════════════════
@@ -40,7 +48,7 @@ proyectosRouter.get('/:id', async (req: Request, res: Response, next: NextFuncti
 /**
  * POST /api/v1/proyectos — Crear nuevo proyecto/faena
  */
-proyectosRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
+proyectosRouter.post('/', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input = crearProyectoSchema.parse(req.body);
     const proyecto = await ProyectosService.crear(req.tenant!.id, input);
@@ -59,7 +67,7 @@ proyectosRouter.post('/', async (req: Request, res: Response, next: NextFunction
 /**
  * PUT /api/v1/proyectos/:id — Editar proyecto existente
  */
-proyectosRouter.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+proyectosRouter.put('/:id', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
     const input = editarProyectoSchema.parse(req.body);
@@ -82,7 +90,7 @@ proyectosRouter.put('/:id', async (req: Request, res: Response, next: NextFuncti
 /**
  * DELETE /api/v1/proyectos/:id — Desactivar proyecto (soft delete)
  */
-proyectosRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+proyectosRouter.delete('/:id', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = String(req.params.id);
     const resultado = await ProyectosService.desactivar(req.tenant!.id, id);
@@ -118,7 +126,7 @@ proyectosRouter.get('/:id/frentes', async (req: Request, res: Response, next: Ne
 /**
  * POST /api/v1/proyectos/:id/frentes — Crear frente de trabajo
  */
-proyectosRouter.post('/:id/frentes', async (req: Request, res: Response, next: NextFunction) => {
+proyectosRouter.post('/:id/frentes', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const proyectoId = String(req.params.id);
     const input = crearFrenteSchema.parse(req.body);
@@ -141,7 +149,7 @@ proyectosRouter.post('/:id/frentes', async (req: Request, res: Response, next: N
 /**
  * DELETE /api/v1/proyectos/:proyectoId/frentes/:frenteId — Desactivar frente
  */
-proyectosRouter.delete('/:proyectoId/frentes/:frenteId', async (req: Request, res: Response, next: NextFunction) => {
+proyectosRouter.delete('/:proyectoId/frentes/:frenteId', verificarPermisoProyecto, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const frenteId = String(req.params.frenteId);
     const resultado = await ProyectosService.desactivarFrente(req.tenant!.id, frenteId);
