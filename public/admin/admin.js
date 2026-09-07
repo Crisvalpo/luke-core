@@ -345,6 +345,24 @@ async function renderizarVistaProyectosTenant(tenant) {
               <button class="btn btn-primary" onclick="descargarPlantillaPiping('${p.id}', '${p.codigo}')" style="width: 100%; font-size: 0.8rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #059669;">
                 📥 Descargar Planilla Excel (Piping)
               </button>
+
+              <details style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem 0.65rem; color: #334155; margin-top: 0.2rem; cursor: pointer;">
+                <summary style="font-weight: 600; color: #0f766e; list-style: none; display: flex; align-items: center; justify-content: space-between;">
+                  <span>🛡️ ¿Excel bloquea las macros? (Instrucciones)</span>
+                  <span style="font-size: 0.7rem; color: #64748b;">Ver pasos ▾</span>
+                </summary>
+                <div style="margin-top: 0.6rem; line-height: 1.45; border-top: 1px solid #e2e8f0; padding-top: 0.5rem;">
+                  <p style="margin-bottom: 0.4rem; font-weight: 600; color: #0f172a;">Configurar Windows (Se hace 1 sola vez en tu equipo):</p>
+                  <ol style="margin-left: 1.2rem; margin-bottom: 0.5rem; padding-left: 0;">
+                    <li>Presiona <kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 4px; font-family: monospace;">Win + R</kbd>, escribe <code style="color: #0369a1; font-weight: 600;">inetcpl.cpl</code> y presiona <em>Enter</em>.</li>
+                    <li>Pestaña <strong>Seguridad</strong> &gt; selecciona <strong>Sitios de confianza</strong> &gt; botón <strong>Sitios</strong>.</li>
+                    <li>Agrega <code style="background: #eff6ff; color: #1d4ed8; padding: 1px 4px; border-radius: 3px; font-weight: 600;">https://app.lukeapp.cl</code> y haz clic en <strong>Agregar</strong>, <strong>Cerrar</strong> y <strong>Aceptar</strong>.</li>
+                  </ol>
+                  <p style="margin-bottom: 0; color: #64748b; font-size: 0.725rem;">
+                    💡 <em>Alternativa rápida:</em> Clic derecho en el archivo descargado &gt; <strong>Propiedades</strong> &gt; marca la casilla <strong>☑️ Desbloquear</strong> abajo y pulsa Aceptar.
+                  </p>
+                </div>
+              </details>
             </div>
           ` : `
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
