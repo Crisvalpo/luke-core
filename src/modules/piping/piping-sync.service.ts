@@ -30,10 +30,28 @@ export class PipingSyncService {
       throw new Error(`Permiso denegado o proyecto inexistente para usuario '${usuarioWindows}' en proyecto '${idProyecto}'.`);
     }
 
+    let personalId = authQuery.rows[0]?.personal_id || null;
+    let tenantId = authQuery.rows[0]?.tenant_id || null;
+    let proyectoId = authQuery.rows[0]?.proyecto_id || null;
+
+    if (!proyectoId) {
+      const proy = await client.query(`
+        SELECT id, tenant_id FROM core.projects WHERE (code = $1 OR id::text = $1) LIMIT 1;
+      `, [idProyecto.trim()]);
+      if (proy.rows[0]) {
+        proyectoId = proy.rows[0].id;
+        tenantId = proy.rows[0].tenant_id;
+      }
+    }
+
+    if (!proyectoId) {
+      throw new Error(`Proyecto no encontrado con identificador '${idProyecto}'.`);
+    }
+
     return {
-      personalId: authQuery.rows[0]?.personal_id || null,
-      tenantId: authQuery.rows[0]?.tenant_id || '00000000-0000-0000-0000-000000000001',
-      proyectoId: authQuery.rows[0]?.proyecto_id
+      personalId,
+      tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+      proyectoId
     };
   }
 
