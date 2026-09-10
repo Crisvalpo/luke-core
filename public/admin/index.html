@@ -30,13 +30,13 @@
 <body>
 
   <div class="app-container">
-    <!-- Sidebar -->
+    <!-- Sidebar (Supabase Style Collapsed/Expandable) -->
     <aside class="sidebar">
       <div class="brand-header">
         <div class="brand-logo">L</div>
-        <div class="brand-info" style="min-width: 0;">
+        <div class="brand-info">
           <h1 style="font-size: 0.95rem; font-weight: 700;">LukeAPPs</h1>
-          <div id="user-name-label" style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">Usuario</div>
+          <div id="user-name-label" class="user-name-label">Usuario</div>
           <div style="margin-top: 3px;">
             <span id="user-display-name" class="role-badge role-badge-staff">Super-Admin</span>
           </div>
@@ -44,19 +44,27 @@
       </div>
 
       <nav class="nav-links">
-        <a class="nav-item active" id="nav-link-tenants" href="javascript:void(0)" onclick="navegarASeccion('proyectos')">📁 Proyectos</a>
-        <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')">👥 Dotación de Personal</a>
-        <a class="nav-item" id="nav-link-whatsapp" href="javascript:void(0)" onclick="abrirModalWhatsApp()" style="display: flex; align-items: center; justify-content: space-between;">
-          <span>📱 WhatsApp Bot</span>
-          <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block;"></span>
+        <a class="nav-item active" id="nav-link-tenants" href="javascript:void(0)" onclick="navegarASeccion('proyectos')" title="Proyectos">
+          <span class="nav-icon">📁</span>
+          <span class="nav-text">Proyectos</span>
+        </a>
+        <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')" title="Dotación de Personal">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">Dotación de Personal</span>
+        </a>
+        <a class="nav-item" id="nav-link-whatsapp" href="javascript:void(0)" onclick="abrirModalWhatsApp()" title="WhatsApp Bot">
+          <span class="nav-icon">📱</span>
+          <span class="nav-text">WhatsApp Bot</span>
+          <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block; flex-shrink: 0;"></span>
         </a>
       </nav>
 
-      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--border-sidebar); padding-top: 1rem;">
-        <button class="btn btn-secondary" onclick="cerrarSesion()" style="width: 100%; justify-content: center; font-size: 0.8rem;">
-          🚪 Cerrar Sesión
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-logout" onclick="cerrarSesion()" title="Cerrar Sesión">
+          <span class="nav-icon">🚪</span>
+          <span class="nav-text">Cerrar Sesión</span>
         </button>
-        <span style="font-size: 0.7rem; color: var(--color-text-muted); text-align: center;">v1.0.0 • Oracle Cloud 24/7</span>
+        <span class="footer-version">v1.0.0 • Oracle Cloud 24/7</span>
       </div>
     </aside>
 

@@ -90,7 +90,13 @@ function verificarAutenticacion() {
 
         const navTenants = document.getElementById('nav-link-tenants');
         if (navTenants) {
-          navTenants.innerText = user.rol === 'operario' ? '📁 Mis Proyectos' : '📁 Proyectos';
+          const textSpan = navTenants.querySelector('.nav-text');
+          const texto = user.rol === 'operario' ? 'Mis Proyectos' : 'Proyectos';
+          if (textSpan) {
+            textSpan.innerText = texto;
+          } else {
+            navTenants.innerText = `📁 ${texto}`;
+          }
         }
 
         const navDotacion = document.getElementById('nav-link-dotacion');
