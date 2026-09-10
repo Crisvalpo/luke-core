@@ -1546,7 +1546,7 @@ function navegarASeccion(seccion) {
     if (navDotacion) navDotacion.classList.remove('active');
     if (topbarTitulo) {
       if (user?.rol === 'super_admin') {
-        topbarTitulo.innerText = 'Gestión de Empresas & Marcas Blancas';
+        topbarTitulo.innerText = 'Gestión de Empresas';
       } else {
         topbarTitulo.innerText = `Mi Empresa — ${nombreEmpresa}`;
       }

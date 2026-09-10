@@ -84,11 +84,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
             </span>
             <span class="topbar-breadcrumb-slash">/</span>
-            <h2 id="topbar-titulo" class="topbar-title">Gestión de Empresas & Marcas Blancas</h2>
-            <span class="topbar-status-pill">
-              <span class="status-dot"></span>
-              <span id="topbar-env-label">Oracle Cloud 24/7</span>
-            </span>
+            <h2 id="topbar-titulo" class="topbar-title">Gestión de Empresas</h2>
           </div>
         </div>
 
@@ -99,17 +95,6 @@
             <kbd class="search-kbd">Ctrl K</kbd>
           </div>
 
-          <button class="btn btn-secondary topbar-btn" id="btn-topbar-whatsapp" onclick="abrirModalWhatsApp()" title="Estado de WhatsApp Bot">
-            <span id="wa-topbar-dot" class="wa-dot-badge"></span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>WhatsApp</span>
-          </button>
-
-          <button class="btn btn-secondary topbar-btn" id="btn-topbar-ingesta" onclick="abrirModalIngesta()" title="Ingesta Masiva Excel">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
-            <span>Ingesta Excel</span>
-          </button>
-
           <button class="btn btn-primary topbar-btn-primary" id="btn-nuevo-cliente" onclick="abrirModalOnboarding()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
             <span>Nuevo Cliente</span>
@@ -118,32 +103,8 @@
       </header>
 
       <div class="content-area">
-        <!-- KPIs Globales -->
-        <section class="kpi-grid">
-          <div class="kpi-card" id="kpi-card-tenants">
-            <div class="kpi-label" id="kpi-label-tenants">Empresas Activas</div>
-            <div class="kpi-value" id="kpi-tenants">-</div>
-          </div>
-          <div class="kpi-card" id="kpi-card-proyectos" onclick="navegarASeccion('proyectos')" style="cursor: pointer;" title="Ver Proyectos">
-            <div class="kpi-label">Proyectos Activos</div>
-            <div class="kpi-value" id="kpi-proyectos">-</div>
-          </div>
-          <div class="kpi-card" id="kpi-card-personal" onclick="navegarASeccion('dotacion')" style="cursor: pointer;" title="Ver y Gestionar Dotación">
-            <div class="kpi-label">Dotación Indexada</div>
-            <div class="kpi-value" id="kpi-personal">-</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Flota de Maquinaria</div>
-            <div class="kpi-value" id="kpi-equipos">-</div>
-          </div>
-        </section>
-
-        <!-- Barra de Búsqueda (Solo para Super-Admin) -->
-        <section class="action-bar" id="action-bar-busqueda">
-          <div class="search-box">
-            <span>🔍</span>
-            <input type="text" id="input-busqueda" placeholder="Buscar por nombre, RUT o slug..." oninput="filtrarTenants()">
-          </div>
+        <!-- Barra Contador de Resultados -->
+        <section class="action-bar" id="action-bar-busqueda" style="margin-bottom: 0.5rem;">
           <div style="font-size: 0.85rem; color: var(--color-text-muted);">
             Mostrando <strong id="contador-mostrados">0</strong> clientes
           </div>
