@@ -510,8 +510,18 @@ async function descargarPlantillaPiping(proyectoId, codigoProyecto) {
   }
 }
 
-function filtrarTenants() {
-  const query = document.getElementById('input-busqueda').value.toLowerCase().trim();
+function sincronizarBusquedaTopbar(val) {
+  const mainInput = document.getElementById('input-busqueda');
+  if (mainInput) mainInput.value = val;
+  filtrarTenants(val);
+}
+
+function filtrarTenants(queryManual) {
+  const inputTop = document.getElementById('input-busqueda-topbar');
+  const inputMain = document.getElementById('input-busqueda');
+  const queryRaw = (queryManual !== undefined ? queryManual : (inputTop?.value || inputMain?.value || ''));
+  const query = queryRaw.toLowerCase().trim();
+
   const filtrados = todosLosTenants.filter(t => 
     t.razon_social.toLowerCase().includes(query) ||
     t.slug.toLowerCase().includes(query) ||
@@ -519,6 +529,18 @@ function filtrarTenants() {
   );
   renderizarTenants(filtrados);
 }
+
+// Atajo de Teclado Ctrl + K / Cmd + K para enfocar el buscador inteligente
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    const topbarInput = document.getElementById('input-busqueda-topbar') || document.getElementById('input-busqueda');
+    if (topbarInput) {
+      e.preventDefault();
+      topbarInput.focus();
+      topbarInput.select();
+    }
+  }
+});
 
 function abrirModalOnboarding() {
   document.getElementById('modal-onboarding').classList.add('active');

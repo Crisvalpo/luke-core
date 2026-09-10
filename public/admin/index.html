@@ -78,17 +78,41 @@
     <!-- Main Content -->
     <main class="main-wrapper">
       <header class="topbar">
-        <h2 id="topbar-titulo">Gestión de Empresas & Marcas Blancas</h2>
-        <div style="display: flex; gap: 0.75rem;">
-          <button class="btn btn-secondary" id="btn-topbar-whatsapp" onclick="abrirModalWhatsApp()" style="display: inline-flex; align-items: center; gap: 0.45rem;">
-            <span id="wa-topbar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block;"></span>
-            📱 WhatsApp Bot
+        <div class="topbar-left">
+          <div class="topbar-brand">
+            <span class="topbar-brand-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            </span>
+            <span class="topbar-breadcrumb-slash">/</span>
+            <h2 id="topbar-titulo" class="topbar-title">Gestión de Empresas & Marcas Blancas</h2>
+            <span class="topbar-status-pill">
+              <span class="status-dot"></span>
+              <span id="topbar-env-label">Oracle Cloud 24/7</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="topbar-search" id="topbar-search-box">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="input-busqueda-topbar" placeholder="Buscar por nombre, RUT o slug..." oninput="sincronizarBusquedaTopbar(this.value)">
+            <kbd class="search-kbd">Ctrl K</kbd>
+          </div>
+
+          <button class="btn btn-secondary topbar-btn" id="btn-topbar-whatsapp" onclick="abrirModalWhatsApp()" title="Estado de WhatsApp Bot">
+            <span id="wa-topbar-dot" class="wa-dot-badge"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>WhatsApp</span>
           </button>
-          <button class="btn btn-secondary" id="btn-topbar-ingesta" onclick="abrirModalIngesta()">
-            📊 Ingesta Masiva (Excel)
+
+          <button class="btn btn-secondary topbar-btn" id="btn-topbar-ingesta" onclick="abrirModalIngesta()" title="Ingesta Masiva Excel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
+            <span>Ingesta Excel</span>
           </button>
-          <button class="btn btn-primary" id="btn-nuevo-cliente" onclick="abrirModalOnboarding()">
-            ➕ Nuevo Cliente
+
+          <button class="btn btn-primary topbar-btn-primary" id="btn-nuevo-cliente" onclick="abrirModalOnboarding()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <span>Nuevo Cliente</span>
           </button>
         </div>
       </header>
