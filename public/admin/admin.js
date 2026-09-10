@@ -6,6 +6,45 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarTenants();
 });
 
+function aplicarEstiloSidebarPorRol(user) {
+  const sidebar = document.querySelector('.sidebar');
+  const nameLabel = document.getElementById('user-name-label');
+  const roleBadge = document.getElementById('user-display-name');
+
+  if (!sidebar) return;
+
+  sidebar.classList.remove('theme-staff', 'theme-fundador', 'theme-operario');
+
+  const rol = (user.rol || '').toLowerCase().trim();
+  const nombre = user.nombre_completo || 'Usuario';
+
+  if (nameLabel) {
+    nameLabel.innerText = nombre;
+    nameLabel.title = nombre;
+  }
+
+  if (rol === 'super_admin' || rol === 'staff') {
+    sidebar.classList.add('theme-staff');
+    if (roleBadge) {
+      roleBadge.className = 'role-badge role-badge-staff';
+      roleBadge.innerHTML = '⚡ Staff LukeAPP';
+    }
+  } else if (['fundador', 'admin_empresa', 'admin_proyecto', 'jefe_proyecto', 'admin'].includes(rol)) {
+    sidebar.classList.add('theme-fundador');
+    if (roleBadge) {
+      roleBadge.className = 'role-badge role-badge-fundador';
+      const label = (rol === 'fundador' || rol === 'admin_empresa') ? '👑 Fundador Empresa' : '🛡️ Admin Proyecto';
+      roleBadge.innerHTML = label;
+    }
+  } else {
+    sidebar.classList.add('theme-operario');
+    if (roleBadge) {
+      roleBadge.className = 'role-badge role-badge-operario';
+      roleBadge.innerHTML = '👷 Operativo Terreno';
+    }
+  }
+}
+
 function verificarAutenticacion() {
   const token = localStorage.getItem('luke_core_token');
   const userJson = localStorage.getItem('luke_core_user');
@@ -21,10 +60,7 @@ function verificarAutenticacion() {
   if (userJson) {
     try {
       const user = JSON.parse(userJson);
-      const displayElem = document.getElementById('user-display-name');
-      if (displayElem) {
-        displayElem.innerText = `${user.nombre_completo.split(' ')[0]} (${user.rol})`;
-      }
+      aplicarEstiloSidebarPorRol(user);
 
       // Si no es Super-Admin, adaptar la vista a su Entorno de Empresa
       if (user.rol !== 'super_admin') {
@@ -255,7 +291,18 @@ function renderizarTenants(tenants) {
         </div>
 
         <div class="tenant-modules">
-          ${modulos.map(m => `<span class="module-pill">${m}</span>`).join('')}
+          ${modulos.map(m => {
+            const labels = {
+              core: '⚙️ Core Base',
+              combustible: '⛽ Combustible',
+              piping: '🔩 Piping & Spools',
+              ingesta_masiva: '📊 Ingesta Excel',
+              partes_diarios: '📋 Partes Diarios',
+              cuadrillas: '👷 Cuadrillas',
+              mantenimiento: '🛠️ Mantenimiento'
+            };
+            return `<span class="module-pill">${labels[m] || m}</span>`;
+          }).join('')}
         </div>
 
         <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">

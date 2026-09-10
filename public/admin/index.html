@@ -34,9 +34,12 @@
     <aside class="sidebar">
       <div class="brand-header">
         <div class="brand-logo">L</div>
-        <div class="brand-info">
-          <h1>LukeAPPs</h1>
-          <span id="user-display-name">Super-Admin</span>
+        <div class="brand-info" style="min-width: 0;">
+          <h1 style="font-size: 0.95rem; font-weight: 700;">LukeAPPs</h1>
+          <div id="user-name-label" style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">Usuario</div>
+          <div style="margin-top: 3px;">
+            <span id="user-display-name" class="role-badge role-badge-staff">Super-Admin</span>
+          </div>
         </div>
       </div>
 
@@ -49,7 +52,7 @@
         </a>
       </nav>
 
-      <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--border-sidebar); padding-top: 1rem;">
+      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--border-sidebar); padding-top: 1rem;">
         <button class="btn btn-secondary" onclick="cerrarSesion()" style="width: 100%; justify-content: center; font-size: 0.8rem;">
           🚪 Cerrar Sesión
         </button>
@@ -265,6 +268,7 @@
             <label class="form-label">Módulos Habilitados en este Entorno</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
               <label><input type="checkbox" name="modulos" value="combustible" checked> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
+              <label><input type="checkbox" name="modulos" value="piping" checked> 🔩 Control & Ingesta de Piping (Excel, Juntas & Spools)</label>
             </div>
           </div>
 
@@ -356,6 +360,7 @@
             <label class="form-label">Módulos Habilitados</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
               <label><input type="checkbox" name="edit-modulos" value="combustible"> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
+              <label><input type="checkbox" name="edit-modulos" value="piping"> 🔩 Control & Ingesta de Piping (Excel, Juntas & Spools)</label>
             </div>
           </div>
         </div>

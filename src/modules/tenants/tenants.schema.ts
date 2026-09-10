@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const moduloDisponibleEnum = z.enum([
   'core',
   'combustible',
+  'piping',
   'partes_diarios',
   'ingesta_masiva',
   'cuadrillas',
