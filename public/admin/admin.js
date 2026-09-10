@@ -90,13 +90,11 @@ function verificarAutenticacion() {
 
         const navTenants = document.getElementById('nav-link-tenants');
         if (navTenants) {
+          const iconSpan = navTenants.querySelector('.nav-icon');
           const textSpan = navTenants.querySelector('.nav-text');
           const texto = user.rol === 'operario' ? 'Mis Proyectos' : 'Proyectos';
-          if (textSpan) {
-            textSpan.innerText = texto;
-          } else {
-            navTenants.innerText = `📁 ${texto}`;
-          }
+          if (iconSpan) iconSpan.innerText = '📁';
+          if (textSpan) textSpan.innerText = texto;
         }
 
         const navDotacion = document.getElementById('nav-link-dotacion');
@@ -116,7 +114,14 @@ function verificarAutenticacion() {
         const kpiCardTenants = document.getElementById('kpi-card-tenants');
         if (kpiCardTenants) kpiCardTenants.style.display = 'none';
       } else {
-        // Es super_admin: consultar estado de WhatsApp
+        // Es super_admin / Staff LukeAPP: Gestiona las Empresas / Clientes
+        const navTenants = document.getElementById('nav-link-tenants');
+        if (navTenants) {
+          const iconSpan = navTenants.querySelector('.nav-icon');
+          const textSpan = navTenants.querySelector('.nav-text');
+          if (iconSpan) iconSpan.innerText = '🏢';
+          if (textSpan) textSpan.innerText = 'Empresas';
+        }
         verificarEstadoWhatsAppBadge();
       }
     } catch {}
