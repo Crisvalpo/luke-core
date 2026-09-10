@@ -88,12 +88,15 @@ function verificarAutenticacion() {
         const barBusqueda = document.getElementById('action-bar-busqueda');
         if (barBusqueda) barBusqueda.style.display = 'none';
 
+        const SVG_FOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+        const SVG_BUILDING = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
+
         const navTenants = document.getElementById('nav-link-tenants');
         if (navTenants) {
           const iconSpan = navTenants.querySelector('.nav-icon');
           const textSpan = navTenants.querySelector('.nav-text');
           const texto = user.rol === 'operario' ? 'Mis Proyectos' : 'Proyectos';
-          if (iconSpan) iconSpan.innerText = '📁';
+          if (iconSpan) iconSpan.innerHTML = SVG_FOLDER;
           if (textSpan) textSpan.innerText = texto;
         }
 
@@ -115,11 +118,12 @@ function verificarAutenticacion() {
         if (kpiCardTenants) kpiCardTenants.style.display = 'none';
       } else {
         // Es super_admin / Staff LukeAPP: Gestiona las Empresas / Clientes
+        const SVG_BUILDING = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
         const navTenants = document.getElementById('nav-link-tenants');
         if (navTenants) {
           const iconSpan = navTenants.querySelector('.nav-icon');
           const textSpan = navTenants.querySelector('.nav-text');
-          if (iconSpan) iconSpan.innerText = '🏢';
+          if (iconSpan) iconSpan.innerHTML = SVG_BUILDING;
           if (textSpan) textSpan.innerText = 'Empresas';
         }
         verificarEstadoWhatsAppBadge();

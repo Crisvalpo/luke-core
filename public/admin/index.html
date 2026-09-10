@@ -44,23 +44,31 @@
 
       <nav class="nav-links">
         <a class="nav-item active" id="nav-link-tenants" href="javascript:void(0)" onclick="navegarASeccion('proyectos')" title="Empresas / Proyectos">
-          <span class="nav-icon" id="nav-icon-tenants">🏢</span>
+          <span class="nav-icon" id="nav-icon-tenants">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+          </span>
           <span class="nav-text" id="nav-text-tenants">Empresas</span>
         </a>
         <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')" title="Dotación de Personal">
-          <span class="nav-icon">👥</span>
+          <span class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
           <span class="nav-text">Dotación de Personal</span>
         </a>
         <a class="nav-item" id="nav-link-whatsapp" href="javascript:void(0)" onclick="abrirModalWhatsApp()" title="WhatsApp Bot">
-          <span class="nav-icon">📱</span>
+          <span class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
           <span class="nav-text">WhatsApp Bot</span>
-          <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block; flex-shrink: 0;"></span>
+          <span id="wa-sidebar-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block; flex-shrink: 0; margin-left: auto;"></span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
         <button class="btn btn-secondary btn-logout" onclick="cerrarSesion()" title="Cerrar Sesión">
-          <span class="nav-icon">🚪</span>
+          <span class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+          </span>
           <span class="nav-text">Cerrar Sesión</span>
         </button>
         <span class="footer-version">v1.0.0 • Oracle Cloud 24/7</span>
