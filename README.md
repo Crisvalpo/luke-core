@@ -130,3 +130,9 @@ npm run build
 pm2 start ecosystem.config.js
 pm2 save
 ```
+
+---
+
+## 🗺️ Seguimiento de Tareas & Roadmap
+Para consultar las tareas planificadas, en curso y pendientes de implementación, revisa el archivo [ROADMAP.md](file:///c:/Github/Core/ROADMAP.md).
+

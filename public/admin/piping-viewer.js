@@ -34,7 +34,8 @@ function abrirVisorPiping(proyectoId, codigo, nombre) {
   if (dotacionSec) dotacionSec.style.display = 'none';
   if (visorSec) visorSec.style.display = 'block';
 
-  document.getElementById('visor-proy-titulo').innerText = `${codigo} — ${nombre}`;
+  const elTitulo = document.getElementById('visor-proy-titulo');
+  if (elTitulo) elTitulo.innerText = `${codigo} — ${nombre}`;
   if (topbarTitulo) topbarTitulo.innerText = `Ingeniería Piping — ${codigo}`;
 
   actualizarTabsUI();

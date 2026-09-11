@@ -4,6 +4,7 @@ export const moduloDisponibleEnum = z.enum([
   'core',
   'combustible',
   'piping',
+  'equipos',
   'partes_diarios',
   'ingesta_masiva',
   'cuadrillas',

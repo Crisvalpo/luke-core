@@ -49,7 +49,7 @@
           </span>
           <span class="nav-text" id="nav-text-tenants">Empresas</span>
         </a>
-        <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')" title="Dotación de Personal">
+        <a class="nav-item" id="nav-link-dotacion" href="javascript:void(0)" onclick="navegarASeccion('dotacion')" title="Dotación de Personal" style="display: none;">
           <span class="nav-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
@@ -219,6 +219,36 @@
 
           </div>
         </section>
+
+        <!-- Visor Faenero de Cuadrillas, Diccionarios y HH -->
+        <section id="visor-cuadrillas-container" style="display: none;">
+          <div style="background: var(--bg-container); border: 1px solid var(--border-container); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-subtle);">
+            
+            <!-- Cabecera del Visor con botón volver y título de proyecto -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <button class="btn btn-secondary" onclick="cerrarVisorCuadrillas()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
+                  ← Volver a Proyectos
+                </button>
+                <h3 id="cuadrillas-proy-titulo" style="font-size: 1.15rem; font-weight: 700; margin: 0; color: #0f172a;">
+                  PROYECTO — Cuadrillas y HH
+                </h3>
+              </div>
+            </div>
+
+            <!-- Pestañas de Navegación del Módulo de Cuadrillas -->
+            <div class="piping-tabs" style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-container); margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: 0.5rem;">
+              <button class="piping-tab-btn tab-cuadrilla-btn active" data-tab="organigrama" onclick="cambiarTabCuadrillas('organigrama')">👷 Organigrama</button>
+              <button class="piping-tab-btn tab-cuadrilla-btn" data-tab="asignacion" onclick="cambiarTabCuadrillas('asignacion')">📋 Asignar a Tareas</button>
+              <button class="piping-tab-btn tab-cuadrilla-btn" data-tab="reporte-hh" onclick="cambiarTabCuadrillas('reporte-hh')">⏱️ Reporte HH Reales</button>
+              <button class="piping-tab-btn tab-cuadrilla-btn" data-tab="diccionarios" onclick="cambiarTabCuadrillas('diccionarios')">⚙️ Diccionarios de Empresa</button>
+            </div>
+
+            <!-- Contenedor Dinámico de la Pestaña Activa -->
+            <div id="cuadrillas-tab-body"></div>
+
+          </div>
+        </section>
       </div>
     </main>
   </div>
@@ -235,7 +265,7 @@
         <div class="form-grid">
           <div class="form-group full">
             <label class="form-label">Razón Social *</label>
-            <input class="form-input" type="text" id="ob-razon-social" required placeholder="Ej: Anglo American Sur S.A.">
+            <input class="form-input" type="text" id="ob-razon-social" required placeholder="Ej: Tu Empresa SpA">
           </div>
 
           <div class="form-group">
@@ -245,7 +275,7 @@
 
           <div class="form-group">
             <label class="form-label">Slug Único (Minúsculas) *</label>
-            <input class="form-input" type="text" id="ob-slug" required placeholder="Ej: anglo">
+            <input class="form-input" type="text" id="ob-slug" required placeholder="Ej: tuempresa">
           </div>
 
           <div class="form-group">
@@ -267,8 +297,8 @@
           <div class="form-group full">
             <label class="form-label">Módulos Habilitados en este Entorno</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
-              <label><input type="checkbox" name="modulos" value="combustible" checked> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
-              <label><input type="checkbox" name="modulos" value="piping" checked> 🔩 Control & Ingesta de Piping (Excel, Juntas & Spools)</label>
+              <label><input type="checkbox" name="modulos" value="piping" checked> 🔩 Piping</label>
+              <label><input type="checkbox" name="modulos" value="equipos" checked> 🚜 Equipos</label>
             </div>
           </div>
 
@@ -288,7 +318,7 @@
 
           <div class="form-group">
             <label class="form-label">Email Corporativo *</label>
-            <input class="form-input" type="email" id="ob-admin-email" required placeholder="jperez@empresa.cl">
+            <input class="form-input" type="email" id="ob-admin-email" required placeholder="contacto@tuempresa.cl">
           </div>
 
           <div class="form-group">
@@ -359,8 +389,8 @@
           <div class="form-group full" id="group-edit-modulos">
             <label class="form-label">Módulos Habilitados</label>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; font-size: 0.85rem;">
-              <label><input type="checkbox" name="edit-modulos" value="combustible"> ⛽ Gestión de Combustible (Faenas & Estanques)</label>
-              <label><input type="checkbox" name="edit-modulos" value="piping"> 🔩 Control & Ingesta de Piping (Excel, Juntas & Spools)</label>
+              <label><input type="checkbox" name="edit-modulos" value="piping"> 🔩 Piping</label>
+              <label><input type="checkbox" name="edit-modulos" value="equipos"> 🚜 Equipos</label>
             </div>
           </div>
         </div>
@@ -687,6 +717,8 @@
   </div>
 
   <script src="/admin/piping-viewer.js"></script>
+  <script src="/admin/cuadrillas-viewer.js"></script>
+  <script src="/admin/cuadrillas-dictionaries.js"></script>
   <script src="/admin/admin.js"></script>
 </body>
 </html>

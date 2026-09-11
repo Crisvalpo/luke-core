@@ -20,6 +20,8 @@ import { ingestaRouter } from './modules/ingesta/ingesta.routes.js';
 import { rolesRouter } from './modules/roles/roles.routes.js';
 import { pipingRouter } from './modules/piping/piping.routes.js';
 import { whatsappRouter } from './modules/whatsapp/whatsapp.routes.js';
+import { mirrorRouter } from './modules/mirror/mirror.routes.js';
+import cuadrillasRouter from './modules/cuadrillas/cuadrillas.routes.js';
 
 export const app = express();
 
@@ -79,10 +81,16 @@ apiV1.use('/proveedores', requireAuth, requireTenant, proveedoresRouter);
 apiV1.use('/roles', requireAuth, requireTenant, rolesRouter);
 apiV1.use('/storage', requireAuth, storageRouter);
 
-// 🚀 Capa 3: Sincronización y Módulos Operacionales (Excel / Piping)
+// 🚀 Capa 3: Sincronización y Módulos Operacionales (Excel / Piping / RRHH Mirror / Cuadrillas)
 apiV1.use('/piping', pipingRouter);
+apiV1.use('/mirror', mirrorRouter);
+apiV1.use('/cuadrillas', cuadrillasRouter);
 
 app.use('/api/v1', apiV1);
+
+// 👥 Microservicio Espejo RRHH (Acceso directo para App de Terreno)
+app.use('/mirror', mirrorRouter);
+app.use('/api/cuadrillas', cuadrillasRouter);
 
 // Alias directo para clientes legacy / macros Excel (/api/auth, /api/piping, /api/access, /api/me/projects)
 app.use('/api/auth', authRouter);

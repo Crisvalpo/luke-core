@@ -101,8 +101,8 @@ function verificarAutenticacion() {
         }
 
         const navDotacion = document.getElementById('nav-link-dotacion');
-        if (navDotacion && user.rol === 'operario') {
-          navDotacion.style.display = 'none';
+        if (navDotacion) {
+          navDotacion.style.display = (user.rol === 'operario') ? 'none' : 'flex';
         }
 
         const topbarTitulo = document.getElementById('topbar-titulo');
@@ -118,6 +118,9 @@ function verificarAutenticacion() {
         if (kpiCardTenants) kpiCardTenants.style.display = 'none';
       } else {
         // Es super_admin / Staff LukeAPP: Gestiona las Empresas / Clientes
+        const navDotacion = document.getElementById('nav-link-dotacion');
+        if (navDotacion) navDotacion.style.display = 'none';
+
         const SVG_BUILDING = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
         const navTenants = document.getElementById('nav-link-tenants');
         if (navTenants) {
@@ -188,13 +191,17 @@ async function cargarTenants() {
     actualizarKPIs(todosLosTenants);
     renderizarTenants(todosLosTenants);
 
-    // Si el tenant tiene logo propio, actualizar el logo en el sidebar
-    if (todosLosTenants.length === 1 && todosLosTenants[0].config?.logo_url) {
-      const brandLogoElem = document.querySelector('.brand-logo');
+    // Marca Blanca: Solo actualizar el logo en el sidebar si el usuario pertenece a una empresa específica (no Staff)
+    const brandLogoElem = document.querySelector('.brand-logo');
+    if (user && user.rol !== 'super_admin' && user.rol !== 'staff' && todosLosTenants.length === 1 && todosLosTenants[0].config?.logo_url) {
       if (brandLogoElem) {
         brandLogoElem.innerHTML = `<img src="${todosLosTenants[0].config.logo_url}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">`;
         brandLogoElem.style.background = 'transparent';
       }
+    } else if (brandLogoElem) {
+      // Para Super-Admin / Staff LukeAPP: Mantener siempre el isotipo oficial 'L'
+      brandLogoElem.innerHTML = 'L';
+      brandLogoElem.style.background = '';
     }
 
   } catch (error) {
@@ -229,12 +236,17 @@ function actualizarKPIs(tenants) {
     kpiCardTenants.style.display = esSuperAdmin ? 'block' : 'none';
   }
 
-  if (esSuperAdmin) {
-    document.getElementById('kpi-tenants').innerText = tenants.length;
-  }
-  document.getElementById('kpi-proyectos').innerText = totalProyectos;
-  document.getElementById('kpi-personal').innerText = totalPersonal;
-  document.getElementById('kpi-equipos').innerText = totalEquipos;
+  const elTenants = document.getElementById('kpi-tenants');
+  if (elTenants && esSuperAdmin) elTenants.innerText = tenants.length;
+
+  const elProyectos = document.getElementById('kpi-proyectos');
+  if (elProyectos) elProyectos.innerText = totalProyectos;
+
+  const elPersonal = document.getElementById('kpi-personal');
+  if (elPersonal) elPersonal.innerText = totalPersonal;
+
+  const elEquipos = document.getElementById('kpi-equipos');
+  if (elEquipos) elEquipos.innerText = totalEquipos;
 }
 
 function renderizarTenants(tenants) {
@@ -251,7 +263,8 @@ function renderizarTenants(tenants) {
     return;
   }
 
-  document.getElementById('contador-mostrados').innerText = tenants.length;
+  const contMostrados = document.getElementById('contador-mostrados');
+  if (contMostrados) contMostrados.innerText = tenants.length;
 
   if (tenants.length === 0) {
     container.innerHTML = `
@@ -309,8 +322,9 @@ function renderizarTenants(tenants) {
           ${modulos.map(m => {
             const labels = {
               core: '⚙️ Core Base',
+              piping: '🔩 Piping',
+              equipos: '🚜 Equipos',
               combustible: '⛽ Combustible',
-              piping: '🔩 Piping & Spools',
               ingesta_masiva: '📊 Ingesta Excel',
               partes_diarios: '📋 Partes Diarios',
               cuadrillas: '👷 Cuadrillas',
@@ -446,6 +460,9 @@ async function renderizarVistaProyectosTenant(tenant) {
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
               <button class="btn btn-secondary" onclick="abrirVisorPiping('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #f0fdf4; color: #15803d; border-color: #86efac; font-weight: 600;">
                 📊 Piping
+              </button>
+              <button class="btn btn-secondary" onclick="abrirVisorCuadrillas('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; font-weight: 600;">
+                👷 Cuadrillas & HH
               </button>
               ${user && (user.rol === 'fundador' || user.rol === 'admin_empresa' || user.rol === 'super_admin') ? `
                 <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
@@ -868,6 +885,9 @@ async function cargarFaenasTenant(tenantId) {
                 </td>
                 <td style="padding: 0.5rem 0.75rem; text-align: center;">
                   <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
+                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="abrirModalInvitarAdmin('${tenantId}', '${p.id}')" title="Asignar o invitar personal a este proyecto">
+                      👤 Personal
+                    </button>
                     <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
                       ✏️ Editar
                     </button>
@@ -1511,21 +1531,28 @@ async function desvincularWhatsApp() {
 let seccionActual = 'proyectos';
 
 function navegarASeccion(seccion) {
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
+
+  if (seccion === 'dotacion' && (user?.rol === 'super_admin' || user?.rol === 'staff')) {
+    seccion = 'proyectos';
+  }
+
   seccionActual = seccion;
   const tenantsGrid = document.getElementById('tenants-container');
   const dotacionSec = document.getElementById('dotacion-container');
   const visorSec = document.getElementById('visor-piping-container');
+  const visorCuadrillasSec = document.getElementById('visor-cuadrillas-container');
   const navTenants = document.getElementById('nav-link-tenants');
   const navDotacion = document.getElementById('nav-link-dotacion');
   const topbarTitulo = document.getElementById('topbar-titulo');
   const btnNuevo = document.getElementById('btn-nuevo-cliente');
 
-  const userJson = localStorage.getItem('luke_core_user');
-  let user = null;
-  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
   const nombreEmpresa = user?.tenant_razon_social || user?.tenant_slug || (todosLosTenants[0]?.razon_social) || 'Mi Empresa';
 
   if (visorSec) visorSec.style.display = 'none';
+  if (visorCuadrillasSec) visorCuadrillasSec.style.display = 'none';
 
   if (seccion === 'dotacion') {
     if (tenantsGrid) tenantsGrid.style.display = 'none';

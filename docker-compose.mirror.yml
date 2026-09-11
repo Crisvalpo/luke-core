@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mirror-db:
+    image: postgres:15-alpine
+    container_name: luke-mirror-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SupabaseStrongPass2025!
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - mirror-db-data:/var/lib/postgresql/data
+      - ./db/migrations/037_create_mirror_tables.sql:/docker-entrypoint-initdb.d/01_mirror.sql:ro
+
+  mirror-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: luke-mirror-api
+    restart: always
+    depends_on:
+      - mirror-db
+    ports:
+      - "3080:3080"
+    environment:
+      NODE_ENV: production
+      PORT: 3080
+      SOURCE: excel # Change to 'buk' in Phase 2 or 'mock' for local tests
+      DATABASE_URL: postgresql://postgres:SupabaseStrongPass2025!@mirror-db:5432/postgres
+      BUK_TENANT: ${BUK_TENANT:-demo}
+      BUK_API_KEY: ${BUK_API_KEY:-}
+
+volumes:
+  mirror-db-data:
