@@ -122,15 +122,20 @@
           <div style="background: var(--bg-container); border: 1px solid var(--border-container); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
               <div>
-                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem;" id="dotacion-titulo-header">👥 Dotación de Personal</h3>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;" id="dotacion-titulo-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Dotación de Personal
+                </h3>
                 <p style="color: var(--color-text-muted); font-size: 0.85rem; margin: 0;">Gestiona las cuentas, roles y asignaciones del equipo agrupadas por proyecto.</p>
               </div>
               <div style="display: flex; gap: 0.75rem;">
-                <button class="btn btn-secondary" onclick="abrirModalIngesta()" style="font-size: 0.85rem;">
-                  📊 Carga Masiva (Excel)
+                <button class="btn btn-secondary" onclick="abrirModalIngesta()" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  Carga Masiva (Excel)
                 </button>
-                <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
-                  ➕ Invitar Personal
+                <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                  Invitar Personal
                 </button>
               </div>
             </div>
@@ -581,7 +586,8 @@
       <div class="modal-header" style="align-items: center;">
         <div>
           <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--color-primary, #0f766e); display: flex; align-items: center; gap: 0.5rem;">
-            <span>🎉</span> ¡Usuario Invitado Exitosamente!
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            ¡Usuario Invitado Exitosamente!
           </h3>
           <p id="invitacion-exitosa-sub" style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 3px;">
             El acceso ha sido configurado en el sistema.
@@ -593,18 +599,18 @@
       <div style="padding: 0.5rem 0 1rem 0; display: flex; flex-direction: column; gap: 1rem;">
         <!-- Canal Email -->
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
-          <span style="font-size: 1.25rem; line-height: 1;">📧</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           <div style="font-size: 0.83rem; color: #166534; line-height: 1.4;">
             <strong>Correo oficial despachado:</strong> Se envió la invitación a <span id="invitacion-email-dest" style="font-weight: 600;"></span>.
             <div style="margin-top: 0.35rem; color: #15803d; font-size: 0.78rem; background: rgba(255,255,255,0.7); padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px dashed #86efac;">
-              ⚠️ <em>Nota importante:</em> En cuentas corporativas (Outlook / Microsoft 365), recuérdale revisar la carpeta <strong>"Correo no deseado" (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
+              <em>Nota importante:</em> En cuentas corporativas (Outlook / Microsoft 365), recuérdale revisar la carpeta <strong>"Correo no deseado" (Spam)</strong> o la pestaña <strong>"Otros"</strong>.
             </div>
           </div>
         </div>
 
         <!-- Canal WhatsApp -->
         <div id="invitacion-wa-box" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 0.85rem; display: flex; gap: 0.75rem; align-items: flex-start;">
-          <span style="font-size: 1.25rem; line-height: 1;">📱</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075985" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
           <div style="font-size: 0.83rem; color: #075985; line-height: 1.4;">
             <strong>Notificación por WhatsApp:</strong> Se envió un mensaje con el enlace directo al teléfono registrado para que active su cuenta con 1 toque.
           </div>
@@ -612,8 +618,9 @@
 
         <!-- Enlace Directo Copiable -->
         <div style="background: var(--bg-card, #f8fafc); border: 1px solid var(--border-container, #e2e8f0); border-radius: 8px; padding: 1rem;">
-          <label style="font-size: 0.82rem; font-weight: 600; color: var(--color-text, #1e293b); display: block; margin-bottom: 0.4rem;">
-            🔗 Enlace de Activación Directo (Infalible)
+          <label style="font-size: 0.82rem; font-weight: 600; color: var(--color-text, #1e293b); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Enlace de Activación Directo (Infalible)
           </label>
           <p style="font-size: 0.76rem; color: var(--color-text-muted, #64748b); margin-bottom: 0.6rem; line-height: 1.35;">
             Si el usuario no revisa su correo o tiene bloqueos corporativos, cópiale y pégale este enlace por Teams, Slack o chat interno:
@@ -621,7 +628,7 @@
           <div style="display: flex; gap: 0.5rem; align-items: center;">
             <input type="text" id="invitacion-link-input" readonly style="flex: 1; font-family: monospace; font-size: 0.78rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border-container, #cbd5e1); border-radius: 6px; background: #fff; color: #0f172a;" onclick="this.select()">
             <button type="button" class="btn btn-primary" id="btn-copiar-invitacion" onclick="copiarEnlaceInvitacionDirecto()" style="white-space: nowrap; padding: 0.55rem 0.9rem; font-size: 0.82rem; display: flex; align-items: center; gap: 0.35rem;">
-              <span>📋</span> Copiar Enlace
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar Enlace
             </button>
           </div>
         </div>
@@ -640,7 +647,8 @@
     <div class="modal-card" style="max-width: 480px; text-align: center;">
       <div class="modal-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 1rem;">
         <h3 class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
-          📱 WhatsApp Bot Puente
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          WhatsApp Bot Puente
         </h3>
         <button class="modal-close" onclick="cerrarModalWhatsApp()">✕</button>
       </div>
@@ -658,7 +666,10 @@
             <img id="wa-qr-image" src="" alt="Código QR WhatsApp" style="width: 250px; height: 250px; display: block;">
           </div>
           <div style="margin: 1.25rem auto 0 auto; font-size: 0.85rem; color: #475569; line-height: 1.5; max-width: 360px; text-align: left; background: #f8fafc; padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div style="font-weight: 600; color: #0f172a; margin-bottom: 0.35rem;">📱 Pasos para escanear:</div>
+            <div style="font-weight: 600; color: #0f172a; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              Pasos para escanear:
+            </div>
             <ol style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #475569;">
               <li>Abre <strong>WhatsApp</strong> en tu teléfono</li>
               <li>Ve a <strong>Ajustes / Configuración > Dispositivos vinculados</strong></li>
@@ -672,8 +683,8 @@
 
         <!-- Contenedor Conectado -->
         <div id="wa-connected-container" style="display: none; flex-direction: column; align-items: center; padding: 1rem 0;">
-          <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem;">
-            ✓
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #0f172a;">¡Bot Conectado y Operativo!</h4>
           <p style="margin: 0; font-size: 0.85rem; color: #64748b; max-width: 320px;">
@@ -683,8 +694,9 @@
             <div><strong>Número vinculado:</strong> <span id="wa-bot-number">+56 9 ...</span></div>
             <div><strong>Estado:</strong> <span style="color: #16a34a; font-weight: 600;">Conectado y Operativo</span></div>
           </div>
-          <button class="btn btn-secondary" onclick="desvincularWhatsApp()" style="margin-top: 1.5rem; color: #dc2626; border-color: #fca5a5;">
-            🔴 Desvincular Teléfono
+          <button class="btn btn-secondary" onclick="desvincularWhatsApp()" style="margin-top: 1.5rem; color: #dc2626; border-color: #fca5a5; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            Desvincular Teléfono
           </button>
         </div>
 
@@ -696,8 +708,9 @@
 
         <!-- Guía de Comandos Válidos del Bot Staff (Estilo Telegram) -->
         <div style="margin-top: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; text-align: left;">
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.4rem;">
-            <span>🤖</span> <span>Comandos Interativos de WhatsApp (Staff Bot)</span>
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+            <span>Comandos Interactivos de WhatsApp (Staff Bot)</span>
           </h4>
           <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 0.75rem 0;">
             Si tu número de WhatsApp está registrado como Staff / Super-Admin, puedes enviar estos comandos directamente al chat del Bot:

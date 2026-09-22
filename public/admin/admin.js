@@ -33,20 +33,20 @@ function aplicarEstiloSidebarPorRol(user) {
     sidebar.classList.add('theme-staff');
     if (roleBadge) {
       roleBadge.className = 'role-badge role-badge-staff';
-      roleBadge.innerHTML = '⚡ Staff LukeAPP';
+      roleBadge.innerHTML = 'Staff LukeAPP';
     }
   } else if (['fundador', 'admin_empresa', 'admin_proyecto', 'jefe_proyecto', 'admin'].includes(rol)) {
     sidebar.classList.add('theme-fundador');
     if (roleBadge) {
       roleBadge.className = 'role-badge role-badge-fundador';
-      const label = (rol === 'fundador' || rol === 'admin_empresa') ? '👑 Fundador Empresa' : '🛡️ Admin Proyecto';
+      const label = (rol === 'fundador' || rol === 'admin_empresa') ? 'Fundador Empresa' : 'Admin Proyecto';
       roleBadge.innerHTML = label;
     }
   } else {
     sidebar.classList.add('theme-operario');
     if (roleBadge) {
       roleBadge.className = 'role-badge role-badge-operario';
-      roleBadge.innerHTML = '👷 Operativo Terreno';
+      roleBadge.innerHTML = 'Operativo Terreno';
     }
   }
 }
@@ -291,13 +291,18 @@ function renderizarTenants(tenants) {
     return;
   }
 
+  const SVG_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+  const SVG_USERS = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+  const SVG_EXCEL = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
+  const SVG_FOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+
   let htmlRows = tenants.map(t => {
     const colorPrimario = t.config?.color_primario || '#10b981';
     const modulos = t.config?.modulos_activos || ['core'];
     const logoUrl = t.config?.logo_url;
     const estadoBadge = t.activo 
-      ? `<span class="module-pill" style="background: #dcfce7; color: #16a34a; border-color: #86efac; font-weight: 600;">🟢 Activa</span>`
-      : `<span class="module-pill" style="background: #fee2e2; color: #c21a25; border-color: #fca5a5; font-weight: 600;">🔴 Pausada</span>`;
+      ? `<span class="module-pill" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0; font-weight: 500;">Activa</span>`
+      : `<span class="module-pill" style="background: #fef2f2; color: #991b1b; border-color: #fecaca; font-weight: 500;">Pausada</span>`;
 
     const logoHtml = logoUrl 
       ? `<img src="${logoUrl}" alt="${t.razon_social}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-container); padding: 2px; background: #ffffff; flex-shrink: 0;">`
@@ -323,21 +328,21 @@ function renderizarTenants(tenants) {
         <td style="padding: 0.85rem 1rem;">${estadoBadge}</td>
         <td style="padding: 0.85rem 1rem;">
           <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
-            <span class="module-pill" style="background: #f1f5f9; color: #334155; border-color: #cbd5e1;" title="Total de Proyectos">📁 ${t.total_proyectos || 0} Proyectos</span>
-            <span class="module-pill" style="background: #f1f5f9; color: #334155; border-color: #cbd5e1;" title="Dotación de Personal">👥 ${t.total_personal || 0} Dotación</span>
+            <span class="module-pill" style="background: #f8fafc; color: #475569; border-color: #cbd5e1;" title="Total de Proyectos">${SVG_FOLDER}${t.total_proyectos || 0} Proyectos</span>
+            <span class="module-pill" style="background: #f8fafc; color: #475569; border-color: #cbd5e1;" title="Dotación de Personal">${SVG_USERS}${t.total_personal || 0} Dotación</span>
           </div>
         </td>
         <td style="padding: 0.85rem 1rem;">
           <div style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
             ${modulos.slice(0, 4).map(m => {
               const labels = {
-                core: '⚙️ Core',
-                piping: '🔩 Piping',
-                equipos: '🚜 Equipos',
-                ingesta_masiva: '📊 Excel',
-                cuadrillas: '👷 Cuadrillas'
+                core: 'Core',
+                piping: 'Piping',
+                equipos: 'Equipos',
+                ingesta_masiva: 'Excel',
+                cuadrillas: 'Cuadrillas'
               };
-              return `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">${labels[m] || m}</span>`;
+              return `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem; background: #f8fafc; color: #475569; border-color: #e2e8f0;">${labels[m] || m}</span>`;
             }).join('')}
             ${modulos.length > 4 ? `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">+${modulos.length - 4}</span>` : ''}
           </div>
@@ -345,16 +350,16 @@ function renderizarTenants(tenants) {
         <td style="padding: 0.85rem 1rem; text-align: right;" onclick="event.stopPropagation()">
           <div style="display: inline-flex; gap: 0.35rem; justify-content: flex-end;">
             <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Editar Parámetros de la Empresa">
-              ✏️ Editar
+              ${SVG_EDIT}Editar
             </button>
             <button class="btn btn-secondary" onclick="verDotacionTenant('${t.id}', '${razonLimpia}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Ver Dotación de Personal">
-              👥 Dotación
+              ${SVG_USERS}Dotación
             </button>
             <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Carga Masiva de Datos Excel">
-              📊 Excel
+              ${SVG_EXCEL}Excel
             </button>
             <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${razonLimpia}')" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" title="Ver Proyectos de la Empresa">
-              📁 Proyectos
+              ${SVG_FOLDER}Proyectos
             </button>
           </div>
         </td>
@@ -493,22 +498,22 @@ async function renderizarVistaProyectosTenant(tenant) {
             </div>
           ` : `
             <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-              <button class="btn btn-secondary" onclick="abrirVisorPiping('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #f0fdf4; color: #15803d; border-color: #86efac; font-weight: 600;">
-                📊 Piping
+              <button class="btn btn-secondary" onclick="abrirVisorPiping('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #f0fdf4; color: #15803d; border-color: #86efac; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                ${SVG_FOLDER} Piping
               </button>
-              <button class="btn btn-secondary" onclick="abrirVisorCuadrillas('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; font-weight: 600;">
-                👷 Cuadrillas & HH
+              <button class="btn btn-secondary" onclick="abrirVisorCuadrillas('${p.id}', '${p.codigo}', '${(p.nombre || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                ${SVG_USERS} Cuadrillas & HH
               </button>
               ${user && (user.rol === 'fundador' || user.rol === 'admin_empresa' || user.rol === 'super_admin') ? `
-                <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                  📊 Dotación
+                <button class="btn btn-secondary" onclick="abrirModalIngesta('${tenant.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                  ${SVG_EXCEL} Dotación
                 </button>
               ` : ''}
-              <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                👤 Invitar
+              <button class="btn btn-secondary" onclick="abrirModalInvitarAdmin('${tenant.id}', '${p.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                ${SVG_USERS} Invitar
               </button>
-              <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem;">
-                ⚙️ Gestionar
+              <button class="btn btn-primary" onclick="abrirModalFaenas('${tenant.id}', '${tenant.slug}', '${tenant.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.45rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                ${SVG_EDIT} Gestionar
               </button>
             </div>
           `}
@@ -920,14 +925,14 @@ async function cargarFaenasTenant(tenantId) {
                 </td>
                 <td style="padding: 0.5rem 0.75rem; text-align: center;">
                   <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
-                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="abrirModalInvitarAdmin('${tenantId}', '${p.id}')" title="Asignar o invitar personal a este proyecto">
-                      👤 Personal
+                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="abrirModalInvitarAdmin('${tenantId}', '${p.id}')" title="Asignar o invitar personal a este proyecto">
+                      ${SVG_USERS} Personal
                     </button>
-                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
-                      ✏️ Editar
+                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
+                      ${SVG_EDIT} Editar
                     </button>
-                    <button type="button" class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;" onclick="ejecutarEliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo}')" title="Eliminar proyecto">
-                      🗑️ Eliminar
+                    <button type="button" class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="ejecutarEliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo}')" title="Eliminar proyecto">
+                      ${SVG_TRASH} Eliminar
                     </button>
                   </div>
                 </td>
@@ -1684,13 +1689,18 @@ async function cargarDotacionEmpresa(tenantIdParam) {
       grupos[key].integrantes.push(p);
     });
 
+    const SVG_LINK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+    const SVG_TRASH_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+    const SVG_BUILDING_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
+    const SVG_FOLDER_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+
     let htmlContent = '';
     const keys = Object.keys(grupos);
 
     keys.forEach(key => {
       const g = grupos[key];
       const esGeneral = key === 'SIN_PROYECTO';
-      const headerIcon = esGeneral ? '🏢' : '📁';
+      const headerIcon = esGeneral ? SVG_BUILDING_ICON : SVG_FOLDER_ICON;
       const headerBg = esGeneral ? '#f8fafc' : '#f0fdf4';
       const headerColor = esGeneral ? '#475569' : '#166534';
       const headerBorder = esGeneral ? '#e2e8f0' : '#bbf7d0';
@@ -1699,12 +1709,12 @@ async function cargarDotacionEmpresa(tenantIdParam) {
         <div style="margin-bottom: 1.75rem; border: 1px solid var(--border-container); border-radius: 10px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
           <!-- Header del Grupo / Proyecto -->
           <div style="background: ${headerBg}; border-bottom: 1px solid ${headerBorder}; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <span style="font-size: 1.1rem;">${headerIcon}</span>
+            <div style="display: flex; align-items: center; gap: 0.6rem; color: ${headerColor};">
+              ${headerIcon}
               <strong style="color: ${headerColor}; font-size: 0.95rem;">${g.nombre}</strong>
             </div>
-            <span class="module-pill" style="background: #ffffff; color: ${headerColor}; border-color: ${headerBorder}; font-weight: 600;">
-              👥 ${g.integrantes.length} ${g.integrantes.length === 1 ? 'Integrante' : 'Integrantes'}
+            <span class="module-pill" style="background: #ffffff; color: ${headerColor}; border-color: ${headerBorder}; font-weight: 500;">
+              ${g.integrantes.length} ${g.integrantes.length === 1 ? 'Integrante' : 'Integrantes'}
             </span>
           </div>
 
@@ -1724,11 +1734,11 @@ async function cargarDotacionEmpresa(tenantIdParam) {
               <tbody>
                 ${g.integrantes.map(p => {
                   const iniciales = (p.nombre_completo || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-                  let badgeRol = '<span class="module-pill" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">Cubicador / Operario</span>';
+                  let badgeRol = '<span class="module-pill" style="background: #f1f5f9; color: #475569; border-color: #cbd5e1;">Cubicador / Operario</span>';
                   if (p.rol_organizacional === 'fundador' || p.rol_organizacional === 'admin_empresa') {
-                    badgeRol = '<span class="module-pill" style="background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;">👑 Fundador</span>';
+                    badgeRol = '<span class="module-pill" style="background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff; font-weight: 500;">Fundador</span>';
                   } else if (p.rol_organizacional === 'admin_proyecto' || p.rol_organizacional === 'admin') {
-                    badgeRol = '<span class="module-pill" style="background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe;">🛡️ Admin Proyecto</span>';
+                    badgeRol = '<span class="module-pill" style="background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; font-weight: 500;">Admin Proyecto</span>';
                   }
 
                   return `
@@ -1748,18 +1758,18 @@ async function cargarDotacionEmpresa(tenantIdParam) {
                       <td style="padding: 0.75rem 1rem; color: var(--color-text-main);">${p.cargo || 'Personal'}</td>
                       <td style="padding: 0.75rem 1rem;">${badgeRol}</td>
                       <td style="padding: 0.75rem 1rem;">
-                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem;">
-                          ${p.email ? `<span>✉️ ${p.email}</span>` : ''}
-                          ${p.telefono_whatsapp ? `<span>📱 ${p.telefono_whatsapp}</span>` : ''}
+                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem; color: var(--color-text-muted);">
+                          ${p.email ? `<span>${p.email}</span>` : ''}
+                          ${p.telefono_whatsapp ? `<span>${p.telefono_whatsapp}</span>` : ''}
                         </div>
                       </td>
                       <td style="padding: 0.75rem 1rem; text-align: right;">
                         <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
                           <button class="btn btn-secondary" onclick="obtenerEnlaceActivacion('${p.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" title="Generar / Ver Enlace de Activación Directo">
-                            🔗 Enlace
+                            ${SVG_LINK_ICON}Enlace
                           </button>
                           <button class="btn btn-secondary" onclick="eliminarPersonalDeDotacion('${p.id}', '${(p.nombre_completo || '').replace(/'/g, "\\'")}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" title="Eliminar de la Dotación">
-                            🗑️
+                            ${SVG_TRASH_ICON}
                           </button>
                         </div>
                       </td>
