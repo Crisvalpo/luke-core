@@ -177,8 +177,8 @@ const updatePerfilSchema = z.object({
   avatar_url: z.string().optional().nullable()
 });
 
-// Actualizar perfil del usuario autenticado
-personalRouter.put('/perfil', async (req: Request, res: Response, next: NextFunction) => {
+// Actualizar perfil del usuario autenticado (Handler global independiente del Tenant)
+export async function actualizarPerfilHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const userEmail = (req as any).user?.email;
     const body = updatePerfilSchema.parse(req.body);
@@ -214,5 +214,7 @@ personalRouter.put('/perfil', async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     next(error);
   }
-});
+}
+
+personalRouter.put('/perfil', actualizarPerfilHandler);
 

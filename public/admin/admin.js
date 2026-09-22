@@ -168,6 +168,12 @@ function getAuthHeaders(tenantIdOpcional) {
       tenantId = u.tenant_id;
     } catch {}
   }
+  if (!tenantId && typeof tenantActualId !== 'undefined' && tenantActualId) {
+    tenantId = tenantActualId;
+  }
+  if (!tenantId && typeof todosLosTenants !== 'undefined' && todosLosTenants?.length > 0) {
+    tenantId = todosLosTenants[0]?.id;
+  }
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`

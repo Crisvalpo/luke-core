@@ -11,7 +11,7 @@ import { sendSuccess, sendError } from './shared/utils/response.js';
 import { identidadRouter } from './modules/identidad/identidad.routes.js';
 import { tenantsRouter } from './modules/tenants/tenants.routes.js';
 import { proyectosRouter } from './modules/proyectos/proyectos.routes.js';
-import { personalRouter } from './modules/personal/personal.routes.js';
+import { personalRouter, actualizarPerfilHandler } from './modules/personal/personal.routes.js';
 import { equiposRouter } from './modules/equipos/equipos.routes.js';
 import { proveedoresRouter } from './modules/proveedores/proveedores.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
@@ -74,6 +74,9 @@ apiV1.use('/tenants', requireAuth, tenantsRouter);
 apiV1.use('/ingesta', requireAuth, requireSuperAdmin, ingestaRouter);
 apiV1.use('/whatsapp', requireAuth, requireSuperAdmin, whatsappRouter);
 apiV1.use('/system/schema', requireAuth, schemaRouter);
+
+// 👤 Perfil del Usuario Autenticado (Cualquier usuario autenticado puede actualizar su propio perfil sin requerir tenant)
+apiV1.put('/personal/perfil', requireAuth, actualizarPerfilHandler);
 
 // 🔐 Capa 2: Rutas con Auth + Tenant (Admins de Empresa y sus operaciones)
 apiV1.use('/proyectos', requireAuth, requireTenant, proyectosRouter);
