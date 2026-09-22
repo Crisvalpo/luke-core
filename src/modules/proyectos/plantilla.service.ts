@@ -17,10 +17,10 @@ export class PlantillaService {
 
     // 1. Obtener datos del proyecto
     const proyRes = await query(`
-      SELECT p.id, p.codigo, p.nombre, p.estado, p.centro_costo, p.tenant_id, t.slug as tenant_slug
+      SELECT p.id, p.code AS codigo, p.name AS nombre, p.status AS estado, p.cost_center AS centro_costo, p.tenant_id, t.slug as tenant_slug
       FROM core.projects p
       JOIN core.tenants t ON t.id = p.tenant_id
-      WHERE p.id = $1 AND p.tenant_id = $2 AND p.activo = TRUE
+      WHERE p.id = $1 AND p.tenant_id = $2 AND p.is_active = TRUE
       LIMIT 1;
     `, [proyectoId, tenantId]);
 

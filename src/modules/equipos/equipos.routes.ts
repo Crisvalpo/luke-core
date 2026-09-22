@@ -13,14 +13,22 @@ equiposRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
     let sql = `
       SELECT 
         eq.*,
+        eq.internal_code AS codigo_interno,
+        eq.license_plate AS patente,
+        eq.description AS descripcion,
+        eq.category AS categoria,
+        eq.meter_type AS tipo_medicion,
+        eq.last_reading AS ultimo_contador,
+        eq.is_active AS activo,
+        eq.project_id AS proyecto_id,
         t.slug AS tenant_slug,
         t.business_name AS tenant_razon_social,
-        pr.codigo AS proyecto_codigo,
-        pr.nombre AS proyecto_nombre
+        pr.code AS proyecto_codigo,
+        pr.name AS proyecto_nombre
       FROM core.equipment eq
       JOIN core.tenants t ON t.id = eq.tenant_id
-      LEFT JOIN core.projects pr ON pr.id = eq.proyecto_id
-      WHERE eq.activo = TRUE
+      LEFT JOIN core.projects pr ON pr.id = eq.project_id
+      WHERE eq.is_active = TRUE
     `;
 
     const params: any[] = [];
@@ -30,18 +38,18 @@ equiposRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
     }
     if (proyecto) {
       params.push(String(proyecto));
-      sql += ` AND (pr.codigo = $${params.length} OR pr.id::text = $${params.length})`;
+      sql += ` AND (pr.code = $${params.length} OR pr.id::text = $${params.length})`;
     }
     if (categoria) {
       params.push(String(categoria));
-      sql += ` AND eq.categoria = $${params.length}`;
+      sql += ` AND eq.category = $${params.length}`;
     }
     if (busqueda) {
       params.push(`%${String(busqueda).toLowerCase()}%`);
-      sql += ` AND (LOWER(eq.codigo_interno) LIKE $${params.length} OR LOWER(COALESCE(eq.patente, '')) LIKE $${params.length} OR LOWER(eq.descripcion) LIKE $${params.length})`;
+      sql += ` AND (LOWER(eq.internal_code) LIKE $${params.length} OR LOWER(COALESCE(eq.license_plate, '')) LIKE $${params.length} OR LOWER(eq.description) LIKE $${params.length})`;
     }
 
-    sql += ` ORDER BY eq.codigo_interno ASC LIMIT 200;`;
+    sql += ` ORDER BY eq.internal_code ASC LIMIT 200;`;
 
     const result = await query(sql, params);
     return sendSuccess(res, result.rows);
@@ -62,9 +70,9 @@ equiposRouter.patch('/:id/contador', async (req: Request, res: Response, next: N
 
     const result = await query(`
       UPDATE core.equipment 
-      SET ultimo_contador = $1
-      WHERE id = $2 AND activo = TRUE
-      RETURNING *;
+      SET last_reading = $1, updated_at = NOW()
+      WHERE id = $2 AND is_active = TRUE
+      RETURNING *, last_reading AS ultimo_contador, internal_code AS codigo_interno;
     `, [nuevo_contador, id]);
 
     if (result.rows.length === 0) {

@@ -71,10 +71,10 @@ export class RolesService {
     if (rolRes.rows.length === 0) return null;
 
     const personalRes = await dbPool.query(`
-      SELECT id, rut, nombre_completo, cargo, telefono_whatsapp, turno
-      FROM core.personal
-      WHERE rol_funcional_id = $1 AND tenant_id = $2 AND activo = TRUE
-      ORDER BY nombre_completo ASC;
+      SELECT id, national_id AS rut, full_name AS nombre_completo, job_title AS cargo, phone_number AS telefono_whatsapp, shift AS turno
+      FROM core.personnel
+      WHERE rol_funcional_id = $1 AND tenant_id = $2 AND is_active = TRUE
+      ORDER BY full_name ASC;
     `, [rolId, tenantId]);
 
     return {

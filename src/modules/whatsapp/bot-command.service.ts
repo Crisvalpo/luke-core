@@ -22,10 +22,10 @@ export class BotCommandService {
 
     // 1. Resolver identidad y perfil del usuario
     const userRes = await query(`
-      SELECT p.*, t.slug as tenant_slug 
+      SELECT p.*, p.full_name AS nombre_completo, p.org_role AS rol_organizacional, p.phone_number AS telefono_whatsapp, t.slug as tenant_slug 
       FROM core.personnel p
       JOIN core.tenants t ON t.id = p.tenant_id
-      WHERE p.telefono_whatsapp = $1 AND p.activo = TRUE
+      WHERE p.phone_number = $1 AND p.is_active = TRUE
       LIMIT 1;
     `, [telNorm]);
 
@@ -262,7 +262,7 @@ export class BotCommandService {
              COUNT(DISTINCT pers.id) as total_personal
       FROM core.tenants t
       LEFT JOIN core.projects p ON p.tenant_id = t.id
-      LEFT JOIN core.personnel pers ON pers.tenant_id = t.id AND pers.activo = TRUE
+      LEFT JOIN core.personnel pers ON pers.tenant_id = t.id AND pers.is_active = TRUE
       GROUP BY t.id, t.slug, t.business_name, t.tax_id, t.is_active
       ORDER BY t.business_name ASC;
     `);

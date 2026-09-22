@@ -45,7 +45,7 @@ export class IngestaService {
    * Obtiene mapa de código de proyecto a UUID para un tenant
    */
   private static async obtenerMapaProyectos(tenantId: string): Promise<Map<string, string>> {
-    const res = await query(`SELECT id, LOWER(codigo) AS codigo FROM core.projects WHERE tenant_id = $1`, [tenantId]);
+    const res = await query(`SELECT id, LOWER(code) AS codigo FROM core.projects WHERE tenant_id = $1`, [tenantId]);
     const mapa = new Map<string, string>();
     res.rows.forEach(p => mapa.set(p.codigo, p.id));
     return mapa;
@@ -102,19 +102,19 @@ export class IngestaService {
       try {
         const res = await query(`
           INSERT INTO core.personnel (
-            tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno, activo
+            tenant_id, project_id, national_id, full_name, job_title, org_role, phone_number, email, shift, is_active
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
-          ON CONFLICT (tenant_id, rut) DO UPDATE SET
-            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.personnel.project_id),
-            nombre_completo = EXCLUDED.nombre_completo,
-            cargo = EXCLUDED.cargo,
-            rol_organizacional = EXCLUDED.rol_organizacional,
-            telefono_whatsapp = COALESCE(EXCLUDED.telefono_whatsapp, core.personnel.phone_number),
+          ON CONFLICT (tenant_id, national_id) DO UPDATE SET
+            project_id = COALESCE(EXCLUDED.project_id, core.personnel.project_id),
+            full_name = EXCLUDED.full_name,
+            job_title = EXCLUDED.job_title,
+            org_role = EXCLUDED.org_role,
+            phone_number = COALESCE(EXCLUDED.phone_number, core.personnel.phone_number),
             email = COALESCE(EXCLUDED.email, core.personnel.email),
-            turno = COALESCE(EXCLUDED.turno, core.personnel.shift),
-            activo = TRUE,
-            actualizado_en = NOW()
+            shift = COALESCE(EXCLUDED.shift, core.personnel.shift),
+            is_active = TRUE,
+            updated_at = NOW()
           RETURNING (xmax = 0) AS es_nuevo;
         `, [tenantId, proyectoId, rutNormalizado, nombre, cargo, rolOrg, telefonoNorm, email, turno]);
 
@@ -176,18 +176,18 @@ export class IngestaService {
       try {
         const res = await query(`
           INSERT INTO core.equipment (
-            tenant_id, proyecto_id, codigo_interno, patente, descripcion, categoria, tipo_medicion, ultimo_contador, activo
+            tenant_id, project_id, internal_code, license_plate, description, category, meter_type, last_reading, is_active
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
-          ON CONFLICT (tenant_id, codigo_interno) DO UPDATE SET
-            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.equipment.project_id),
-            patente = COALESCE(EXCLUDED.patente, core.equipment.license_plate),
-            descripcion = EXCLUDED.descripcion,
-            categoria = EXCLUDED.categoria,
-            tipo_medicion = EXCLUDED.tipo_medicion,
-            ultimo_contador = GREATEST(core.equipment.last_reading, EXCLUDED.ultimo_contador),
-            activo = TRUE,
-            actualizado_en = NOW()
+          ON CONFLICT (tenant_id, internal_code) DO UPDATE SET
+            project_id = COALESCE(EXCLUDED.project_id, core.equipment.project_id),
+            license_plate = COALESCE(EXCLUDED.license_plate, core.equipment.license_plate),
+            description = EXCLUDED.description,
+            category = EXCLUDED.category,
+            meter_type = EXCLUDED.meter_type,
+            last_reading = GREATEST(core.equipment.last_reading, EXCLUDED.last_reading),
+            is_active = TRUE,
+            updated_at = NOW()
           RETURNING (xmax = 0) AS es_nuevo;
         `, [tenantId, proyectoId, codigoInterno, patente, descripcion, categoria, tipoMedicion, isNaN(contadorInicial) ? 0 : contadorInicial]);
 

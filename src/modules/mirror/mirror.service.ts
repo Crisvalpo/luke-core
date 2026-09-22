@@ -39,10 +39,10 @@ export class MirrorService {
     );
     if (matchCc.rows[0]) return matchCc.rows[0].project_id;
 
-    // Rule 3: 1:1 Fallback against official core.proyectos code
+    // Rule 3: 1:1 Fallback against official core.projects code
     const fallbackDirect = await query(
-      `SELECT codigo FROM core.projects 
-       WHERE tenant_id = $1 AND (UPPER(codigo) = UPPER($2) OR UPPER(centro_costo) = UPPER($2)) AND activo = TRUE LIMIT 1`,
+      `SELECT code AS codigo FROM core.projects 
+       WHERE tenant_id = $1 AND (UPPER(code) = UPPER($2) OR UPPER(cost_center) = UPPER($2)) AND is_active = TRUE LIMIT 1`,
       [tenantId, ccNorm]
     );
     if (fallbackDirect.rows[0]) return fallbackDirect.rows[0].codigo;

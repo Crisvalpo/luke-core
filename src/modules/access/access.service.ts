@@ -48,13 +48,13 @@ export class AccessService {
 
     if (tenantId) {
       const adminRes = await query(`
-        SELECT telefono_whatsapp 
+        SELECT phone_number AS telefono_whatsapp 
         FROM core.personnel 
         WHERE tenant_id = $1 
-          AND rol_organizacional IN ('super_admin', 'admin') 
-          AND telefono_whatsapp IS NOT NULL 
-          AND activo = TRUE 
-        ORDER BY CASE WHEN rol_organizacional = 'super_admin' THEN 1 ELSE 2 END 
+          AND org_role IN ('super_admin', 'admin') 
+          AND phone_number IS NOT NULL 
+          AND is_active = TRUE 
+        ORDER BY CASE WHEN org_role = 'super_admin' THEN 1 ELSE 2 END 
         LIMIT 1;
       `, [tenantId]);
       adminTelefono = adminRes.rows[0]?.telefono_whatsapp || null;

@@ -35,10 +35,10 @@ export class AuthService {
         return null;
       }
 
-      // Buscar el perfil de personal y tenant en PostgreSQL (core.personal)
+      // Buscar el perfil de personal y tenant en PostgreSQL (core.personnel)
       const personalRes = await query(`
         SELECT 
-          p.id, p.nombre_completo, p.email, p.rol_organizacional,
+          p.id, p.full_name AS nombre_completo, p.email, p.org_role AS rol_organizacional,
           t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
         FROM core.personnel p
         LEFT JOIN core.tenants t ON t.id = p.tenant_id
@@ -112,16 +112,16 @@ export class AuthService {
       throw new Error(error?.message || 'Credenciales inválidas en Supabase Auth');
     }
 
-    // 2. Resolver ficha y contexto del usuario en core.personal
+    // 2. Resolver ficha y contexto del usuario en core.personnel
     const personalRes = await query(`
       SELECT 
-        p.id, p.nombre_completo, p.email, p.rol_organizacional, p.activo, p.auth_user_id,
+        p.id, p.full_name AS nombre_completo, p.email, p.org_role AS rol_organizacional, p.is_active AS activo, p.auth_user_id,
         t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social, t.is_active AS tenant_activo
       FROM core.personnel p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE (p.auth_user_id = $1 OR LOWER(p.email) = $2)
-        AND p.activo = TRUE
-      ORDER BY (p.rol_organizacional = 'super_admin') DESC, p.created_at DESC
+        AND p.is_active = TRUE
+      ORDER BY (p.org_role = 'super_admin') DESC, p.created_at DESC
       LIMIT 1;
     `, [data.user.id, email]);
 
@@ -175,9 +175,9 @@ export class AuthService {
   static async establecerClaveDirecta(email: string, password: string): Promise<UserSession> {
     const emailNorm = email.trim().toLowerCase();
 
-    // 1. Buscar usuario en core.personal
+    // 1. Buscar usuario en core.personnel
     const personalRes = await query(`
-      SELECT p.id, p.auth_user_id, p.nombre_completo, p.rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
+      SELECT p.id, p.auth_user_id, p.full_name AS nombre_completo, p.org_role AS rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
       FROM core.personnel p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE LOWER(p.email) = $1
@@ -226,16 +226,16 @@ export class AuthService {
     const usuarioNorm = usuarioWindows.trim();
     const soloUsername = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
 
-    // 1. Buscar usuario autorizado en core.personal por usuario_windows
+    // 1. Buscar usuario autorizado en core.personnel por usuario_windows
     let userRes = await query(`
-      SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+      SELECT p.id, p.tenant_id, p.full_name AS nombre_completo, p.phone_number AS telefono_whatsapp, p.usuario_windows, p.is_active AS activo, p.puede_sincronizar_excel
       FROM core.personnel p
       WHERE (
         UPPER(p.usuario_windows) = UPPER($1) 
         OR UPPER(p.usuario_windows) = UPPER($2)
         OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER($2)
       ) 
-      AND p.activo = TRUE 
+      AND p.is_active = TRUE 
       AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
       LIMIT 1;
     `, [usuarioNorm, soloUsername]);
@@ -244,15 +244,15 @@ export class AuthService {
     if (userRes.rows.length === 0 && identificador) {
       const identNorm = identificador.trim();
       const bindRes = await query(`
-        SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+        SELECT p.id, p.tenant_id, p.full_name AS nombre_completo, p.phone_number AS telefono_whatsapp, p.usuario_windows, p.is_active AS activo, p.puede_sincronizar_excel
         FROM core.personnel p
         WHERE (
           p.id::text = $1 
           OR LOWER(p.email) = LOWER($1) 
-          OR REPLACE(p.telefono_whatsapp, '+', '') LIKE '%' || REPLACE($1, '+', '')
-          OR REPLACE(p.rut, '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
+          OR REPLACE(p.phone_number, '+', '') LIKE '%' || REPLACE($1, '+', '')
+          OR REPLACE(p.national_id, '-', '') = REPLACE(REPLACE($1, '.', ''), '-', '')
         )
-        AND p.activo = TRUE 
+        AND p.is_active = TRUE 
         AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
         LIMIT 1;
       `, [identNorm]);
@@ -274,7 +274,7 @@ export class AuthService {
     // 2.5 Smart-Bind: Coincidencia inteligente por email prefix o nombre/apellido para usuarios recién invitados
     if (userRes.rows.length === 0 && soloUsername.length >= 3) {
       const smartRes = await query(`
-        SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
+        SELECT p.id, p.tenant_id, p.full_name AS nombre_completo, p.phone_number AS telefono_whatsapp, p.usuario_windows, p.is_active AS activo, p.puede_sincronizar_excel
         FROM core.personnel p
         WHERE (
           LOWER(SPLIT_PART(p.email, '@', 1)) = LOWER($1)
@@ -283,13 +283,13 @@ export class AuthService {
           OR LOWER(REPLACE(SPLIT_PART(p.email, '@', 1), '-', '')) = LOWER(REPLACE($1, '-', ''))
           OR (
             LENGTH($1) >= 4 AND (
-              LOWER(SPLIT_PART(p.nombre_completo, ' ', 1)) = LOWER($1)
-              OR LOWER(SPLIT_PART(p.nombre_completo, ' ', 2)) = LOWER($1)
-              OR LOWER(p.nombre_completo) LIKE '%' || LOWER($1) || '%'
+              LOWER(SPLIT_PART(p.full_name, ' ', 1)) = LOWER($1)
+              OR LOWER(SPLIT_PART(p.full_name, ' ', 2)) = LOWER($1)
+              OR LOWER(p.full_name) LIKE '%' || LOWER($1) || '%'
             )
           )
         )
-        AND p.activo = TRUE 
+        AND p.is_active = TRUE 
         AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
         AND (p.usuario_windows IS NULL OR TRIM(p.usuario_windows) = '')
         LIMIT 1;
@@ -370,16 +370,16 @@ export class AuthService {
     const soloUsername = usuarioNorm.includes('\\') ? usuarioNorm.split('\\')[1] : usuarioNorm;
     const otpNorm = otp.trim();
 
-    // 1. Buscar usuario en core.personal
+    // 1. Buscar usuario en core.personnel
     const userRes = await query(`
-      SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows
+      SELECT p.id, p.tenant_id, p.full_name AS nombre_completo, p.phone_number AS telefono_whatsapp, p.usuario_windows
       FROM core.personnel p
       WHERE (
         UPPER(p.usuario_windows) = UPPER($1) 
         OR UPPER(p.usuario_windows) = UPPER($2)
         OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER($2)
       ) 
-      AND p.activo = TRUE 
+      AND p.is_active = TRUE 
       LIMIT 1;
     `, [usuarioNorm, soloUsername]);
 
