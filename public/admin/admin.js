@@ -1996,6 +1996,10 @@ async function cargarMapaMundoDB() {
     const res = await fetch('/api/v1/system/schema', {
       headers: getAuthHeaders()
     });
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error(`El servidor respondió con código HTTP ${res.status}. Verifica que el endpoint esté activo.`);
+    }
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Error al obtener esquema');
 

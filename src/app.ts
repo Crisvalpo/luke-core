@@ -73,6 +73,7 @@ apiV1.use('/access', accessRouter);
 apiV1.use('/tenants', requireAuth, tenantsRouter);
 apiV1.use('/ingesta', requireAuth, requireSuperAdmin, ingestaRouter);
 apiV1.use('/whatsapp', requireAuth, requireSuperAdmin, whatsappRouter);
+apiV1.use('/system/schema', requireAuth, schemaRouter);
 
 // 🔐 Capa 2: Rutas con Auth + Tenant (Admins de Empresa y sus operaciones)
 apiV1.use('/proyectos', requireAuth, requireTenant, proyectosRouter);
