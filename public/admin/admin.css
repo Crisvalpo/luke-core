@@ -867,3 +867,46 @@ select.form-input {
   color: #b45309;
   border: 1px solid #fde68a;
 }
+
+/* Dropdown de Acciones (Kebab Menu) */
+.actions-dropdown {
+  animation: fadeInDown 0.15s ease-out;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-main);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background: #f1f5f9;
+  color: var(--color-primary);
+}
+
+.dropdown-item svg {
+  flex-shrink: 0;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

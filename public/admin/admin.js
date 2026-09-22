@@ -10,6 +10,7 @@ const SVG_TRASH = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13
 const SVG_PLUS = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 const SVG_LINK = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
 const SVG_BUILDING = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
+const SVG_KEBAB = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
 
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacion();
@@ -361,20 +362,26 @@ function renderizarTenants(tenants) {
             ${modulos.length > 4 ? `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">+${modulos.length - 4}</span>` : ''}
           </div>
         </td>
-        <td style="padding: 0.85rem 1rem; text-align: right;" onclick="event.stopPropagation()">
-          <div style="display: inline-flex; gap: 0.35rem; justify-content: flex-end;">
-            <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Editar Parámetros de la Empresa">
-              ${SVG_EDIT}Editar
+        <td style="padding: 0.85rem 1rem; text-align: right; position: relative;" onclick="event.stopPropagation()">
+          <div style="position: relative; display: inline-block;">
+            <button type="button" class="btn btn-secondary" onclick="toggleMenuAcciones(event, '${t.id}')" style="padding: 0.35rem 0.55rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--color-text-main);" title="Opciones de la Empresa">
+              ${SVG_KEBAB}
             </button>
-            <button class="btn btn-secondary" onclick="verDotacionTenant('${t.id}', '${razonLimpia}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Ver Dotación de Personal">
-              ${SVG_USERS}Dotación
-            </button>
-            <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Carga Masiva de Datos Excel">
-              ${SVG_EXCEL}Excel
-            </button>
-            <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${razonLimpia}')" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" title="Ver Proyectos de la Empresa">
-              ${SVG_FOLDER}Proyectos
-            </button>
+            <div class="actions-dropdown" id="dropdown-${t.id}" style="display: none; position: absolute; right: 0; top: calc(100% + 4px); background: #ffffff; border: 1px solid var(--border-container); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06); min-width: 190px; z-index: 1000; text-align: left; padding: 5px; overflow: hidden;">
+              <button type="button" class="dropdown-item" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${razonLimpia}'); cerrarTodosDropdowns();">
+                ${SVG_FOLDER}<span>Ver Proyectos</span>
+              </button>
+              <button type="button" class="dropdown-item" onclick="verDotacionTenant('${t.id}', '${razonLimpia}'); cerrarTodosDropdowns();">
+                ${SVG_USERS}<span>Dotación de Personal</span>
+              </button>
+              <button type="button" class="dropdown-item" onclick="abrirModalIngesta('${t.id}'); cerrarTodosDropdowns();">
+                ${SVG_EXCEL}<span>Carga Masiva Excel</span>
+              </button>
+              <div style="height: 1px; background: var(--border-container); margin: 4px 0;"></div>
+              <button type="button" class="dropdown-item" onclick="abrirModalEdicion('${t.id}'); cerrarTodosDropdowns();">
+                ${SVG_EDIT}<span>Editar Empresa</span>
+              </button>
+            </div>
           </div>
         </td>
       </tr>
@@ -403,6 +410,26 @@ function renderizarTenants(tenants) {
     </div>
   `;
 }
+
+function toggleMenuAcciones(event, tenantId) {
+  event.stopPropagation();
+  const dropdown = document.getElementById(`dropdown-${tenantId}`);
+  const todos = document.querySelectorAll('.actions-dropdown');
+  todos.forEach(d => {
+    if (d !== dropdown) d.style.display = 'none';
+  });
+  if (dropdown) {
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+  }
+}
+
+function cerrarTodosDropdowns() {
+  document.querySelectorAll('.actions-dropdown').forEach(d => {
+    d.style.display = 'none';
+  });
+}
+
+document.addEventListener('click', cerrarTodosDropdowns);
 
 async function renderizarVistaProyectosTenant(tenant) {
   const container = document.getElementById('tenants-container');
@@ -903,15 +930,15 @@ async function cargarFaenasTenant(tenantId) {
     window._faenasTenantActual = proyectos;
 
     container.innerHTML = `
-      <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-container); border-radius: 8px;">
+      <div style="max-height: 360px; overflow-y: auto; border: 1px solid var(--border-container); border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
             <tr style="background: #f8fafc; text-align: left; border-bottom: 1px solid var(--border-container);">
-              <th style="padding: 0.5rem 0.75rem;">Código</th>
-              <th style="padding: 0.5rem 0.75rem;">Proyecto</th>
-              <th style="padding: 0.5rem 0.75rem;">Ubicación</th>
-              <th style="padding: 0.5rem 0.75rem;">Estado</th>
-              <th style="padding: 0.5rem 0.75rem; text-align: center;">Acción</th>
+              <th style="padding: 0.55rem 0.75rem;">Código</th>
+              <th style="padding: 0.55rem 0.75rem;">Proyecto</th>
+              <th style="padding: 0.55rem 0.75rem;">Ubicación</th>
+              <th style="padding: 0.55rem 0.75rem;">Estado</th>
+              <th style="padding: 0.55rem 0.75rem; text-align: center;">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -922,30 +949,30 @@ async function cargarFaenasTenant(tenantId) {
 
               const badgeEntrenamiento = esEntrenamiento ? `
                 <div style="margin-top: 3px;">
-                  <span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Entorno controlado no real para aprender y crear sin afectar operaciones">🧪 Entrenamiento / Sandbox</span>
+                  <span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="Entorno controlado no real para aprender y crear sin afectar operaciones">Entrenamiento / Sandbox</span>
                 </div>
               ` : '';
 
               return `
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: var(--color-primary);">${p.codigo}</td>
-                <td style="padding: 0.5rem 0.75rem;">
+                <td style="padding: 0.55rem 0.75rem; font-weight: 600; color: var(--color-primary);">${p.codigo}</td>
+                <td style="padding: 0.55rem 0.75rem;">
                   <div style="font-weight: 500;">${p.nombre}</div>
                   ${badgeEntrenamiento}
                 </td>
-                <td style="padding: 0.5rem 0.75rem; color: var(--color-text-muted);">${p.ubicacion || '-'}</td>
-                <td style="padding: 0.5rem 0.75rem;">
+                <td style="padding: 0.55rem 0.75rem; color: var(--color-text-muted);">${p.ubicacion || '-'}</td>
+                <td style="padding: 0.55rem 0.75rem;">
                   <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: ${p.estado === 'en_ejecucion' ? '#ecfdf5; color: #059669;' : '#f3f4f6; color: #4b5563;'}">${p.estado}</span>
                 </td>
-                <td style="padding: 0.5rem 0.75rem; text-align: center;">
+                <td style="padding: 0.55rem 0.75rem; text-align: center;">
                   <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
-                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="abrirModalInvitarAdmin('${tenantId}', '${p.id}')" title="Asignar o invitar personal a este proyecto">
+                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="abrirModalInvitarAdmin('${tenantId}', '${p.id}')" title="Asignar o invitar personal a este proyecto">
                       ${SVG_USERS} Personal
                     </button>
-                    <button type="button" class="btn btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
+                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="prepararEditarFaena('${p.id}')" title="Editar datos del proyecto">
                       ${SVG_EDIT} Editar
                     </button>
-                    <button type="button" class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="ejecutarEliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo}')" title="Eliminar proyecto">
+                    <button type="button" class="btn" style="padding: 4px 8px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="ejecutarEliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo}')" title="Eliminar proyecto">
                       ${SVG_TRASH} Eliminar
                     </button>
                   </div>
@@ -957,7 +984,7 @@ async function cargarFaenasTenant(tenantId) {
       </div>
     `;
   } catch (err) {
-    container.innerHTML = `<div style="text-align: center; padding: 1rem; color: #c21a25;">❌ Error: ${err.message}</div>`;
+    container.innerHTML = `<div style="text-align: center; padding: 1rem; color: #c21a25;">Error: ${err.message}</div>`;
   }
 }
 
@@ -976,7 +1003,7 @@ function prepararEditarFaena(proyectoId) {
   document.getElementById('faena-ubicacion').value = p.ubicacion || '';
   document.getElementById('faena-centro-costo').value = p.centro_costo || '';
 
-  document.getElementById('faena-form-title').innerText = `✏️ Editar Proyecto (${p.codigo})`;
+  document.getElementById('faena-form-title').innerText = `Editar Proyecto (${p.codigo})`;
   document.getElementById('btn-submit-faena').innerText = 'Guardar Cambios';
   document.getElementById('btn-cancelar-faena').style.display = 'inline-block';
 }
