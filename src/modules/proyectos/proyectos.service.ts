@@ -17,6 +17,7 @@ export class ProyectosService {
         p.name AS nombre,
         p.cost_center AS centro_costo,
         p.location AS ubicacion,
+        p.client AS cliente,
         p.status AS estado,
         p.metadata,
         p.is_active AS activo,
@@ -77,7 +78,7 @@ export class ProyectosService {
     const proyectoRes = await dbPool.query(`
       SELECT 
         id, tenant_id, code AS codigo, name AS nombre, cost_center AS centro_costo,
-        location AS ubicacion, status AS estado, metadata, is_active AS activo, created_at, updated_at
+        location AS ubicacion, client AS cliente, status AS estado, metadata, is_active AS activo, created_at, updated_at
       FROM core.projects
       WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE;
     `, [proyectoId, tenantId]);
@@ -110,9 +111,9 @@ export class ProyectosService {
       }
 
       const proyectoRes = await client.query(`
-        INSERT INTO core.projects (tenant_id, code, name, cost_center, location, status, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, tenant_id, code AS codigo, name AS nombre, cost_center AS centro_costo, location AS ubicacion, status AS estado, metadata, is_active AS activo, created_at, updated_at;
-      `, [tenantId, input.codigo, input.nombre, input.centro_costo || null, input.ubicacion || null, input.estado, JSON.stringify(input.metadata)]);
+        INSERT INTO core.projects (tenant_id, code, name, cost_center, location, client, status, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, tenant_id, code AS codigo, name AS nombre, cost_center AS centro_costo, location AS ubicacion, client AS cliente, status AS estado, metadata, is_active AS activo, created_at, updated_at;
+      `, [tenantId, input.codigo, input.nombre, input.centro_costo || null, input.ubicacion || null, input.cliente || null, input.estado, JSON.stringify(input.metadata)]);
       const proyecto = proyectoRes.rows[0];
 
       await client.query(`
@@ -155,6 +156,7 @@ export class ProyectosService {
     if (input.nombre !== undefined) { params.push(input.nombre); updates.push(`name = $${params.length}`); }
     if (input.centro_costo !== undefined) { params.push(input.centro_costo); updates.push(`cost_center = $${params.length}`); }
     if (input.ubicacion !== undefined) { params.push(input.ubicacion); updates.push(`location = $${params.length}`); }
+    if (input.cliente !== undefined) { params.push(input.cliente); updates.push(`client = $${params.length}`); }
     if (input.estado !== undefined) { params.push(input.estado); updates.push(`status = $${params.length}`); }
     if (input.metadata !== undefined) { params.push(JSON.stringify(input.metadata)); updates.push(`metadata = metadata || $${params.length}::jsonb`); }
     if (typeof input.activo === 'boolean') { params.push(input.activo); updates.push(`is_active = $${params.length}`); }
@@ -162,7 +164,7 @@ export class ProyectosService {
     if (updates.length === 0) throw new Error('No se enviaron campos para actualizar.');
 
     params.push(proyectoId, tenantId);
-    const sql = `UPDATE core.projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length - 1} AND tenant_id = $${params.length} RETURNING id, code AS codigo, name AS nombre, location AS ubicacion, cost_center AS centro_costo, status AS estado, metadata, is_active AS activo;`;
+    const sql = `UPDATE core.projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${params.length - 1} AND tenant_id = $${params.length} RETURNING id, code AS codigo, name AS nombre, location AS ubicacion, client AS cliente, cost_center AS centro_costo, status AS estado, metadata, is_active AS activo;`;
     const result = await dbPool.query(sql, params);
     return result.rows[0] || null;
   }

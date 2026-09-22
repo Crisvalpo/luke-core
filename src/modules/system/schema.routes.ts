@@ -86,32 +86,32 @@ schemaRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
     });
 
     const TABLE_DESCRIPTIONS: Record<string, string> = {
-      // Core & Multi-Tenancy
+      // Core & Multi-Tenancy (Inglés Normalizado)
       'core.tenants': 'Empresas clientes con aislamiento Multi-Tenant de datos, subdominio/slug y configuración de marca blanca.',
-      'core.usuarios': 'Cuentas de usuario de la plataforma con credenciales de acceso, correo corporativo y hash de contraseña.',
-      'core.roles': 'Catálogo de roles y matriz de permisos por nivel de usuario (Super-Admin, Fundador, Admin Proyecto, Operario).',
-      'core.roles_empresa': 'Matriz de roles corporativos asignables a los trabajadores de cada tenant.',
-      'core.roles_proyecto': 'Matriz de roles de proyecto asignables en obra.',
-      'core.tenant_usuarios': 'Tabla pivote que vincula usuarios con las empresas (tenants) a las que tienen acceso autorizado.',
-      'core.proyectos': 'Faenas y obras de construcción o montaje industrial pertenecientes a cada empresa cliente.',
-      'core.personal': 'Dotación de personal faenero, cargos, RUTs, teléfonos de contacto y credenciales de sincronización Excel.',
-      'core.cuadrillas': 'Equipos de trabajo en terreno agrupados por capataz, especialidad y jefe de obra.',
+      'core.projects': 'Faenas, obras y contratos de construcción y montaje industrial por tenant.',
+      'core.personnel': 'Dotación de personal faenero, cargos, RUTs, teléfonos y estado operativo.',
+      'core.equipment': 'Flota de maquinarias, vehículos y equipos mayores/menores en faena.',
+      'core.crews': 'Cuadrillas de trabajo en terreno agrupadas por capataz y especialidad.',
       'core.crew_task_assignments': 'Asignación de cuadrillas a tareas de avance diario en obra.',
-      'core.frentes_trabajo': 'Ubicaciones físicas y frentes operativos de trabajo en faena.',
+      'core.company_roles': 'Matriz de roles corporativos asignables a los trabajadores de cada tenant.',
+      'core.project_personnel': 'Dotación asignada a faenas específicas con credenciales y roles de obra.',
+      'core.work_fronts': 'Ubicaciones físicas y frentes operativos de trabajo en faena.',
+      'core.usuarios': 'Cuentas de usuario de la plataforma con credenciales de acceso y hash de contraseña.',
+      'core.roles': 'Catálogo de roles y matriz de permisos por nivel de usuario (Super-Admin, Fundador, Admin).',
+      'core.tenant_usuarios': 'Tabla pivote que vincula usuarios con las empresas (tenants) autorizadas.',
       'core.mirror_attendance': 'Registro de asistencia sincronizado desde la App espejo de terreno.',
       'core.mirror_workers': 'Trabajadores registrados en el espejo de la App de terreno (Buk Mirror).',
       'core.sesiones_canal': 'Sesiones activas del canal puente de WhatsApp Bot.',
 
-      // Piping & Ingeniería
-      'piping.pid': 'Catálogo de planos P&ID (Piping and Instrumentation Diagrams) registrados por proyecto.',
-      'piping.lineas': 'Líneas de cañería con sus especificaciones de fluido, servicio, diámetro NPS, clase y presión.',
-      'piping.isometricos': 'Planos isométricos de piping con versión de revisión, plano de cliente y trazabilidad de avance.',
+      // Piping & Ingeniería (Inglés Normalizado)
+      'piping.lines': 'Líneas de cañería con sus especificaciones de fluido, servicio, diámetro NPS, clase y presión.',
+      'piping.isometrics': 'Planos isométricos de piping con versión de revisión y trazabilidad de avance.',
       'piping.spools': 'Elementos prefabricados (Spools) de cañería con peso, longitud, etapa y ubicación física.',
-      'piping.juntas': 'Registro de soldaduras/juntas con tipo (BW/FW), pulgadas de diámetro (NPS), material y prueba NDT.',
-      'piping.valvulas': 'Válvulas y accesorios de instrumentación vinculados a líneas de piping con estado de montaje.',
-      'piping.soportes': 'Soportes estructurales de cañerías con alcance de fabricación y estado de instalación.',
-      'piping.mto': 'Material Take Off (MTO) o cubicaciones masivas de piping importadas desde planillas Excel.',
-      'piping.legacy_joint_list': 'LISTA OBSOLETA: Registros de juntas legacy provenientes de ingesta inicial.',
+      'piping.joints': 'Registro de soldaduras/juntas con tipo (BW/FW), pulgadas de diámetro (NPS) y pruebas NDT.',
+      'piping.valves': 'Válvulas y accesorios de instrumentación vinculados a líneas de piping.',
+      'piping.supports': 'Soportes estructurales de cañerías con alcance de fabricación y montaje.',
+      'piping.pid': 'Catálogo de planos P&ID registrados por proyecto.',
+      'piping.mto': 'Material Take Off (MTO) o cubicaciones masivas de piping.',
 
       // Proyectos Externos (Quiz, Ruleta, Subastas, Infraestructura)
       'quiz.quizzes': 'PROYECTO QUIZ: Cuestionarios y trivias creados en la plataforma Quiz (2,803 registros).',

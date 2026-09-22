@@ -14,6 +14,7 @@ export const crearProyectoSchema = z.object({
     .transform(v => v.trim()),
   centro_costo: z.string().max(64).optional().nullable(),
   ubicacion: z.string().max(255).optional().nullable(),
+  cliente: z.string().max(255).optional().nullable(),
   estado: z.enum(['en_ejecucion', 'paralizado', 'terminado', 'en_cierre'])
     .default('en_ejecucion'),
   metadata: z.record(z.any()).default({})
@@ -30,6 +31,7 @@ export const editarProyectoSchema = z.object({
     .optional(),
   centro_costo: z.string().max(64).optional().nullable(),
   ubicacion: z.string().max(255).optional().nullable(),
+  cliente: z.string().max(255).optional().nullable(),
   estado: z.enum(['en_ejecucion', 'paralizado', 'terminado', 'en_cierre']).optional(),
   metadata: z.record(z.any()).optional(),
   activo: z.boolean().optional()
