@@ -33,3 +33,11 @@
 - **Prohibición Total de Emojis**: NUNCA usar emojis coloridos (`👥`, `📊`, `➕`, `📱`, `🤖`, `🎉`, `📧`, `⚠️`, `🔗`, `🗑️`, `🔒`, `🟢`, `🔴`, `🔩`, `🚜`, `✏️`, `⚡`, `👑`, `🛡️`, `👷`) en títulos, botones, modales, tablas, menús ni opciones de selección.
 - **Estilo Siluetas SVG Outline**: Usar estrictamente iconos vectoriales SVG estilo silueta/outline (`fill="none" stroke="currentColor" stroke-width="1.75"` o `2`), alineados con el diseño minimalista de la barra de navegación lateral (estilo Supabase).
 - **Alineación Visual**: Todos los iconos dentro de botones o encabezados deben tener un tamaño consistente (`14px` a `20px`) y usar `display: inline-flex; align-items: center; gap: 0.4rem;`.
+
+## 6. Menús Contextuales y Acciones en Tablas
+- Las acciones por fila deben agruparse preferentemente en un botón de 3 puntos verticales (`⋮` menú Kebab) para optimizar el ancho de pantalla.
+- **Evitar Recortes por Overflow**: Los dropdowns flotantes generados dinámicamente deben utilizar `position: fixed` calculando coordenadas con `getBoundingClientRect()` para que no sean truncados por `overflow-x: auto` o `overflow: hidden` del contenedor de la tabla.
+
+## 7. Herramientas de Imagen y Canvas 2D Nativo
+- Para recorte, manipulación o rotación de imágenes de perfil o logos corporativos, utilizar Canvas 2D nativo de HTML5 con soporte de arrastre (pan), zoom y rotación 90°, evitando dependencias pesadas de terceros.
+

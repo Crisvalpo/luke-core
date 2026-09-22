@@ -51,18 +51,26 @@ graph TD
 
 ---
 
-## 🏛️ Las 7 Entidades Maestras (`core.*`)
+## 🏛️ Entidades Maestras Canónicas (`core.*`)
+
+Todas las tablas operativas y de seguridad se encuentran normalizadas estrictamente en **inglés (snake_case)** en el esquema `core.*`:
 
 | # | Entidad | Tabla | Descripción |
 |---|---|---|---|
 | 1 | **Tenants** | `core.tenants` | Empresas clientes (`slug`, `razon_social`, `rut`, `config`, RLS). |
-| 2 | **Proyectos** | `core.proyectos` | Obras, faenas y centros de costo contables (`codigo`, `nombre`, `centro_costo`). |
-| 3 | **Frentes de Trabajo** | `core.frentes_trabajo` | Zonas operativas y WBS/CWA/IWP (`Chancado`, `Molienda`, etc.). |
-| 4 | **Personal** | `core.personal` | Dotación con RUT normalizado y teléfono WhatsApp **E.164** (+569...). |
-| 5 | **Equipos** | `core.equipos` | Flota y maquinaria pesada con control de horómetro/odómetro. |
-| 6 | **Proveedores** | `core.proveedores` | Terceros (arriendo de maquinaria, insumos, subcontratos). |
-| 7 | **Sesiones & Auditoría** | `core.sesiones_canal` / `core.audit_logs` | Memoria conversacional para bots WhatsApp y trazabilidad inmutable. |
-| 8 | **Roles Dinámicos** | `core.roles_empresa` | Matriz de roles y permisos granulares JSONB clonados por industria. |
+| 2 | **Proyectos** | `core.projects` | Obras, faenas y centros de costo contables (`code`, `name`, `cost_center`, `client`). *(Absorbió el esquema legacy `platform`)*. |
+| 3 | **Frentes de Trabajo** | `core.work_fronts` | Zonas operativas y paquetes WBS/CWA/IWP (`Chancado`, `Molienda`, etc.). |
+| 4 | **Personal** | `core.personnel` | Dotación con RUT normalizado Módulo 11 y teléfono WhatsApp **E.164** (+569...). |
+| 5 | **Equipos** | `core.equipment` | Flota y maquinaria pesada con control de horómetro/odómetro. |
+| 6 | **Cuadrillas & Turnos** | `core.crews` / `core.crew_members` | Equipos de trabajo en faena liderados por roles operativos autorizados. |
+| 7 | **Roles de Seguridad (RBAC)** | `core.company_roles` | Matriz de permisos de software y acceso a la plataforma (admin, supervisor, etc.). |
+| 8 | **Roles Operativos de Faena** | `core.company_operational_roles` | Cargos de cuadrilla en terreno (`can_lead_crew`: Capataz, Soldador, Rigger, etc.). |
+| 9 | **Mensajería & Subastas** | `core.subastas_mensajes` | Registro conversacional de requerimientos de maquinaria vía bot de WhatsApp. |
+| 10 | **Auditoría & Trazabilidad** | `core.audit_logs` | Registro inmutable de eventos, cambios y accesos multi-tenant. |
+
+> [!NOTE]
+> El esquema legacy `platform` fue migrado y eliminado por completo. Todos los proyectos y faenas operan centralizadamente en `core.projects` con soporte para el mandante directo (`client`).
+
 
 ---
 
@@ -113,10 +121,16 @@ Disponible al iniciar el servidor en:
 - `GET /api/v1/identidad/resolver-whatsapp?telefono=+56977778888`
 - `POST /api/v1/identidad/resolver-whatsapp` (body: `{"telefono": "+56977778888"}`)
 
-### 👷 Dotación y Flota
-- `GET /api/v1/personal?tenant=eim&proyecto=ANDINA-PIP` — Dotación asignada a la obra.
-- `GET /api/v1/equipos?tenant=eim` — Maquinaria activa y contadores.
+### 👷 Dotación, Flota y Proyectos
+- `GET /api/v1/projects` — Proyectos de la empresa activa con centro de costo y mandante (`client`).
+- `GET /api/v1/personal?proyecto=ANDINA-PIP` — Dotación asignada a la faena con RUT y teléfono normalizados.
+- `GET /api/v1/equipos` — Maquinaria activa y contadores.
 - `PATCH /api/v1/equipos/:id/contador` — Actualizar horómetro / odómetro desde terreno.
+
+### 👤 Perfil de Usuario & Avatar
+- `GET /api/v1/personal/perfil` — Obtiene los datos de perfil y configuración del usuario autenticado (sin requerir tenant).
+- `PUT /api/v1/personal/perfil` — Actualiza nombre, teléfono, cargo y avatar recortado mediante Canvas 2D nativo y almacenado en Supabase Storage (`core-logos`).
+
 
 ---
 

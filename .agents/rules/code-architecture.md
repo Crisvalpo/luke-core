@@ -30,7 +30,12 @@
   - `<dominio>.schema.ts`: Esquemas de validación Zod.
 - Lo transversal (middlewares, formateadores, normalizadores) pertenece a `src/shared/`.
 
-## 5. Respuestas de API Estandarizadas
+## 5. Middleware y Resolución de Tenant
+- Las rutas operativas asociadas a una faena/empresa deben utilizar `requireTenant` para aislar datos.
+- Las rutas transversales (autenticación, perfil de usuario `/api/v1/personal/perfil`, onboarding y endpoints de super-admin) deben utilizar `requireAuth` sin forzar tenant para permitir operación a usuarios sin contexto de empresa fija.
+
+## 6. Respuestas de API Estandarizadas
 - Todas las rutas HTTP deben responder utilizando los helpers unificados:
   - `sendSuccess(res, data, statusCode, meta)`
   - `sendError(res, mensaje, statusCode, detalles)`
+

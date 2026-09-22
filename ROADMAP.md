@@ -39,4 +39,8 @@ Registro oficial de requerimientos, mejoras de arquitectura y funcionalidades pl
 | **CORE-02** | Botón de gestión directa de personal en cada proyecto de empresa | `public/admin/admin.js` | ✅ Completada |
 | **CORE-03** | Autenticación con Google (Google OAuth) | `src/modules/auth/` | 📝 Anotada (Pendiente) |
 | **CORE-04** | buk-mirror-service: Espejo RRHH solo lectura por obra (Fase 1: Macro & XLSX) | `src/modules/mirror/` | ✅ Completada |
+| **CORE-05** | Migración y eliminación de esquema legacy `platform` -> `core.projects` con mandante `client` | `src/modules/proyectos/`, DB | ✅ Completada |
+| **CORE-06** | Editor interactivo de Avatar (Canvas 2D nativo) y endpoint de perfil desacoplado de tenant | `public/admin/`, `src/modules/personal/` | ✅ Completada |
+| **CORE-07** | Acciones en tabla con botón Kebab `⋮` flotante y modal de faenas ampliado | `public/admin/` | ✅ Completada |
+
 
