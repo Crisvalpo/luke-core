@@ -19,14 +19,22 @@ export class PersonalService {
     let sql = `
       SELECT 
         p.*,
+        p.full_name AS nombre_completo,
+        p.national_id AS rut,
+        p.job_title AS cargo,
+        p.org_role AS rol_organizacional,
+        p.phone_number AS telefono_whatsapp,
+        p.shift AS turno,
+        p.is_active AS activo,
+        p.project_id AS proyecto_id,
         t.slug AS tenant_slug,
         t.business_name AS tenant_razon_social,
-        pr.codigo AS proyecto_codigo,
-        pr.nombre AS proyecto_nombre
-      FROM core.personal p
+        pr.code AS proyecto_codigo,
+        pr.name AS proyecto_nombre
+      FROM core.personnel p
       JOIN core.tenants t ON t.id = p.tenant_id
-      LEFT JOIN core.proyectos pr ON pr.id = p.proyecto_id
-      WHERE p.activo = TRUE
+      LEFT JOIN core.projects pr ON pr.id = p.project_id
+      WHERE p.is_active = TRUE
     `;
 
     const params: any[] = [];
@@ -36,18 +44,18 @@ export class PersonalService {
     }
     if (filtros.proyecto) {
       params.push(String(filtros.proyecto));
-      sql += ` AND (pr.codigo = $${params.length} OR pr.id::text = $${params.length})`;
+      sql += ` AND (pr.code = $${params.length} OR pr.id::text = $${params.length})`;
     }
     if (filtros.rol) {
       params.push(String(filtros.rol).toLowerCase());
-      sql += ` AND p.rol_organizacional = $${params.length}`;
+      sql += ` AND p.org_role = $${params.length}`;
     }
     if (filtros.busqueda) {
       params.push(`%${String(filtros.busqueda).toLowerCase()}%`);
-      sql += ` AND (LOWER(p.nombre_completo) LIKE $${params.length} OR p.rut LIKE $${params.length} OR p.telefono_whatsapp LIKE $${params.length})`;
+      sql += ` AND (LOWER(p.full_name) LIKE $${params.length} OR p.national_id LIKE $${params.length} OR p.phone_number LIKE $${params.length})`;
     }
 
-    sql += ` ORDER BY p.nombre_completo ASC LIMIT 200;`;
+    sql += ` ORDER BY p.full_name ASC LIMIT 200;`;
     const result = await query(sql, params);
     return result.rows;
   }
@@ -58,15 +66,15 @@ export class PersonalService {
   static async eliminar(id: string, tenantId: string) {
     // 1. Obtener datos antes de eliminar para posible limpieza en Supabase Auth
     const findRes = await query(
-      'SELECT id, nombre_completo, email, auth_user_id FROM core.personal WHERE id = $1 AND tenant_id = $2',
+      'SELECT id, full_name AS nombre_completo, email, auth_user_id FROM core.personnel WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
     if (findRes.rowCount === 0) return null;
     const personal = findRes.rows[0];
 
-    // 2. Eliminar de core.personal_proyectos y core.personal
-    await query('DELETE FROM core.personal_proyectos WHERE personal_id = $1', [id]);
-    await query('DELETE FROM core.personal WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    // 2. Eliminar de core.project_personnel y core.personnel
+    await query('DELETE FROM core.project_personnel WHERE personnel_id = $1', [id]);
+    await query('DELETE FROM core.personnel WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     // 3. Si tenía cuenta en Supabase Auth y no es super_admin, remover de Auth opcionalmente
     if (personal.auth_user_id) {
@@ -107,7 +115,7 @@ export class PersonalService {
       if (linkData?.properties?.action_link) {
         inviteUrl = linkData.properties.action_link;
         if (linkData.user) {
-          await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [linkData.user.id, personal.id]);
+          await query('UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2', [linkData.user.id, personal.id]);
         }
       } else if (linkErr) {
         const { data: recovData } = await supabaseAdmin.auth.admin.generateLink({
@@ -118,7 +126,7 @@ export class PersonalService {
         if (recovData?.properties?.action_link) {
           inviteUrl = recovData.properties.action_link;
           if (recovData.user) {
-            await query('UPDATE core.personal SET auth_user_id = $1 WHERE id = $2', [recovData.user.id, personal.id]);
+            await query('UPDATE core.personnel SET auth_user_id = $1 WHERE id = $2', [recovData.user.id, personal.id]);
           }
         }
       }

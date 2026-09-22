@@ -92,7 +92,7 @@ export class TenantsService {
 
       // 4.2 Obtener el ID del Rol ADMIN_GENERAL del proyecto (o plantilla)
       const rolAdminRes = await client.query(
-        'SELECT id FROM core.roles_empresa WHERE tenant_id = $1 AND codigo = $2 AND (proyecto_id = $3 OR proyecto_id IS NULL) ORDER BY proyecto_id NULLS LAST LIMIT 1',
+        'SELECT id FROM core.company_roles WHERE tenant_id = $1 AND codigo = $2 AND (proyecto_id = $3 OR proyecto_id IS NULL) ORDER BY proyecto_id NULLS LAST LIMIT 1',
         [tenant.id, 'ADMIN_GENERAL', proyecto.id]
       );
       const rolAdminId = rolAdminRes.rows[0]?.id || null;

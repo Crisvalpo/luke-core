@@ -42,35 +42,35 @@ export class PipingService {
         }
       }
 
-      // 2. Validar autorización de usuario en el proyecto (core.personal + core.personal_proyectos)
+      // 2. Validar autorización de usuario en el proyecto (core.personnel + core.project_personnel)
       if (usuarioWindowsJwt !== 'ADMIN_KEY') {
         const authUserQuery = await client.query(`
           SELECT 
             p.id AS personal_id, 
             p.tenant_id, 
-            p.nombre_completo,
+            p.full_name AS nombre_completo,
             pr.id AS proyecto_id,
-            pr.codigo AS proyecto_codigo
-          FROM core.personal p
-          JOIN core.proyectos pr ON (
-            (pr.codigo = $2 OR pr.id::text = $2)
+            pr.code AS proyecto_codigo
+          FROM core.personnel p
+          JOIN core.projects pr ON (
+            (pr.code = $2 OR pr.id::text = $2)
             AND pr.tenant_id = p.tenant_id
           )
-          LEFT JOIN core.personal_proyectos pp ON (
-            pp.personal_id = p.id AND pp.proyecto_id = pr.id
+          LEFT JOIN core.project_personnel pp ON (
+            pp.personnel_id = p.id AND pp.project_id = pr.id
           )
           WHERE (
             UPPER(p.usuario_windows) = UPPER($1)
             OR UPPER(p.usuario_windows) = UPPER(SPLIT_PART($1, '\\', 2))
             OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER(SPLIT_PART($1, '\\', 2))
           )
-          AND p.activo = TRUE
+          AND p.is_active = TRUE
           AND (p.puede_sincronizar_excel IS TRUE OR p.puede_sincronizar_excel IS NULL)
           AND (
-            p.proyecto_id = pr.id 
+            p.project_id = pr.id 
             OR pp.puede_sincronizar IS TRUE 
-            OR p.rol_organizacional = 'super_admin'
-            OR p.rol_organizacional = 'admin'
+            OR p.org_role = 'super_admin'
+            OR p.org_role = 'admin'
           )
           LIMIT 1;
         `, [usuarioWindowsJwt, idProyecto]);

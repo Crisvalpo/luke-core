@@ -185,7 +185,7 @@ export class ProyectosService {
   }
 
   static async crearFrente(tenantId: string, proyectoId: string, input: CrearFrenteInput) {
-    const proyectoCheck = await dbPool.query('SELECT id FROM core.proyectos WHERE id = $1 AND tenant_id = $2', [proyectoId, tenantId]);
+    const proyectoCheck = await dbPool.query('SELECT id FROM core.projects WHERE id = $1 AND tenant_id = $2', [proyectoId, tenantId]);
     if (proyectoCheck.rows.length === 0) throw new Error('Proyecto no encontrado en esta empresa.');
 
     const result = await dbPool.query(`

@@ -40,7 +40,7 @@ export class AuthService {
         SELECT 
           p.id, p.nombre_completo, p.email, p.rol_organizacional,
           t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
-        FROM core.personal p
+        FROM core.personnel p
         LEFT JOIN core.tenants t ON t.id = p.tenant_id
         WHERE p.auth_user_id = $1 OR LOWER(p.email) = $2
         LIMIT 1;
@@ -117,7 +117,7 @@ export class AuthService {
       SELECT 
         p.id, p.nombre_completo, p.email, p.rol_organizacional, p.activo, p.auth_user_id,
         t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social, t.is_active AS tenant_activo
-      FROM core.personal p
+      FROM core.personnel p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE (p.auth_user_id = $1 OR LOWER(p.email) = $2)
         AND p.activo = TRUE
@@ -178,7 +178,7 @@ export class AuthService {
     // 1. Buscar usuario en core.personal
     const personalRes = await query(`
       SELECT p.id, p.auth_user_id, p.nombre_completo, p.rol_organizacional, t.id AS tenant_id, t.slug AS tenant_slug, t.business_name AS tenant_razon_social
-      FROM core.personal p
+      FROM core.personnel p
       LEFT JOIN core.tenants t ON t.id = p.tenant_id
       WHERE LOWER(p.email) = $1
       LIMIT 1;
@@ -229,7 +229,7 @@ export class AuthService {
     // 1. Buscar usuario autorizado en core.personal por usuario_windows
     let userRes = await query(`
       SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
-      FROM core.personal p
+      FROM core.personnel p
       WHERE (
         UPPER(p.usuario_windows) = UPPER($1) 
         OR UPPER(p.usuario_windows) = UPPER($2)
@@ -245,7 +245,7 @@ export class AuthService {
       const identNorm = identificador.trim();
       const bindRes = await query(`
         SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
-        FROM core.personal p
+        FROM core.personnel p
         WHERE (
           p.id::text = $1 
           OR LOWER(p.email) = LOWER($1) 
@@ -260,7 +260,7 @@ export class AuthService {
       if (bindRes.rows.length > 0) {
         const u = bindRes.rows[0];
         await query(`
-          UPDATE core.personal 
+          UPDATE core.personnel 
           SET usuario_windows = $1, updated_at = NOW() 
           WHERE id = $2;
         `, [usuarioNorm, u.id]);
@@ -275,7 +275,7 @@ export class AuthService {
     if (userRes.rows.length === 0 && soloUsername.length >= 3) {
       const smartRes = await query(`
         SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows, p.activo, p.puede_sincronizar_excel
-        FROM core.personal p
+        FROM core.personnel p
         WHERE (
           LOWER(SPLIT_PART(p.email, '@', 1)) = LOWER($1)
           OR LOWER(REPLACE(SPLIT_PART(p.email, '@', 1), '.', '')) = LOWER(REPLACE($1, '.', ''))
@@ -298,7 +298,7 @@ export class AuthService {
       if (smartRes.rows.length > 0) {
         const u = smartRes.rows[0];
         await query(`
-          UPDATE core.personal 
+          UPDATE core.personnel 
           SET usuario_windows = $1, updated_at = NOW() 
           WHERE id = $2;
         `, [usuarioNorm, u.id]);
@@ -373,7 +373,7 @@ export class AuthService {
     // 1. Buscar usuario en core.personal
     const userRes = await query(`
       SELECT p.id, p.tenant_id, p.nombre_completo, p.telefono_whatsapp, p.usuario_windows
-      FROM core.personal p
+      FROM core.personnel p
       WHERE (
         UPPER(p.usuario_windows) = UPPER($1) 
         OR UPPER(p.usuario_windows) = UPPER($2)

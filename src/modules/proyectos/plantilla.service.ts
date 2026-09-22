@@ -18,7 +18,7 @@ export class PlantillaService {
     // 1. Obtener datos del proyecto
     const proyRes = await query(`
       SELECT p.id, p.codigo, p.nombre, p.estado, p.centro_costo, p.tenant_id, t.slug as tenant_slug
-      FROM core.proyectos p
+      FROM core.projects p
       JOIN core.tenants t ON t.id = p.tenant_id
       WHERE p.id = $1 AND p.tenant_id = $2 AND p.activo = TRUE
       LIMIT 1;
@@ -37,7 +37,7 @@ export class PlantillaService {
     if (user?.email) {
       const perRes = await query(`
         SELECT id, usuario_windows 
-        FROM core.personal 
+        FROM core.personnel 
         WHERE LOWER(email) = LOWER($1) AND tenant_id = $2
         LIMIT 1;
       `, [user.email, tenantId]);

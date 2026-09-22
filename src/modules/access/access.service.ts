@@ -49,7 +49,7 @@ export class AccessService {
     if (tenantId) {
       const adminRes = await query(`
         SELECT telefono_whatsapp 
-        FROM core.personal 
+        FROM core.personnel 
         WHERE tenant_id = $1 
           AND rol_organizacional IN ('super_admin', 'admin') 
           AND telefono_whatsapp IS NOT NULL 

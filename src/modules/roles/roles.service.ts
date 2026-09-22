@@ -12,12 +12,15 @@ export class RolesService {
     let sql = `
       SELECT 
         r.*,
-        p.nombre AS proyecto_nombre,
+        r.code AS codigo, r.name AS nombre, r.description AS descripcion,
+        r.base_security_role AS rol_seguridad_base, r.permissions AS permisos,
+        r.is_active AS activo, r.project_id AS proyecto_id,
+        p.name AS proyecto_nombre,
         COUNT(per.id) AS total_personal_asignado
-      FROM core.roles_empresa r
-      LEFT JOIN core.proyectos p ON p.id = r.proyecto_id
-      LEFT JOIN core.personal per ON per.rol_funcional_id = r.id AND per.activo = TRUE
-      WHERE r.tenant_id = $1 AND r.activo = TRUE
+      FROM core.company_roles r
+      LEFT JOIN core.projects p ON p.id = r.project_id
+      LEFT JOIN core.personnel per ON per.rol_funcional_id = r.id AND per.is_active = TRUE
+      WHERE r.tenant_id = $1 AND r.is_active = TRUE
     `;
     const params: any[] = [tenantId];
 
@@ -30,14 +33,14 @@ export class RolesService {
     }
 
     sql += `
-      GROUP BY r.id, p.nombre
+      GROUP BY r.id, p.name
       ORDER BY
-        CASE r.rol_seguridad_base
+        CASE r.base_security_role
           WHEN 'admin' THEN 1
           WHEN 'supervisor' THEN 2
           WHEN 'worker' THEN 3
         END,
-        r.nombre ASC;
+        r.name ASC;
     `;
 
     const result = await dbPool.query(sql, params);
@@ -49,9 +52,12 @@ export class RolesService {
    */
   static async obtenerDetalle(tenantId: string, rolId: string, proyectoId?: string | null) {
     let sqlRol = `
-      SELECT r.*, p.nombre AS proyecto_nombre
-      FROM core.roles_empresa r
-      LEFT JOIN core.proyectos p ON p.id = r.proyecto_id
+      SELECT r.*, r.code AS codigo, r.name AS nombre, r.description AS descripcion,
+        r.base_security_role AS rol_seguridad_base, r.permissions AS permisos,
+        r.is_active AS activo, r.project_id AS proyecto_id,
+        p.name AS proyecto_nombre
+      FROM core.company_roles r
+      LEFT JOIN core.projects p ON p.id = r.project_id
       WHERE r.id = $1 AND r.tenant_id = $2
     `;
     const params: any[] = [rolId, tenantId];
@@ -84,14 +90,14 @@ export class RolesService {
     const proyectoId = input.proyecto_id || null;
 
     // Verificar unicidad de código dentro del proyecto o tenant
-    let dupSql = 'SELECT id FROM core.roles_empresa WHERE tenant_id = $1 AND codigo = $2';
+    let dupSql = 'SELECT id FROM core.company_roles WHERE tenant_id = $1 AND code = $2';
     const dupParams: any[] = [tenantId, input.codigo];
 
     if (proyectoId) {
       dupParams.push(proyectoId);
-      dupSql += ` AND proyecto_id = $3`;
+      dupSql += ` AND project_id = $3`;
     } else {
-      dupSql += ` AND proyecto_id IS NULL`;
+      dupSql += ` AND project_id IS NULL`;
     }
 
     const duplicado = await dbPool.query(dupSql, dupParams);
@@ -100,12 +106,14 @@ export class RolesService {
     }
 
     const result = await dbPool.query(`
-      INSERT INTO core.roles_empresa (
-        tenant_id, proyecto_id, codigo, nombre, descripcion, color,
-        rol_seguridad_base, permisos, is_template
+      INSERT INTO core.company_roles (
+        tenant_id, project_id, code, name, description, color,
+        base_security_role, permissions, is_template
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *;
+      RETURNING *, code AS codigo, name AS nombre, description AS descripcion,
+        base_security_role AS rol_seguridad_base, permissions AS permisos,
+        is_active AS activo, project_id AS proyecto_id;
     `, [
       tenantId,
       proyectoId,
@@ -130,11 +138,11 @@ export class RolesService {
 
     if (input.nombre !== undefined) {
       params.push(input.nombre);
-      updates.push(`nombre = $${params.length}`);
+      updates.push(`name = $${params.length}`);
     }
     if (input.descripcion !== undefined) {
       params.push(input.descripcion);
-      updates.push(`descripcion = $${params.length}`);
+      updates.push(`description = $${params.length}`);
     }
     if (input.color !== undefined) {
       params.push(input.color);
@@ -142,15 +150,15 @@ export class RolesService {
     }
     if (input.rol_seguridad_base !== undefined) {
       params.push(input.rol_seguridad_base);
-      updates.push(`rol_seguridad_base = $${params.length}`);
+      updates.push(`base_security_role = $${params.length}`);
     }
     if (input.permisos !== undefined) {
       params.push(JSON.stringify(input.permisos));
-      updates.push(`permisos = $${params.length}::jsonb`);
+      updates.push(`permissions = $${params.length}::jsonb`);
     }
     if (typeof input.activo === 'boolean') {
       params.push(input.activo);
-      updates.push(`activo = $${params.length}`);
+      updates.push(`is_active = $${params.length}`);
     }
 
     if (updates.length === 0) {
@@ -161,17 +169,17 @@ export class RolesService {
     params.push(tenantId);
 
     let sql = `
-      UPDATE core.roles_empresa
+      UPDATE core.company_roles
       SET ${updates.join(', ')}
       WHERE id = $${params.length - 1} AND tenant_id = $${params.length}
     `;
 
     if (proyectoId) {
       params.push(proyectoId);
-      sql += ` AND (proyecto_id = $${params.length} OR proyecto_id IS NULL)`;
+      sql += ` AND (project_id = $${params.length} OR project_id IS NULL)`;
     }
 
-    sql += ` RETURNING *;`;
+    sql += ` RETURNING *, code AS codigo, name AS nombre;`;
 
     const result = await dbPool.query(sql, params);
     if (result.rows.length === 0) return null;
@@ -188,19 +196,19 @@ export class RolesService {
 
       // Desvincular personal que tenga este rol
       await client.query(
-        'UPDATE core.personal SET rol_funcional_id = NULL WHERE rol_funcional_id = $1 AND tenant_id = $2',
+        'UPDATE core.personnel SET rol_funcional_id = NULL WHERE rol_funcional_id = $1 AND tenant_id = $2',
         [rolId, tenantId]
       );
 
-      let sql = `UPDATE core.roles_empresa SET activo = FALSE WHERE id = $1 AND tenant_id = $2`;
+      let sql = `UPDATE core.company_roles SET is_active = FALSE WHERE id = $1 AND tenant_id = $2`;
       const params: any[] = [rolId, tenantId];
 
       if (proyectoId) {
         params.push(proyectoId);
-        sql += ` AND proyecto_id = $3`;
+        sql += ` AND project_id = $3`;
       }
 
-      sql += ` RETURNING id, codigo, nombre;`;
+      sql += ` RETURNING id, code AS codigo, name AS nombre;`;
 
       const result = await client.query(sql, params);
       await client.query('COMMIT');
@@ -221,7 +229,7 @@ export class RolesService {
   static async asignarRol(tenantId: string, personalId: string, rolId: string | null) {
     if (rolId) {
       const rolCheck = await dbPool.query(
-        'SELECT id, proyecto_id FROM core.roles_empresa WHERE id = $1 AND tenant_id = $2 AND activo = TRUE',
+        'SELECT id, project_id FROM core.company_roles WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE',
         [rolId, tenantId]
       );
       if (rolCheck.rows.length === 0) {
@@ -230,10 +238,10 @@ export class RolesService {
     }
 
     const result = await dbPool.query(`
-      UPDATE core.personal
+      UPDATE core.personnel
       SET rol_funcional_id = $1
-      WHERE id = $2 AND tenant_id = $3 AND activo = TRUE
-      RETURNING id, nombre_completo, cargo, rol_funcional_id;
+      WHERE id = $2 AND tenant_id = $3 AND is_active = TRUE
+      RETURNING id, full_name AS nombre_completo, job_title AS cargo, rol_funcional_id;
     `, [rolId, personalId, tenantId]);
 
     if (result.rows.length === 0) {

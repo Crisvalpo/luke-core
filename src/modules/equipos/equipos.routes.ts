@@ -17,9 +17,9 @@ equiposRouter.get('/', async (req: Request, res: Response, next: NextFunction) =
         t.business_name AS tenant_razon_social,
         pr.codigo AS proyecto_codigo,
         pr.nombre AS proyecto_nombre
-      FROM core.equipos eq
+      FROM core.equipment eq
       JOIN core.tenants t ON t.id = eq.tenant_id
-      LEFT JOIN core.proyectos pr ON pr.id = eq.proyecto_id
+      LEFT JOIN core.projects pr ON pr.id = eq.proyecto_id
       WHERE eq.activo = TRUE
     `;
 
@@ -61,7 +61,7 @@ equiposRouter.patch('/:id/contador', async (req: Request, res: Response, next: N
     const { nuevo_contador } = updateContadorSchema.parse(req.body);
 
     const result = await query(`
-      UPDATE core.equipos 
+      UPDATE core.equipment 
       SET ultimo_contador = $1
       WHERE id = $2 AND activo = TRUE
       RETURNING *;

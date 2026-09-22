@@ -65,12 +65,12 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
     const usuarioWindowsNorm = body.usuario_windows ? body.usuario_windows.trim() : null;
 
     const result = await query(`
-      INSERT INTO core.personal (
-        tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, 
-        telefono_whatsapp, email, turno, usuario_windows, puede_sincronizar_excel
+      INSERT INTO core.personnel (
+        tenant_id, project_id, national_id, full_name, job_title, org_role, 
+        phone_number, email, shift, usuario_windows, puede_sincronizar_excel
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *;
+      RETURNING *, full_name AS nombre_completo, national_id AS rut, job_title AS cargo, org_role AS rol_organizacional, phone_number AS telefono_whatsapp;
     `, [
       body.tenant_id,
       body.proyecto_id || null,
@@ -89,9 +89,9 @@ personalRouter.post('/', async (req: Request, res: Response, next: NextFunction)
 
     if (body.proyecto_id) {
       await query(`
-        INSERT INTO core.personal_proyectos (personal_id, proyecto_id, puede_sincronizar)
+        INSERT INTO core.project_personnel (personnel_id, project_id, puede_sincronizar)
         VALUES ($1, $2, $3)
-        ON CONFLICT (personal_id, proyecto_id) DO UPDATE SET puede_sincronizar = $3;
+        ON CONFLICT (personnel_id, project_id) DO UPDATE SET puede_sincronizar = $3;
       `, [nuevoPersonal.id, body.proyecto_id, body.puede_sincronizar_excel]);
     }
 
@@ -139,7 +139,7 @@ personalRouter.delete('/:id', async (req: Request, res: Response, next: NextFunc
 personalRouter.post('/:id/enlace-invitacion', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const persRes = await query('SELECT * FROM core.personal WHERE id = $1', [id]);
+    const persRes = await query('SELECT *, full_name AS nombre_completo FROM core.personnel WHERE id = $1', [id]);
     if (persRes.rowCount === 0) return sendError(res, 'Personal no encontrado', 404);
     const persona = persRes.rows[0];
     if (!persona.email) return sendError(res, 'Este personal no tiene email registrado', 400);
@@ -187,16 +187,16 @@ personalRouter.put('/perfil', async (req: Request, res: Response, next: NextFunc
     let updatedPersonal: any = null;
 
     if (userEmail) {
-      const existingRes = await query('SELECT * FROM core.personal WHERE LOWER(email) = LOWER($1)', [userEmail.trim()]);
+      const existingRes = await query('SELECT *, full_name AS nombre_completo FROM core.personnel WHERE LOWER(email) = LOWER($1)', [userEmail.trim()]);
       if (existingRes.rowCount! > 0) {
         const pers = existingRes.rows[0];
         const newMetadata = { ...(pers.metadata || {}), avatar_url: body.avatar_url ?? pers.metadata?.avatar_url ?? null };
 
         const updateRes = await query(`
-          UPDATE core.personal
+          UPDATE core.personnel
           SET 
-            nombre_completo = COALESCE($1, nombre_completo),
-            telefono_whatsapp = COALESCE($2, telefono_whatsapp),
+            full_name = COALESCE($1, full_name),
+            phone_number = COALESCE($2, phone_number),
             metadata = $3::jsonb,
             updated_at = NOW()
           WHERE id = $4

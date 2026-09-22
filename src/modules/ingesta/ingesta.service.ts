@@ -45,7 +45,7 @@ export class IngestaService {
    * Obtiene mapa de código de proyecto a UUID para un tenant
    */
   private static async obtenerMapaProyectos(tenantId: string): Promise<Map<string, string>> {
-    const res = await query(`SELECT id, LOWER(codigo) AS codigo FROM core.proyectos WHERE tenant_id = $1`, [tenantId]);
+    const res = await query(`SELECT id, LOWER(codigo) AS codigo FROM core.projects WHERE tenant_id = $1`, [tenantId]);
     const mapa = new Map<string, string>();
     res.rows.forEach(p => mapa.set(p.codigo, p.id));
     return mapa;
@@ -101,18 +101,18 @@ export class IngestaService {
 
       try {
         const res = await query(`
-          INSERT INTO core.personal (
+          INSERT INTO core.personnel (
             tenant_id, proyecto_id, rut, nombre_completo, cargo, rol_organizacional, telefono_whatsapp, email, turno, activo
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
           ON CONFLICT (tenant_id, rut) DO UPDATE SET
-            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.personal.proyecto_id),
+            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.personnel.project_id),
             nombre_completo = EXCLUDED.nombre_completo,
             cargo = EXCLUDED.cargo,
             rol_organizacional = EXCLUDED.rol_organizacional,
-            telefono_whatsapp = COALESCE(EXCLUDED.telefono_whatsapp, core.personal.telefono_whatsapp),
-            email = COALESCE(EXCLUDED.email, core.personal.email),
-            turno = COALESCE(EXCLUDED.turno, core.personal.turno),
+            telefono_whatsapp = COALESCE(EXCLUDED.telefono_whatsapp, core.personnel.phone_number),
+            email = COALESCE(EXCLUDED.email, core.personnel.email),
+            turno = COALESCE(EXCLUDED.turno, core.personnel.shift),
             activo = TRUE,
             actualizado_en = NOW()
           RETURNING (xmax = 0) AS es_nuevo;
@@ -175,17 +175,17 @@ export class IngestaService {
 
       try {
         const res = await query(`
-          INSERT INTO core.equipos (
+          INSERT INTO core.equipment (
             tenant_id, proyecto_id, codigo_interno, patente, descripcion, categoria, tipo_medicion, ultimo_contador, activo
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
           ON CONFLICT (tenant_id, codigo_interno) DO UPDATE SET
-            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.equipos.proyecto_id),
-            patente = COALESCE(EXCLUDED.patente, core.equipos.patente),
+            proyecto_id = COALESCE(EXCLUDED.proyecto_id, core.equipment.project_id),
+            patente = COALESCE(EXCLUDED.patente, core.equipment.license_plate),
             descripcion = EXCLUDED.descripcion,
             categoria = EXCLUDED.categoria,
             tipo_medicion = EXCLUDED.tipo_medicion,
-            ultimo_contador = GREATEST(core.equipos.ultimo_contador, EXCLUDED.ultimo_contador),
+            ultimo_contador = GREATEST(core.equipment.last_reading, EXCLUDED.ultimo_contador),
             activo = TRUE,
             actualizado_en = NOW()
           RETURNING (xmax = 0) AS es_nuevo;

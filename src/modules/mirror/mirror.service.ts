@@ -41,7 +41,7 @@ export class MirrorService {
 
     // Rule 3: 1:1 Fallback against official core.proyectos code
     const fallbackDirect = await query(
-      `SELECT codigo FROM core.proyectos 
+      `SELECT codigo FROM core.projects 
        WHERE tenant_id = $1 AND (UPPER(codigo) = UPPER($2) OR UPPER(centro_costo) = UPPER($2)) AND activo = TRUE LIMIT 1`,
       [tenantId, ccNorm]
     );

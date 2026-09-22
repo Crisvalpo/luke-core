@@ -13,16 +13,16 @@ export class PipingSyncService {
    */
   private static async resolverProyecto(client: any, usuarioWindows: string, idProyecto: string) {
     const authQuery = await client.query(`
-      SELECT p.id AS personal_id, p.tenant_id, pr.id AS proyecto_id, pr.codigo AS proyecto_codigo
-      FROM core.personal p
-      JOIN core.proyectos pr ON ((pr.codigo = $2 OR pr.id::text = $2) AND pr.tenant_id = p.tenant_id)
-      LEFT JOIN core.personal_proyectos pp ON (pp.personal_id = p.id AND pp.proyecto_id = pr.id)
+      SELECT p.id AS personal_id, p.tenant_id, pr.id AS proyecto_id, pr.code AS proyecto_codigo
+      FROM core.personnel p
+      JOIN core.projects pr ON ((pr.code = $2 OR pr.id::text = $2) AND pr.tenant_id = p.tenant_id)
+      LEFT JOIN core.project_personnel pp ON (pp.personnel_id = p.id AND pp.project_id = pr.id)
       WHERE (
         UPPER(p.usuario_windows) = UPPER($1)
         OR UPPER(p.usuario_windows) = UPPER(SPLIT_PART($1, '\\', 2))
         OR UPPER(SPLIT_PART(p.usuario_windows, '\\', 2)) = UPPER(SPLIT_PART($1, '\\', 2))
       )
-      AND p.activo = TRUE
+      AND p.is_active = TRUE
       LIMIT 1;
     `, [usuarioWindows, idProyecto.trim()]);
 
