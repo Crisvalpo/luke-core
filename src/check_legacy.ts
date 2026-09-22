@@ -1,4 +1,4 @@
-import { dbPool } from './src/config/database.js';
+import { dbPool } from './config/database.js';
 
 async function check() {
   const query = `
@@ -12,7 +12,7 @@ async function check() {
     try {
       const cnt = await dbPool.query(`SELECT COUNT(*) FROM "${r.table_schema}"."${r.table_name}"`);
       console.log(`${r.table_schema}.${r.table_name}: ${cnt.rows[0].count} filas`);
-    } catch (e) {
+    } catch (e: any) {
       console.log(`${r.table_schema}.${r.table_name}: ERROR - ${e.message}`);
     }
   }
