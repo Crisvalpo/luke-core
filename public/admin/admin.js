@@ -215,14 +215,16 @@ async function cargarTenants() {
 }
 
 function actualizarKPIs(tenants) {
+  if (!Array.isArray(tenants)) return;
+
   let totalProyectos = 0;
   let totalPersonal = 0;
   let totalEquipos = 0;
 
   tenants.forEach(t => {
-    totalProyectos += parseInt(t.total_proyectos || 0, 10);
-    totalPersonal += parseInt(t.total_personal || 0, 10);
-    totalEquipos += parseInt(t.total_equipos || 0, 10);
+    totalProyectos += parseInt(t?.total_proyectos || 0, 10);
+    totalPersonal += parseInt(t?.total_personal || 0, 10);
+    totalEquipos += parseInt(t?.total_equipos || 0, 10);
   });
 
   const userJson = localStorage.getItem('luke_core_user');
@@ -237,16 +239,24 @@ function actualizarKPIs(tenants) {
   }
 
   const elTenants = document.getElementById('kpi-tenants');
-  if (elTenants && esSuperAdmin) elTenants.innerText = tenants.length;
+  if (elTenants && esSuperAdmin) {
+    elTenants.innerText = tenants.length;
+  }
 
   const elProyectos = document.getElementById('kpi-proyectos');
-  if (elProyectos) elProyectos.innerText = totalProyectos;
+  if (elProyectos) {
+    elProyectos.innerText = totalProyectos;
+  }
 
   const elPersonal = document.getElementById('kpi-personal');
-  if (elPersonal) elPersonal.innerText = totalPersonal;
+  if (elPersonal) {
+    elPersonal.innerText = totalPersonal;
+  }
 
   const elEquipos = document.getElementById('kpi-equipos');
-  if (elEquipos) elEquipos.innerText = totalEquipos;
+  if (elEquipos) {
+    elEquipos.innerText = totalEquipos;
+  }
 }
 
 function renderizarTenants(tenants) {
@@ -338,10 +348,13 @@ function renderizarTenants(tenants) {
           <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
             ✏️ Editar
           </button>
+          <button class="btn btn-secondary" onclick="verDotacionTenant('${t.id}', '${(t.razon_social || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+            👥 Dotación
+          </button>
           <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
             📊 Cargar Excel
           </button>
-          <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${t.razon_social}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
+          <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${(t.razon_social || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
             📁 Proyectos
           </button>
         </div>
@@ -1529,14 +1542,18 @@ async function desvincularWhatsApp() {
 // GESTIÓN Y NAVEGACIÓN DE DOTACIÓN DE PERSONAL
 // =============================================================================
 let seccionActual = 'proyectos';
+let tenantSeleccionadoDotacion = null;
+
+function verDotacionTenant(tenantId, razonSocial) {
+  tenantSeleccionadoDotacion = { id: tenantId, razonSocial: razonSocial };
+  navegarASeccion('dotacion');
+}
 
 function navegarASeccion(seccion) {
   const userJson = localStorage.getItem('luke_core_user');
   let user = null;
-  if (userJson) { try { user = JSON.parse(userJson); } catch {} }
-
-  if (seccion === 'dotacion' && (user?.rol === 'super_admin' || user?.rol === 'staff')) {
-    seccion = 'proyectos';
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
   }
 
   seccionActual = seccion;
@@ -1549,7 +1566,7 @@ function navegarASeccion(seccion) {
   const topbarTitulo = document.getElementById('topbar-titulo');
   const btnNuevo = document.getElementById('btn-nuevo-cliente');
 
-  const nombreEmpresa = user?.tenant_razon_social || user?.tenant_slug || (todosLosTenants[0]?.razon_social) || 'Mi Empresa';
+  const nombreEmpresa = tenantSeleccionadoDotacion?.razonSocial || user?.tenant_razon_social || user?.tenant_slug || (todosLosTenants[0]?.razon_social) || 'Mi Empresa';
 
   if (visorSec) visorSec.style.display = 'none';
   if (visorCuadrillasSec) visorCuadrillasSec.style.display = 'none';
@@ -1565,7 +1582,7 @@ function navegarASeccion(seccion) {
       btnNuevo.onclick = () => abrirModalInvitarAdminDirecto();
       btnNuevo.style.display = 'inline-flex';
     }
-    cargarDotacionEmpresa();
+    cargarDotacionEmpresa(tenantSeleccionadoDotacion?.id);
   } else {
     if (tenantsGrid) tenantsGrid.style.display = 'grid';
     if (dotacionSec) dotacionSec.style.display = 'none';
@@ -1590,15 +1607,22 @@ function navegarASeccion(seccion) {
   }
 }
 
-async function cargarDotacionEmpresa() {
-  const tbody = document.getElementById('tabla-dotacion-body');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Cargando dotación...</td></tr>';
+async function cargarDotacionEmpresa(tenantIdParam) {
+  const container = document.getElementById('dotacion-grupos-container');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Cargando dotación por proyecto...</div>';
 
   const userJson = localStorage.getItem('luke_core_user');
   let user = null;
   if (userJson) { try { user = JSON.parse(userJson); } catch {} }
-  const tenantId = user?.tenant_id || (todosLosTenants[0]?.id) || '';
+
+  const tenantId = tenantIdParam || tenantSeleccionadoDotacion?.id || user?.tenant_id || (todosLosTenants[0]?.id) || '';
+  const razonSocialTenant = tenantSeleccionadoDotacion?.razonSocial || user?.tenant_razon_social || (todosLosTenants.find(t => t.id === tenantId)?.razon_social) || 'Empresa';
+
+  const tituloHeader = document.getElementById('dotacion-titulo-header');
+  if (tituloHeader) {
+    tituloHeader.innerText = `👥 Dotación de Personal — ${razonSocialTenant}`;
+  }
 
   try {
     const res = await fetch(`/api/v1/personal?tenant=${tenantId}`, {
@@ -1612,68 +1636,130 @@ async function cargarDotacionEmpresa() {
     if (kpiEl) kpiEl.innerText = personal.length;
 
     if (personal.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">
-            No hay personal registrado en la dotación de esta empresa.<br><br>
-            <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
-              ➕ Invitar al Primer Integrante
-            </button>
-          </td>
-        </tr>
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2.5rem; background: var(--bg-container); border: 1px dashed var(--border-container); border-radius: 8px; color: var(--color-text-muted);">
+          No hay personal registrado en la dotación de esta empresa.<br><br>
+          <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
+            ➕ Invitar al Primer Integrante
+          </button>
+        </div>
       `;
       return;
     }
 
-    tbody.innerHTML = personal.map(p => {
-      const iniciales = (p.nombre_completo || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-      let badgeRol = '<span class="module-pill" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">Cubicador / Operario</span>';
-      if (p.rol_organizacional === 'fundador' || p.rol_organizacional === 'admin_empresa') {
-        badgeRol = '<span class="module-pill" style="background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;">👑 Fundador</span>';
-      } else if (p.rol_organizacional === 'admin_proyecto' || p.rol_organizacional === 'admin') {
-        badgeRol = '<span class="module-pill" style="background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe;">🛡️ Admin Proyecto</span>';
+    // Agrupar personal por Proyecto
+    const grupos = {};
+    personal.forEach(p => {
+      const key = p.proyecto_codigo || p.proyecto_id || 'SIN_PROYECTO';
+      const nombreGrupo = p.proyecto_nombre ? `${p.proyecto_codigo} — ${p.proyecto_nombre}` : (p.proyecto_codigo || '🏢 Administración General (Sin Proyecto)');
+      if (!grupos[key]) {
+        grupos[key] = {
+          codigo: p.proyecto_codigo || 'GENERAL',
+          nombre: nombreGrupo,
+          integrantes: []
+        };
       }
+      grupos[key].integrantes.push(p);
+    });
 
-      const proyAsignado = p.proyecto_codigo ? `<strong>${p.proyecto_codigo}</strong>` : '<span style="color: var(--color-text-muted);">— Nivel Empresa</span>';
+    let htmlContent = '';
+    const keys = Object.keys(grupos);
 
-      return `
-        <tr style="border-bottom: 1px solid var(--border-container); transition: background 0.15s ease;">
-          <td style="padding: 0.85rem 1rem;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <div style="width: 32px; height: 32px; border-radius: 50%; background: #059669; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">
-                ${iniciales}
-              </div>
-              <div>
-                <strong style="display: block; color: var(--color-text-main);">${p.nombre_completo}</strong>
-                ${p.usuario_windows ? `<span style="font-size: 0.75rem; color: var(--color-text-muted);">Win: ${p.usuario_windows}</span>` : ''}
-              </div>
+    keys.forEach(key => {
+      const g = grupos[key];
+      const esGeneral = key === 'SIN_PROYECTO';
+      const headerIcon = esGeneral ? '🏢' : '📁';
+      const headerBg = esGeneral ? '#f8fafc' : '#f0fdf4';
+      const headerColor = esGeneral ? '#475569' : '#166534';
+      const headerBorder = esGeneral ? '#e2e8f0' : '#bbf7d0';
+
+      htmlContent += `
+        <div style="margin-bottom: 1.75rem; border: 1px solid var(--border-container); border-radius: 10px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <!-- Header del Grupo / Proyecto -->
+          <div style="background: ${headerBg}; border-bottom: 1px solid ${headerBorder}; padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.1rem;">${headerIcon}</span>
+              <strong style="color: ${headerColor}; font-size: 0.95rem;">${g.nombre}</strong>
             </div>
-          </td>
-          <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.82rem; color: var(--color-text-muted);">${p.rut || '—'}</td>
-          <td style="padding: 0.85rem 1rem; color: var(--color-text-main);">${p.cargo || 'Personal'}</td>
-          <td style="padding: 0.85rem 1rem;">${badgeRol}</td>
-          <td style="padding: 0.85rem 1rem;">
-            <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem;">
-              ${p.email ? `<span>✉️ ${p.email}</span>` : ''}
-              ${p.telefono_whatsapp ? `<span>📱 ${p.telefono_whatsapp}</span>` : ''}
-            </div>
-          </td>
-          <td style="padding: 0.85rem 1rem; font-size: 0.82rem;">${proyAsignado}</td>
-          <td style="padding: 0.85rem 1rem; text-align: right;">
-            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
-              <button class="btn btn-secondary" onclick="obtenerEnlaceActivacion('${p.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" title="Generar / Ver Enlace de Activación Directo">
-                🔗 Enlace
-              </button>
-              <button class="btn btn-secondary" onclick="eliminarPersonalDeDotacion('${p.id}', '${(p.nombre_completo || '').replace(/'/g, "\\'")}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" title="Eliminar de la Dotación">
-                🗑️
-              </button>
-            </div>
-          </td>
-        </tr>
+            <span class="module-pill" style="background: #ffffff; color: ${headerColor}; border-color: ${headerBorder}; font-weight: 600;">
+              👥 ${g.integrantes.length} ${g.integrantes.length === 1 ? 'Integrante' : 'Integrantes'}
+            </span>
+          </div>
+
+          <!-- Tabla de Integrantes del Grupo -->
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: #fafafa; border-bottom: 1px solid var(--border-container); color: var(--color-text-muted); font-weight: 600; font-size: 0.8rem;">
+                  <th style="padding: 0.6rem 1rem;">Colaborador</th>
+                  <th style="padding: 0.6rem 1rem;">RUT</th>
+                  <th style="padding: 0.6rem 1rem;">Cargo</th>
+                  <th style="padding: 0.6rem 1rem;">Rol Plataforma</th>
+                  <th style="padding: 0.6rem 1rem;">Contacto</th>
+                  <th style="padding: 0.6rem 1rem; text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${g.integrantes.map(p => {
+                  const iniciales = (p.nombre_completo || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+                  let badgeRol = '<span class="module-pill" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">Cubicador / Operario</span>';
+                  if (p.rol_organizacional === 'fundador' || p.rol_organizacional === 'admin_empresa') {
+                    badgeRol = '<span class="module-pill" style="background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;">👑 Fundador</span>';
+                  } else if (p.rol_organizacional === 'admin_proyecto' || p.rol_organizacional === 'admin') {
+                    badgeRol = '<span class="module-pill" style="background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe;">🛡️ Admin Proyecto</span>';
+                  }
+
+                  return `
+                    <tr style="border-bottom: 1px solid var(--border-container); transition: background 0.15s ease;">
+                      <td style="padding: 0.75rem 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.65rem;">
+                          <div style="width: 32px; height: 32px; border-radius: 50%; background: #059669; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">
+                            ${iniciales}
+                          </div>
+                          <div>
+                            <strong style="display: block; color: var(--color-text-main);">${p.nombre_completo}</strong>
+                            ${p.usuario_windows ? `<span style="font-size: 0.75rem; color: var(--color-text-muted);">Win: ${p.usuario_windows}</span>` : ''}
+                          </div>
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.82rem; color: var(--color-text-muted);">${p.rut || '—'}</td>
+                      <td style="padding: 0.75rem 1rem; color: var(--color-text-main);">${p.cargo || 'Personal'}</td>
+                      <td style="padding: 0.75rem 1rem;">${badgeRol}</td>
+                      <td style="padding: 0.75rem 1rem;">
+                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.15rem;">
+                          ${p.email ? `<span>✉️ ${p.email}</span>` : ''}
+                          ${p.telefono_whatsapp ? `<span>📱 ${p.telefono_whatsapp}</span>` : ''}
+                        </div>
+                      </td>
+                      <td style="padding: 0.75rem 1rem; text-align: right;">
+                        <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
+                          <button class="btn btn-secondary" onclick="obtenerEnlaceActivacion('${p.id}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" title="Generar / Ver Enlace de Activación Directo">
+                            🔗 Enlace
+                          </button>
+                          <button class="btn btn-secondary" onclick="eliminarPersonalDeDotacion('${p.id}', '${(p.nombre_completo || '').replace(/'/g, "\\'")}')" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" title="Eliminar de la Dotación">
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
       `;
-    }).join('');
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">Error al cargar dotación: ${err.message}</td></tr>`;
+    });
+
+    container.innerHTML = htmlContent;
+
+  } catch (error) {
+    console.error('Error cargando dotación:', error);
+    container.innerHTML = `
+      <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; padding: 1.5rem; border-radius: 8px; text-align: center;">
+        ❌ No se pudo cargar la dotación de personal: ${error.message}
+      </div>
+    `;
   }
 }
 
