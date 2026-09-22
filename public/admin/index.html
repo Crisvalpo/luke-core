@@ -32,8 +32,8 @@
   <div class="app-container">
     <!-- Sidebar (Supabase Style Collapsed/Expandable) -->
     <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo">L</div>
+      <div class="brand-header" onclick="abrirModalMiPerfil()" style="cursor: pointer;" title="Editar Mi Perfil / Configuración">
+        <div class="brand-logo" id="brand-user-avatar">L</div>
         <div class="brand-info">
           <div id="user-name-label" class="user-name-label" style="font-weight: 600;">Usuario</div>
           <div style="margin-top: 3px;">
@@ -692,6 +692,33 @@
         <div id="wa-loading-spinner" style="display: flex; flex-direction: column; align-items: center; padding: 2rem 0;">
           <div style="width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
           <span style="margin-top: 1rem; font-size: 0.85rem; color: #64748b;">Consultando puente WhatsApp...</span>
+        </div>
+
+        <!-- Guía de Comandos Válidos del Bot Staff (Estilo Telegram) -->
+        <div style="margin-top: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; text-align: left;">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.4rem;">
+            <span>🤖</span> <span>Comandos Interativos de WhatsApp (Staff Bot)</span>
+          </h4>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 0.75rem 0;">
+            Si tu número de WhatsApp está registrado como Staff / Super-Admin, puedes enviar estos comandos directamente al chat del Bot:
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; font-family: monospace;">
+            <div style="background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+              <strong style="color: #0284c7;">/nuevocliente</strong> — Inicia el asistente conversacional paso a paso para dar de alta una nueva empresa (7 pasos).
+            </div>
+            <div style="background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+              <strong style="color: #0284c7;">/empresas</strong> — Muestra la lista de empresas clientes activas, sus RUTs y resumen de dotación/proyectos.
+            </div>
+            <div style="background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+              <strong style="color: #0284c7;">/estado</strong> — Muestra el diagnóstico y tiempo de actividad del servidor Luke Core.
+            </div>
+            <div style="background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+              <strong style="color: #0284c7;">/cancelar</strong> — Cancela en cualquier momento el asistente conversacional activo.
+            </div>
+            <div style="background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+              <strong style="color: #0284c7;">/ayuda</strong> — Muestra el menú de ayuda interactivo.
+            </div>
+          </div>
         </div>
       </div>
 

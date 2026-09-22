@@ -170,3 +170,49 @@ personalRouter.post('/:id/enlace-invitacion', async (req: Request, res: Response
     next(error);
   }
 });
+
+const updatePerfilSchema = z.object({
+  nombre_completo: z.string().min(3).optional(),
+  telefono_whatsapp: z.string().optional().nullable(),
+  avatar_url: z.string().optional().nullable()
+});
+
+// Actualizar perfil del usuario autenticado
+personalRouter.put('/perfil', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userEmail = (req as any).user?.email;
+    const body = updatePerfilSchema.parse(req.body);
+    const telefonoNorm = body.telefono_whatsapp ? normalizarTelefonoChileno(body.telefono_whatsapp) : null;
+
+    let updatedPersonal: any = null;
+
+    if (userEmail) {
+      const existingRes = await query('SELECT * FROM core.personal WHERE LOWER(email) = LOWER($1)', [userEmail.trim()]);
+      if (existingRes.rowCount! > 0) {
+        const pers = existingRes.rows[0];
+        const newMetadata = { ...(pers.metadata || {}), avatar_url: body.avatar_url ?? pers.metadata?.avatar_url ?? null };
+
+        const updateRes = await query(`
+          UPDATE core.personal
+          SET 
+            nombre_completo = COALESCE($1, nombre_completo),
+            telefono_whatsapp = COALESCE($2, telefono_whatsapp),
+            metadata = $3::jsonb,
+            updated_at = NOW()
+          WHERE id = $4
+          RETURNING *;
+        `, [body.nombre_completo || null, telefonoNorm, JSON.stringify(newMetadata), pers.id]);
+        updatedPersonal = updateRes.rows[0];
+      }
+    }
+
+    return sendSuccess(res, updatedPersonal || {
+      nombre_completo: body.nombre_completo,
+      telefono_whatsapp: telefonoNorm,
+      avatar_url: body.avatar_url
+    }, 200, { mensaje: 'Perfil actualizado exitosamente.' });
+  } catch (error) {
+    next(error);
+  }
+});
+

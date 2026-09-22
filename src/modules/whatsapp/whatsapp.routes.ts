@@ -81,3 +81,31 @@ whatsappRouter.post('/logout', async (req: Request, res: Response, next: NextFun
     return sendError(res, error.message || 'Error al cerrar sesión de WhatsApp', 500);
   }
 });
+
+import { BotCommandService } from './bot-command.service.js';
+
+/**
+ * POST /api/v1/whatsapp/webhook — Webhook conversacional para comandos y asistentes de WhatsApp
+ */
+whatsappRouter.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { from, body, message, pushName, phone } = req.body;
+    const telefono = phone || from || '';
+    const texto = body || message || '';
+
+    if (!telefono || !texto) {
+      return sendError(res, 'Falta teléfono o texto en la petición de webhook', 400);
+    }
+
+    const respuestaBot = await BotCommandService.procesarMensajeEntrante({
+      telefonoRemoto: String(telefono),
+      texto: String(texto),
+      nombreRemoto: pushName ? String(pushName) : undefined
+    });
+
+    return sendSuccess(res, { respuesta: respuestaBot }, 200);
+  } catch (error: any) {
+    next(error);
+  }
+});
+
