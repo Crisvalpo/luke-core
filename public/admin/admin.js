@@ -413,13 +413,35 @@ function renderizarTenants(tenants) {
 
 function toggleMenuAcciones(event, tenantId) {
   event.stopPropagation();
+  const btn = event.currentTarget;
   const dropdown = document.getElementById(`dropdown-${tenantId}`);
-  const todos = document.querySelectorAll('.actions-dropdown');
-  todos.forEach(d => {
-    if (d !== dropdown) d.style.display = 'none';
-  });
-  if (dropdown) {
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+  if (!dropdown) return;
+
+  const estaVisible = dropdown.style.display === 'block';
+
+  cerrarTodosDropdowns();
+
+  if (!estaVisible) {
+    dropdown.style.display = 'block';
+    dropdown.style.position = 'fixed';
+    dropdown.style.zIndex = '99999';
+
+    const rect = btn.getBoundingClientRect();
+    const dropdownWidth = 195;
+    const dropdownHeight = 170;
+
+    let left = rect.right - dropdownWidth;
+    if (left < 10) left = 10;
+
+    let top = rect.bottom + 5;
+    // Si queda cortado por la parte inferior de la ventana, abrir hacia arriba
+    if (top + dropdownHeight > window.innerHeight - 10) {
+      top = rect.top - dropdownHeight - 5;
+    }
+
+    dropdown.style.top = `${top}px`;
+    dropdown.style.left = `${left}px`;
+    dropdown.style.right = 'auto';
   }
 }
 
@@ -430,6 +452,8 @@ function cerrarTodosDropdowns() {
 }
 
 document.addEventListener('click', cerrarTodosDropdowns);
+window.addEventListener('scroll', cerrarTodosDropdowns, { passive: true });
+window.addEventListener('resize', cerrarTodosDropdowns);
 
 async function renderizarVistaProyectosTenant(tenant) {
   const container = document.getElementById('tenants-container');
