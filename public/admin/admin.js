@@ -35,8 +35,9 @@ function aplicarEstiloSidebarPorRol(user) {
 
   const avatarElem = document.getElementById('brand-user-avatar') || document.querySelector('.brand-logo');
   if (avatarElem && user.avatar_url && user.avatar_url.trim().startsWith('http')) {
-    avatarElem.innerHTML = `<img src="${user.avatar_url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">`;
+    avatarElem.innerHTML = `<img src="${user.avatar_url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: block;">`;
     avatarElem.style.background = 'transparent';
+    avatarElem.style.overflow = 'hidden';
   }
 
   if (rol === 'super_admin' || rol === 'staff') {
@@ -1889,6 +1890,7 @@ function cerrarModalMiPerfil() {
 
 function actualizarPreviewAvatarPerfil(url, nombreOpt) {
   const preview = document.getElementById('perfil-avatar-preview');
+  const btnReajustar = document.getElementById('btn-reajustar-avatar');
   if (!preview) return;
 
   const userJson = localStorage.getItem('luke_core_user');
@@ -1900,10 +1902,254 @@ function actualizarPreviewAvatarPerfil(url, nombreOpt) {
   const iniciales = (nombre || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 
   if (url && url.trim().startsWith('http')) {
-    preview.innerHTML = `<img src="${url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+    preview.innerHTML = `<img src="${url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">`;
+    preview.style.background = 'transparent';
+    if (btnReajustar) btnReajustar.style.display = 'inline-block';
   } else {
     preview.innerText = iniciales;
     preview.style.background = '#059669';
+    if (btnReajustar) btnReajustar.style.display = 'none';
+  }
+}
+
+// -----------------------------------------------------------------------------
+// EDITOR / AJUSTADOR DE AVATAR INTERACTIVO (CROP, PAN, ZOOM, ROTATE)
+// -----------------------------------------------------------------------------
+const avatarCropper = {
+  img: null,
+  imgLoaded: false,
+  x: 0,
+  y: 0,
+  scale: 1,
+  minScale: 0.5,
+  rotation: 0,
+  isDragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  viewportSize: 220,
+  outputSize: 400
+};
+
+function initAvatarCropperEvents() {
+  const viewport = document.getElementById('cropper-viewport');
+  if (!viewport || viewport.dataset.initialized) return;
+  viewport.dataset.initialized = 'true';
+
+  const onDragStart = (clientX, clientY) => {
+    if (!avatarCropper.imgLoaded) return;
+    avatarCropper.isDragging = true;
+    avatarCropper.dragStartX = clientX - avatarCropper.x;
+    avatarCropper.dragStartY = clientY - avatarCropper.y;
+    viewport.style.cursor = 'grabbing';
+  };
+
+  const onDragMove = (clientX, clientY) => {
+    if (!avatarCropper.isDragging) return;
+    avatarCropper.x = clientX - avatarCropper.dragStartX;
+    avatarCropper.y = clientY - avatarCropper.dragStartY;
+    actualizarTransformacionCropper();
+  };
+
+  const onDragEnd = () => {
+    avatarCropper.isDragging = false;
+    if (viewport) viewport.style.cursor = 'grab';
+  };
+
+  viewport.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    onDragStart(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', (e) => onDragMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', onDragEnd);
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && avatarCropper.isDragging) {
+      onDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+  window.addEventListener('touchend', onDragEnd);
+
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    ajustarZoomRelativo(delta);
+  }, { passive: false });
+}
+
+function prepararEditorAvatar(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    abrirEditorAvatarConUrl(e.target.result);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function abrirEditorAvatarConUrlActual() {
+  const url = document.getElementById('perfil-avatar-url')?.value;
+  if (!url) return;
+  abrirEditorAvatarConUrl(url);
+}
+
+function abrirEditorAvatarConUrl(url) {
+  initAvatarCropperEvents();
+  const imgElem = document.getElementById('cropper-image');
+  const modal = document.getElementById('modal-ajustar-avatar');
+  if (!imgElem || !modal) return;
+
+  avatarCropper.imgLoaded = false;
+  imgElem.src = '';
+
+  const tempImg = new Image();
+  tempImg.crossOrigin = 'anonymous';
+  tempImg.onload = () => {
+    avatarCropper.img = tempImg;
+    avatarCropper.imgLoaded = true;
+
+    const vSize = avatarCropper.viewportSize;
+    const baseScale = Math.max(vSize / tempImg.naturalWidth, vSize / tempImg.naturalHeight);
+    avatarCropper.minScale = Math.max(0.2, baseScale * 0.5);
+    avatarCropper.scale = baseScale;
+    avatarCropper.rotation = 0;
+    avatarCropper.x = 0;
+    avatarCropper.y = 0;
+
+    const zoomSlider = document.getElementById('cropper-zoom');
+    if (zoomSlider) {
+      zoomSlider.min = (baseScale * 0.6).toFixed(2);
+      zoomSlider.max = (baseScale * 3.5).toFixed(2);
+      zoomSlider.step = ((zoomSlider.max - zoomSlider.min) / 100).toFixed(3);
+      zoomSlider.value = baseScale.toFixed(2);
+    }
+
+    imgElem.src = tempImg.src;
+    imgElem.style.width = `${tempImg.naturalWidth}px`;
+    imgElem.style.height = `${tempImg.naturalHeight}px`;
+
+    actualizarTransformacionCropper();
+    modal.classList.add('active');
+  };
+  tempImg.src = url;
+}
+
+function cerrarEditorAvatar() {
+  const modal = document.getElementById('modal-ajustar-avatar');
+  if (modal) modal.classList.remove('active');
+}
+
+function actualizarTransformacionCropper() {
+  const imgElem = document.getElementById('cropper-image');
+  const zoomSlider = document.getElementById('cropper-zoom');
+  if (!imgElem || !avatarCropper.imgLoaded) return;
+
+  if (zoomSlider && document.activeElement === zoomSlider) {
+    avatarCropper.scale = parseFloat(zoomSlider.value) || 1;
+  }
+
+  const vHalf = avatarCropper.viewportSize / 2;
+  imgElem.style.transform = `translate(${vHalf + avatarCropper.x - avatarCropper.img.naturalWidth / 2}px, ${vHalf + avatarCropper.y - avatarCropper.img.naturalHeight / 2}px) rotate(${avatarCropper.rotation}deg) scale(${avatarCropper.scale})`;
+}
+
+function ajustarZoomRelativo(delta) {
+  const zoomSlider = document.getElementById('cropper-zoom');
+  if (!zoomSlider || !avatarCropper.imgLoaded) return;
+  let nuevo = avatarCropper.scale + delta;
+  nuevo = Math.max(parseFloat(zoomSlider.min), Math.min(parseFloat(zoomSlider.max), nuevo));
+  avatarCropper.scale = nuevo;
+  zoomSlider.value = nuevo.toFixed(2);
+  actualizarTransformacionCropper();
+}
+
+function rotarImagenCropper(grados) {
+  avatarCropper.rotation = (avatarCropper.rotation + grados) % 360;
+  actualizarTransformacionCropper();
+}
+
+function resetearCropper() {
+  const zoomSlider = document.getElementById('cropper-zoom');
+  if (zoomSlider) zoomSlider.value = avatarCropper.minScale ? (avatarCropper.minScale * 2).toFixed(2) : '1';
+  avatarCropper.scale = zoomSlider ? parseFloat(zoomSlider.value) : 1;
+  avatarCropper.x = 0;
+  avatarCropper.y = 0;
+  avatarCropper.rotation = 0;
+  actualizarTransformacionCropper();
+}
+
+async function aplicarRecorteAvatar() {
+  if (!avatarCropper.imgLoaded || !avatarCropper.img) return;
+
+  const btn = document.getElementById('btn-aplicar-crop');
+  const textoOriginal = btn ? btn.innerText : 'Aplicar y Guardar Foto';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Procesando y Subiendo...';
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    const outSize = avatarCropper.outputSize;
+    canvas.width = outSize;
+    canvas.height = outSize;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const factor = outSize / avatarCropper.viewportSize;
+
+    ctx.save();
+    ctx.translate(outSize / 2 + avatarCropper.x * factor, outSize / 2 + avatarCropper.y * factor);
+    ctx.rotate((avatarCropper.rotation * Math.PI) / 180);
+    ctx.scale(avatarCropper.scale * factor, avatarCropper.scale * factor);
+    ctx.drawImage(
+      avatarCropper.img,
+      -avatarCropper.img.naturalWidth / 2,
+      -avatarCropper.img.naturalHeight / 2
+    );
+    ctx.restore();
+
+    const base64 = canvas.toDataURL('image/jpeg', 0.92);
+
+    const res = await fetch('/api/v1/storage/upload', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        filename: `avatar-${Date.now()}.jpg`,
+        base64: base64,
+        contentType: 'image/jpeg',
+        bucket: 'core-logos'
+      })
+    });
+
+    if (res.status === 401) {
+      alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+      cerrarSesion();
+      return;
+    }
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al subir imagen');
+
+    const nuevaUrl = json.data.url;
+    const inputUrl = document.getElementById('perfil-avatar-url');
+    if (inputUrl) inputUrl.value = nuevaUrl;
+
+    actualizarPreviewAvatarPerfil(nuevaUrl);
+    cerrarEditorAvatar();
+  } catch (err) {
+    alert(`Error al ajustar y subir imagen: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = textoOriginal;
+    }
   }
 }
 
@@ -1941,10 +2187,10 @@ async function guardarMiPerfil() {
     // Actualizar UI del sidebar
     aplicarEstiloSidebarPorRol(user);
 
-    alert('✅ Tu perfil ha sido actualizado exitosamente.');
+    alert('Tu perfil ha sido actualizado exitosamente.');
     cerrarModalMiPerfil();
   } catch (error) {
-    alert(`❌ Error al actualizar perfil: ${error.message}`);
+    alert(`Error al actualizar perfil: ${error.message}`);
   } finally {
     if (btn) btn.innerText = textoOriginal;
   }
