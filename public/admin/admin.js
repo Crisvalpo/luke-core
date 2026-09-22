@@ -23,6 +23,12 @@ function aplicarEstiloSidebarPorRol(user) {
     nameLabel.title = nombre;
   }
 
+  const avatarElem = document.getElementById('brand-user-avatar') || document.querySelector('.brand-logo');
+  if (avatarElem && user.avatar_url && user.avatar_url.trim().startsWith('http')) {
+    avatarElem.innerHTML = `<img src="${user.avatar_url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">`;
+    avatarElem.style.background = 'transparent';
+  }
+
   if (rol === 'super_admin' || rol === 'staff') {
     sidebar.classList.add('theme-staff');
     if (roleBadge) {
@@ -285,82 +291,98 @@ function renderizarTenants(tenants) {
     return;
   }
 
-  container.innerHTML = tenants.map(t => {
+  let htmlRows = tenants.map(t => {
     const colorPrimario = t.config?.color_primario || '#10b981';
     const modulos = t.config?.modulos_activos || ['core'];
     const logoUrl = t.config?.logo_url;
     const estadoBadge = t.activo 
-      ? `<span class="module-pill" style="background: #dcfce7; color: #16a34a; border-color: #86efac;">🟢 Activa</span>`
-      : `<span class="module-pill" style="background: #fee2e2; color: #c21a25; border-color: #fca5a5;">🔴 Pausada</span>`;
+      ? `<span class="module-pill" style="background: #dcfce7; color: #16a34a; border-color: #86efac; font-weight: 600;">🟢 Activa</span>`
+      : `<span class="module-pill" style="background: #fee2e2; color: #c21a25; border-color: #fca5a5; font-weight: 600;">🔴 Pausada</span>`;
 
     const logoHtml = logoUrl 
-      ? `<img src="${logoUrl}" alt="${t.razon_social}" style="width: 44px; height: 44px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border-container); padding: 2px; background: #ffffff; flex-shrink: 0;">`
-      : `<div class="brand-logo" style="width: 44px; height: 44px; font-size: 1.1rem; background: ${colorPrimario}; border-radius: 8px; flex-shrink: 0;">${t.razon_social.charAt(0)}</div>`;
+      ? `<img src="${logoUrl}" alt="${t.razon_social}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-container); padding: 2px; background: #ffffff; flex-shrink: 0;">`
+      : `<div class="brand-logo" style="width: 36px; height: 36px; font-size: 0.95rem; background: ${colorPrimario}; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700;">${t.razon_social.charAt(0)}</div>`;
+
+    const razonLimpia = (t.razon_social || '').replace(/'/g, "\\'");
 
     return `
-      <article class="tenant-card" style="border-top-color: ${colorPrimario};">
-        <div class="tenant-header">
-          <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+      <tr style="border-bottom: 1px solid var(--border-container, #e2e8f0); transition: background 0.15s ease; cursor: pointer;" 
+          onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${razonLimpia}')"
+          onmouseover="this.style.background='#f8fafc'" 
+          onmouseout="this.style.background='transparent'">
+        <td style="padding: 0.85rem 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
             ${logoHtml}
-            <div class="tenant-title" style="min-width: 0;">
-              <h3 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.razon_social}</h3>
-              <div class="tenant-rut">RUT: <strong>${t.rut}</strong></div>
+            <div>
+              <strong style="color: var(--color-text-main); font-size: 0.9rem; display: block;">${t.razon_social}</strong>
+              <span class="tenant-slug" style="font-size: 0.75rem; color: var(--color-text-muted);">${t.slug}</span>
             </div>
           </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex-shrink: 0;">
-            <span class="tenant-slug">${t.slug}</span>
-            ${estadoBadge}
+        </td>
+        <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.85rem; color: var(--color-text-muted);">${t.rut || '—'}</td>
+        <td style="padding: 0.85rem 1rem;">${estadoBadge}</td>
+        <td style="padding: 0.85rem 1rem;">
+          <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+            <span class="module-pill" style="background: #f1f5f9; color: #334155; border-color: #cbd5e1;" title="Total de Proyectos">📁 ${t.total_proyectos || 0} Proyectos</span>
+            <span class="module-pill" style="background: #f1f5f9; color: #334155; border-color: #cbd5e1;" title="Dotación de Personal">👥 ${t.total_personal || 0} Dotación</span>
           </div>
-        </div>
-
-        <div class="tenant-stats">
-          <div class="stat-item">
-            <span>Proyectos</span>
-            <span>${t.total_proyectos || 0}</span>
+        </td>
+        <td style="padding: 0.85rem 1rem;">
+          <div style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+            ${modulos.slice(0, 4).map(m => {
+              const labels = {
+                core: '⚙️ Core',
+                piping: '🔩 Piping',
+                equipos: '🚜 Equipos',
+                ingesta_masiva: '📊 Excel',
+                cuadrillas: '👷 Cuadrillas'
+              };
+              return `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">${labels[m] || m}</span>`;
+            }).join('')}
+            ${modulos.length > 4 ? `<span class="module-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">+${modulos.length - 4}</span>` : ''}
           </div>
-          <div class="stat-item">
-            <span>Dotación</span>
-            <span>${t.total_personal || 0}</span>
+        </td>
+        <td style="padding: 0.85rem 1rem; text-align: right;" onclick="event.stopPropagation()">
+          <div style="display: inline-flex; gap: 0.35rem; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Editar Parámetros de la Empresa">
+              ✏️ Editar
+            </button>
+            <button class="btn btn-secondary" onclick="verDotacionTenant('${t.id}', '${razonLimpia}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Ver Dotación de Personal">
+              👥 Dotación
+            </button>
+            <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="padding: 0.35rem 0.55rem; font-size: 0.75rem;" title="Carga Masiva de Datos Excel">
+              📊 Excel
+            </button>
+            <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${razonLimpia}')" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" title="Ver Proyectos de la Empresa">
+              📁 Proyectos
+            </button>
           </div>
-          <div class="stat-item">
-            <span>Flota</span>
-            <span>${t.total_equipos || 0}</span>
-          </div>
-        </div>
-
-        <div class="tenant-modules">
-          ${modulos.map(m => {
-            const labels = {
-              core: '⚙️ Core Base',
-              piping: '🔩 Piping',
-              equipos: '🚜 Equipos',
-              combustible: '⛽ Combustible',
-              ingesta_masiva: '📊 Ingesta Excel',
-              partes_diarios: '📋 Partes Diarios',
-              cuadrillas: '👷 Cuadrillas',
-              mantenimiento: '🛠️ Mantenimiento'
-            };
-            return `<span class="module-pill">${labels[m] || m}</span>`;
-          }).join('')}
-        </div>
-
-        <div class="tenant-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button class="btn btn-secondary" onclick="abrirModalEdicion('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
-            ✏️ Editar
-          </button>
-          <button class="btn btn-secondary" onclick="verDotacionTenant('${t.id}', '${(t.razon_social || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
-            👥 Dotación
-          </button>
-          <button class="btn btn-secondary" onclick="abrirModalIngesta('${t.id}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
-            📊 Cargar Excel
-          </button>
-          <button class="btn btn-primary" onclick="abrirModalFaenas('${t.id}', '${t.slug}', '${(t.razon_social || '').replace(/'/g, "\\'")}')" style="flex: 1; font-size: 0.75rem; padding: 0.4rem;">
-            📁 Proyectos
-          </button>
-        </div>
-      </article>
+        </td>
+      </tr>
     `;
   }).join('');
+
+  container.innerHTML = `
+    <div style="grid-column: 1 / -1; background: var(--bg-container); border: 1px solid var(--border-container); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-subtle);">
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-container); color: var(--color-text-muted); font-weight: 600; font-size: 0.8rem;">
+              <th style="padding: 0.75rem 1rem;">Empresa / Cliente</th>
+              <th style="padding: 0.75rem 1rem;">RUT</th>
+              <th style="padding: 0.75rem 1rem;">Estado</th>
+              <th style="padding: 0.75rem 1rem;">Resumen Operativo</th>
+              <th style="padding: 0.75rem 1rem;">Módulos Habilitados</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${htmlRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
 async function renderizarVistaProyectosTenant(tenant) {
@@ -1796,4 +1818,129 @@ function abrirModalInvitarAdminDirecto() {
   const tenantId = user?.tenant_id || (todosLosTenants[0]?.id) || '';
   abrirModalInvitarAdmin(tenantId);
 }
+
+// =============================================================================
+// GESTIÓN DE MI PERFIL DE USUARIO
+// =============================================================================
+function abrirModalMiPerfil() {
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
+  }
+  if (!user) return;
+
+  const inputNombre = document.getElementById('perfil-nombre');
+  const inputEmail = document.getElementById('perfil-email');
+  const inputTel = document.getElementById('perfil-telefono');
+  const inputAvatar = document.getElementById('perfil-avatar-url');
+
+  if (inputNombre) inputNombre.value = user.nombre_completo || '';
+  if (inputEmail) inputEmail.value = user.email || '';
+  if (inputTel) inputTel.value = user.telefono_whatsapp || '';
+  if (inputAvatar) inputAvatar.value = user.avatar_url || user.metadata?.avatar_url || '';
+
+  actualizarPreviewAvatarPerfil(user.avatar_url || user.metadata?.avatar_url, user.nombre_completo);
+  const modal = document.getElementById('modal-mi-perfil');
+  if (modal) modal.classList.add('active');
+}
+
+function cerrarModalMiPerfil() {
+  const modal = document.getElementById('modal-mi-perfil');
+  if (modal) modal.classList.remove('active');
+}
+
+function actualizarPreviewAvatarPerfil(url, nombreOpt) {
+  const preview = document.getElementById('perfil-avatar-preview');
+  if (!preview) return;
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let nombre = nombreOpt;
+  if (!nombre && userJson) {
+    try { nombre = JSON.parse(userJson).nombre_completo; } catch {}
+  }
+
+  const iniciales = (nombre || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+  if (url && url.trim().startsWith('http')) {
+    preview.innerHTML = `<img src="${url.trim()}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+  } else {
+    preview.innerText = iniciales;
+    preview.style.background = '#059669';
+  }
+}
+
+async function guardarMiPerfil() {
+  const btn = document.getElementById('btn-guardar-perfil');
+  const textoOriginal = btn ? btn.innerText : 'Guardar Cambios';
+  if (btn) btn.innerText = 'Guardando...';
+
+  const nuevoNombre = document.getElementById('perfil-nombre')?.value.trim();
+  const nuevoTelefono = document.getElementById('perfil-telefono')?.value.trim();
+  const nuevoAvatarUrl = document.getElementById('perfil-avatar-url')?.value.trim();
+
+  try {
+    const res = await fetch('/api/v1/personal/perfil', {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        nombre_completo: nuevoNombre,
+        telefono_whatsapp: nuevoTelefono,
+        avatar_url: nuevoAvatarUrl || null
+      })
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al actualizar perfil');
+
+    // Actualizar localStorage y UI
+    const userJson = localStorage.getItem('luke_core_user');
+    let user = userJson ? JSON.parse(userJson) : {};
+    user.nombre_completo = nuevoNombre;
+    user.telefono_whatsapp = nuevoTelefono;
+    user.avatar_url = nuevoAvatarUrl;
+    localStorage.setItem('luke_core_user', JSON.stringify(user));
+
+    // Actualizar UI del sidebar
+    aplicarEstiloSidebarPorRol(user);
+
+    alert('✅ Tu perfil ha sido actualizado exitosamente.');
+    cerrarModalMiPerfil();
+  } catch (error) {
+    alert(`❌ Error al actualizar perfil: ${error.message}`);
+  } finally {
+    if (btn) btn.innerText = textoOriginal;
+  }
+}
+
+async function solicitarCambioClavePerfil() {
+  const userJson = localStorage.getItem('luke_core_user');
+  let user = null;
+  if (userJson) {
+    try { user = JSON.parse(userJson); } catch {}
+  }
+  if (!user?.email) {
+    alert('❌ No se encontró tu correo electrónico registrado.');
+    return;
+  }
+
+  if (!confirm(`🔑 Se enviará un enlace directo de restablecimiento de contraseña a "${user.email}". ¿Deseas continuar?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/v1/access/recovery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error enviando enlace');
+
+    alert(`✅ Enlace enviado. Revisa tu bandeja de correo "${user.email}" para definir tu nueva contraseña.`);
+  } catch (error) {
+    alert(`❌ ${error.message}`);
+  }
+}
+
 
