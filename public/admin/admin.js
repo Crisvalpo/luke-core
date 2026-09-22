@@ -1913,15 +1913,13 @@ function actualizarPreviewAvatarPerfil(url, nombreOpt) {
 }
 
 // -----------------------------------------------------------------------------
-// EDITOR / AJUSTADOR DE AVATAR INTERACTIVO (CROP, PAN, ZOOM, ROTATE)
+// EDITOR / AJUSTADOR DE AVATAR INTERACTIVO BASADO EN CANVAS 2D PURO
 // -----------------------------------------------------------------------------
 const avatarCropper = {
   img: null,
-  imgLoaded: false,
-  x: 0,
-  y: 0,
-  scale: 1,
-  minScale: 0.5,
+  panX: 0,
+  panY: 0,
+  zoom: 1,
   rotation: 0,
   isDragging: false,
   dragStartX: 0,
@@ -1931,50 +1929,50 @@ const avatarCropper = {
 };
 
 function initAvatarCropperEvents() {
-  const viewport = document.getElementById('cropper-viewport');
-  if (!viewport || viewport.dataset.initialized) return;
-  viewport.dataset.initialized = 'true';
+  const canvas = document.getElementById('cropper-canvas');
+  if (!canvas || canvas.dataset.initialized) return;
+  canvas.dataset.initialized = 'true';
 
   const onDragStart = (clientX, clientY) => {
-    if (!avatarCropper.imgLoaded) return;
+    if (!avatarCropper.img) return;
     avatarCropper.isDragging = true;
-    avatarCropper.dragStartX = clientX - avatarCropper.x;
-    avatarCropper.dragStartY = clientY - avatarCropper.y;
-    viewport.style.cursor = 'grabbing';
+    avatarCropper.dragStartX = clientX - avatarCropper.panX;
+    avatarCropper.dragStartY = clientY - avatarCropper.panY;
+    canvas.style.cursor = 'grabbing';
   };
 
   const onDragMove = (clientX, clientY) => {
     if (!avatarCropper.isDragging) return;
-    avatarCropper.x = clientX - avatarCropper.dragStartX;
-    avatarCropper.y = clientY - avatarCropper.dragStartY;
-    actualizarTransformacionCropper();
+    avatarCropper.panX = clientX - avatarCropper.dragStartX;
+    avatarCropper.panY = clientY - avatarCropper.dragStartY;
+    renderCropper();
   };
 
   const onDragEnd = () => {
     avatarCropper.isDragging = false;
-    if (viewport) viewport.style.cursor = 'grab';
+    if (canvas) canvas.style.cursor = 'grab';
   };
 
-  viewport.addEventListener('mousedown', (e) => {
+  canvas.addEventListener('mousedown', (e) => {
     e.preventDefault();
     onDragStart(e.clientX, e.clientY);
   });
   window.addEventListener('mousemove', (e) => onDragMove(e.clientX, e.clientY));
   window.addEventListener('mouseup', onDragEnd);
 
-  viewport.addEventListener('touchstart', (e) => {
+  canvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
       onDragStart(e.touches[0].clientX, e.touches[0].clientY);
     }
   }, { passive: false });
   window.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 1 && avatarCropper.isDragging) {
+    if (avatarCropper.isDragging && e.touches.length === 1) {
       onDragMove(e.touches[0].clientX, e.touches[0].clientY);
     }
   }, { passive: false });
   window.addEventListener('touchend', onDragEnd);
 
-  viewport.addEventListener('wheel', (e) => {
+  canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 0.08 : -0.08;
     ajustarZoomRelativo(delta);
@@ -2001,40 +1999,22 @@ function abrirEditorAvatarConUrlActual() {
 
 function abrirEditorAvatarConUrl(url) {
   initAvatarCropperEvents();
-  const imgElem = document.getElementById('cropper-image');
   const modal = document.getElementById('modal-ajustar-avatar');
-  if (!imgElem || !modal) return;
-
-  avatarCropper.imgLoaded = false;
-  imgElem.src = '';
+  if (!modal) return;
 
   const tempImg = new Image();
   tempImg.crossOrigin = 'anonymous';
   tempImg.onload = () => {
     avatarCropper.img = tempImg;
-    avatarCropper.imgLoaded = true;
-
-    const vSize = avatarCropper.viewportSize;
-    const baseScale = Math.max(vSize / tempImg.naturalWidth, vSize / tempImg.naturalHeight);
-    avatarCropper.minScale = Math.max(0.2, baseScale * 0.5);
-    avatarCropper.scale = baseScale;
+    avatarCropper.panX = 0;
+    avatarCropper.panY = 0;
+    avatarCropper.zoom = 1;
     avatarCropper.rotation = 0;
-    avatarCropper.x = 0;
-    avatarCropper.y = 0;
 
     const zoomSlider = document.getElementById('cropper-zoom');
-    if (zoomSlider) {
-      zoomSlider.min = (baseScale * 0.6).toFixed(2);
-      zoomSlider.max = (baseScale * 3.5).toFixed(2);
-      zoomSlider.step = ((zoomSlider.max - zoomSlider.min) / 100).toFixed(3);
-      zoomSlider.value = baseScale.toFixed(2);
-    }
+    if (zoomSlider) zoomSlider.value = '1';
 
-    imgElem.src = tempImg.src;
-    imgElem.style.width = `${tempImg.naturalWidth}px`;
-    imgElem.style.height = `${tempImg.naturalHeight}px`;
-
-    actualizarTransformacionCropper();
+    renderCropper();
     modal.classList.add('active');
   };
   tempImg.src = url;
@@ -2045,46 +2025,83 @@ function cerrarEditorAvatar() {
   if (modal) modal.classList.remove('active');
 }
 
-function actualizarTransformacionCropper() {
-  const imgElem = document.getElementById('cropper-image');
+function drawAvatarToCanvas(ctx, size) {
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+
+  if (!avatarCropper.img) return;
+
+  const ratio = size / avatarCropper.viewportSize;
+
+  ctx.save();
+  // 1. Mover al centro del canvas + pan proporcional
+  ctx.translate(size / 2 + avatarCropper.panX * ratio, size / 2 + avatarCropper.panY * ratio);
+
+  // 2. Rotar
+  ctx.rotate((avatarCropper.rotation * Math.PI) / 180);
+
+  // 3. Escalar: baseScale garantiza que la imagen cubra completamente el círculo
+  const isRotated = (Math.abs(avatarCropper.rotation) % 180) !== 0;
+  const w = isRotated ? avatarCropper.img.naturalHeight : avatarCropper.img.naturalWidth;
+  const h = isRotated ? avatarCropper.img.naturalWidth : avatarCropper.img.naturalHeight;
+  const baseScale = Math.max(size / w, size / h);
+  const totalScale = baseScale * avatarCropper.zoom;
+
+  ctx.scale(totalScale, totalScale);
+
+  // 4. Dibujar la imagen centrada respecto a su centro
+  ctx.drawImage(
+    avatarCropper.img,
+    -avatarCropper.img.naturalWidth / 2,
+    -avatarCropper.img.naturalHeight / 2
+  );
+  ctx.restore();
+}
+
+function renderCropper() {
+  const canvas = document.getElementById('cropper-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  drawAvatarToCanvas(ctx, avatarCropper.viewportSize);
+}
+
+function onZoomSliderChange() {
   const zoomSlider = document.getElementById('cropper-zoom');
-  if (!imgElem || !avatarCropper.imgLoaded) return;
-
-  if (zoomSlider && document.activeElement === zoomSlider) {
-    avatarCropper.scale = parseFloat(zoomSlider.value) || 1;
-  }
-
-  const vHalf = avatarCropper.viewportSize / 2;
-  imgElem.style.transform = `translate(${vHalf + avatarCropper.x - avatarCropper.img.naturalWidth / 2}px, ${vHalf + avatarCropper.y - avatarCropper.img.naturalHeight / 2}px) rotate(${avatarCropper.rotation}deg) scale(${avatarCropper.scale})`;
+  if (!zoomSlider) return;
+  avatarCropper.zoom = parseFloat(zoomSlider.value) || 1;
+  renderCropper();
 }
 
 function ajustarZoomRelativo(delta) {
   const zoomSlider = document.getElementById('cropper-zoom');
-  if (!zoomSlider || !avatarCropper.imgLoaded) return;
-  let nuevo = avatarCropper.scale + delta;
-  nuevo = Math.max(parseFloat(zoomSlider.min), Math.min(parseFloat(zoomSlider.max), nuevo));
-  avatarCropper.scale = nuevo;
+  if (!zoomSlider) return;
+  let nuevo = avatarCropper.zoom + delta;
+  nuevo = Math.max(1, Math.min(3, nuevo));
+  avatarCropper.zoom = nuevo;
   zoomSlider.value = nuevo.toFixed(2);
-  actualizarTransformacionCropper();
+  renderCropper();
 }
 
 function rotarImagenCropper(grados) {
   avatarCropper.rotation = (avatarCropper.rotation + grados) % 360;
-  actualizarTransformacionCropper();
+  renderCropper();
 }
 
 function resetearCropper() {
   const zoomSlider = document.getElementById('cropper-zoom');
-  if (zoomSlider) zoomSlider.value = avatarCropper.minScale ? (avatarCropper.minScale * 2).toFixed(2) : '1';
-  avatarCropper.scale = zoomSlider ? parseFloat(zoomSlider.value) : 1;
-  avatarCropper.x = 0;
-  avatarCropper.y = 0;
+  if (zoomSlider) zoomSlider.value = '1';
+  avatarCropper.zoom = 1;
+  avatarCropper.panX = 0;
+  avatarCropper.panY = 0;
   avatarCropper.rotation = 0;
-  actualizarTransformacionCropper();
+  renderCropper();
 }
 
 async function aplicarRecorteAvatar() {
-  if (!avatarCropper.imgLoaded || !avatarCropper.img) return;
+  if (!avatarCropper.img) return;
 
   const btn = document.getElementById('btn-aplicar-crop');
   const textoOriginal = btn ? btn.innerText : 'Aplicar y Guardar Foto';
@@ -2094,28 +2111,17 @@ async function aplicarRecorteAvatar() {
   }
 
   try {
-    const canvas = document.createElement('canvas');
-    const outSize = avatarCropper.outputSize;
-    canvas.width = outSize;
-    canvas.height = outSize;
-    const ctx = canvas.getContext('2d');
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = avatarCropper.outputSize;
+    exportCanvas.height = avatarCropper.outputSize;
+    const ctx = exportCanvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    const factor = outSize / avatarCropper.viewportSize;
+    // Dibujar exactamente con la misma función que la previsualización
+    drawAvatarToCanvas(ctx, avatarCropper.outputSize);
 
-    ctx.save();
-    ctx.translate(outSize / 2 + avatarCropper.x * factor, outSize / 2 + avatarCropper.y * factor);
-    ctx.rotate((avatarCropper.rotation * Math.PI) / 180);
-    ctx.scale(avatarCropper.scale * factor, avatarCropper.scale * factor);
-    ctx.drawImage(
-      avatarCropper.img,
-      -avatarCropper.img.naturalWidth / 2,
-      -avatarCropper.img.naturalHeight / 2
-    );
-    ctx.restore();
-
-    const base64 = canvas.toDataURL('image/jpeg', 0.92);
+    const base64 = exportCanvas.toDataURL('image/jpeg', 0.92);
 
     const res = await fetch('/api/v1/storage/upload', {
       method: 'POST',
