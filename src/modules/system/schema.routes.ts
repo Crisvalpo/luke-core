@@ -143,24 +143,24 @@ schemaRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
       if (['raw', 'staging', 'documents', 'quality', 'calidad'].includes(schema)) {
         return { status: 'OBSOLETO', label: 'Obsoleto / Legacy', badgeBg: '#f1f5f9', badgeColor: '#64748b' };
       }
-      if (schema === 'piping' && ['legacy_joint_list', 'isometrics', 'joints', 'lines', 'supports', 'valves', 'mto_items'].includes(tableName)) {
-        return { status: 'OBSOLETO', label: 'Tabla Legacy (Reemplazada por español)', badgeBg: '#fef3c7', badgeColor: '#b45309' };
+      if (schema === 'piping' && ['legacy_joint_list', 'lineas', 'juntas', 'isometricos', 'valvulas', 'soportes', 'mto'].includes(tableName)) {
+        return { status: 'OBSOLETO', label: 'Tabla Legacy Español (Reemplazada por Inglés)', badgeBg: '#fef3c7', badgeColor: '#b45309' };
       }
-      if (schema === 'core' && ['projects', 'personnel', 'equipment', 'vendors', 'project_personnel', 'personal_proyectos'].includes(tableName)) {
-        return { status: 'OBSOLETO', label: 'Tabla Legacy Ingesta (Reemplazada)', badgeBg: '#fef3c7', badgeColor: '#b45309' };
+      if (schema === 'core' && ['proyectos', 'personal', 'equipos', 'cuadrillas', 'personal_proyectos'].includes(tableName)) {
+        return { status: 'OBSOLETO', label: 'Tabla Legacy Español (Reemplazada por Inglés)', badgeBg: '#fef3c7', badgeColor: '#b45309' };
       }
 
-      // 2. Esquema Luke Core (Este Proyecto)
-      if (schema === 'core' || schema === 'piping' || (schema === 'public' && ['tenants', 'usuarios', 'roles', 'proyectos', 'personal', 'equipos', 'cuadrillas'].includes(tableName))) {
+      // 2. Esquema Luke Core (Este Proyecto - Tablas Inglés Normalizado)
+      if (schema === 'core' || schema === 'piping' || (schema === 'public' && ['tenants', 'users', 'roles', 'projects', 'personnel', 'equipment', 'crews'].includes(tableName))) {
         return { status: 'CORE', label: 'Luke Core (Activo)', badgeBg: '#ecfdf5', badgeColor: '#047857' };
       }
 
       // 3. Proyectos Externos
       if (schema === 'quiz' || (schema === 'public' && ['quizzes', 'questions', 'games', 'answers', 'players'].includes(tableName))) {
-        return { status: 'OTRO_PROYECTO', label: 'Proyecto Quiz (C:\Github\Quiz)', badgeBg: '#eff6ff', badgeColor: '#1d4ed8' };
+        return { status: 'OTRO_PROYECTO', label: 'Proyecto Quiz (C:\\Github\\Quiz)', badgeBg: '#eff6ff', badgeColor: '#1d4ed8' };
       }
       if (schema === 'ruleta') {
-        return { status: 'OTRO_PROYECTO', label: 'Proyecto Ruleta (C:\Github\Ruleta)', badgeBg: '#f5f3ff', badgeColor: '#6d28d9' };
+        return { status: 'OTRO_PROYECTO', label: 'Proyecto Ruleta (C:\\Github\\Ruleta)', badgeBg: '#f5f3ff', badgeColor: '#6d28d9' };
       }
       if (schema === 'subastas') {
         return { status: 'OTRO_PROYECTO', label: 'Proyecto Subastas (TikTok Live)', badgeBg: '#fff7ed', badgeColor: '#c2410c' };
@@ -169,7 +169,7 @@ schemaRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
         return { status: 'INFRA', label: 'Supabase Engine (Infraestructura)', badgeBg: '#f4f4f5', badgeColor: '#3f3f46' };
       }
 
-      return { status: 'CORE', label: 'Luke Core', badgeBg: '#ecfdf5', badgeColor: '#047857' };
+      return { status: 'CORE', label: 'Luke Core (Activo)', badgeBg: '#ecfdf5', badgeColor: '#047857' };
     };
 
     const getDomain = (schema: string, tableName: string) => {

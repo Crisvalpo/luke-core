@@ -19,4 +19,5 @@
 - Los contadores deben ser valores numéricos con precisión decimal (`NUMERIC(14, 2)`).
 
 ## 5. Idioma y Nomenclatura
-- Todos los nombres de tablas, columnas, endpoints, funciones, comentarios, mensajes de error y documentación deben estar en **español**.
+- Todos los comentarios, mensajes de error, documentaciones y endpoints API deben estar en **español**.
+- Todos los nombres de esquemas, tablas y columnas de base de datos PostgreSQL deben estar estrictamente en **inglés normalizado (snake_case)** (ejemplo: `core.projects`, `core.personnel`, `core.crews`, `piping.lines`, `piping.spools`, `piping.joints`, `piping.isometrics`).

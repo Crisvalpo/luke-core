@@ -102,7 +102,7 @@ export class ProyectosService {
     try {
       await client.query('BEGIN');
       const duplicado = await client.query(
-        'SELECT id FROM core.proyectos WHERE tenant_id = $1 AND codigo = $2',
+        'SELECT id FROM core.projects WHERE tenant_id = $1 AND code = $2',
         [tenantId, input.codigo]
       );
       if (duplicado.rows.length > 0) {
@@ -110,8 +110,8 @@ export class ProyectosService {
       }
 
       const proyectoRes = await client.query(`
-        INSERT INTO core.proyectos (tenant_id, codigo, nombre, centro_costo, ubicacion, estado, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+        INSERT INTO core.projects (tenant_id, code, name, cost_center, location, status, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, tenant_id, code AS codigo, name AS nombre, cost_center AS centro_costo, location AS ubicacion, status AS estado, metadata, is_active AS activo, created_at, updated_at;
       `, [tenantId, input.codigo, input.nombre, input.centro_costo || null, input.ubicacion || null, input.estado, JSON.stringify(input.metadata)]);
       const proyecto = proyectoRes.rows[0];
 
@@ -135,7 +135,7 @@ export class ProyectosService {
 
       await client.query(`
         INSERT INTO core.audit_logs (tenant_id, tabla, registro_id, accion, payload_nuevo, ejecutado_por)
-        VALUES ($1, 'core.proyectos', $2, 'INSERT', $3, $4)
+        VALUES ($1, 'core.projects', $2, 'INSERT', $3, $4)
       `, [tenantId, proyecto.id, JSON.stringify(proyecto), creadorUserId || 'api']);
 
       await client.query('COMMIT');
