@@ -28,3 +28,8 @@
 ## 4. Reutilización y Cero Estilos Inline
 - Usar siempre las clases y variables CSS definidas en `src/shared/styles/design-tokens.css` (`.core-card`, `.core-btn`, `.core-input`, `.core-table`, `.core-badge`, etc.).
 - Prohibido concatenar estilos inline repetitivos.
+
+## 5. Prohibición Estricta de Emojis y Uso Obligatorio de Iconos Silueta SVG
+- **Prohibición Total de Emojis**: NUNCA usar emojis coloridos (`👥`, `📊`, `➕`, `📱`, `🤖`, `🎉`, `📧`, `⚠️`, `🔗`, `🗑️`, `🔒`, `🟢`, `🔴`, `🔩`, `🚜`, `✏️`, `⚡`, `👑`, `🛡️`, `👷`) en títulos, botones, modales, tablas, menús ni opciones de selección.
+- **Estilo Siluetas SVG Outline**: Usar estrictamente iconos vectoriales SVG estilo silueta/outline (`fill="none" stroke="currentColor" stroke-width="1.75"` o `2`), alineados con el diseño minimalista de la barra de navegación lateral (estilo Supabase).
+- **Alineación Visual**: Todos los iconos dentro de botones o encabezados deben tener un tamaño consistente (`14px` a `20px`) y usar `display: inline-flex; align-items: center; gap: 0.4rem;`.

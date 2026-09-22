@@ -74,7 +74,7 @@ function renderTabContenido() {
 function renderOrganigrama(cont) {
   let html = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h4 style="margin:0; font-size:1rem; font-weight:700;">👷 Organigrama de Cuadrillas por Especialidad</h4>
+      <h4 style="margin:0; font-size:1rem; font-weight:700;">Organigrama de Cuadrillas por Especialidad</h4>
     </div>
   `;
 

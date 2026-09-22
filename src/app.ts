@@ -22,6 +22,7 @@ import { pipingRouter } from './modules/piping/piping.routes.js';
 import { whatsappRouter } from './modules/whatsapp/whatsapp.routes.js';
 import { mirrorRouter } from './modules/mirror/mirror.routes.js';
 import cuadrillasRouter from './modules/cuadrillas/cuadrillas.routes.js';
+import { schemaRouter } from './modules/system/schema.routes.js';
 
 export const app = express();
 

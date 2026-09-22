@@ -10,14 +10,14 @@ let visorState = {
 };
 
 const TAB_CONFIG = {
-  pid: { titulo: 'P&IDs', icono: '📑', colHeaders: ['Código P&ID', 'Título del Plano', 'Rev', 'Estado', 'Archivo PDF', 'Responsable'] },
-  lineas: { titulo: 'Líneas de Piping', icono: '📏', colHeaders: ['Tag Línea', 'NPS', 'Servicio', 'Clase', 'Material', 'P&ID Ref', 'Longitud (m)', 'Presión (bar)', 'Estado'] },
-  isometricos: { titulo: 'Isométricos', icono: '📐', colHeaders: ['Código Isométrico', 'Hoja', 'Línea Padre', 'Rev', 'Plano Cliente', 'Estado Spooleado', 'Estado'] },
-  spools: { titulo: 'Spools', icono: '🔩', colHeaders: ['Código Spool', 'Isométrico', 'Tipo', 'Peso (kg)', 'Longitud (m)', 'Ubicación Actual', 'Etapa', 'Estado'] },
-  'lista-juntas': { titulo: 'Juntas / Soldaduras', icono: '⚡', colHeaders: ['ID Junta', 'Isométrico', 'Spool', 'Tipo (BW/FW)', 'NPS', 'Clase', 'Material', 'Estado Soldadura'] },
-  valvulas: { titulo: 'Válvulas', icono: '🚰', colHeaders: ['Tag Válvula', 'Línea', 'NPS', 'Clase', 'Descripción', 'Estado Montaje'] },
-  soportes: { titulo: 'Soportes', icono: '🗜️', colHeaders: ['Tag Soporte', 'Línea', 'Isométrico', 'Tipo Soporte', 'NPS', 'Alcance', 'Estado Fabricación'] },
-  mto: { titulo: 'MTO / Cubicaciones', icono: '📦', colHeaders: ['Código Material', 'Descripción', 'Línea / Iso', 'NPS', 'Cantidad', 'Unidad', 'Bodega', 'Estado'] }
+  pid: { titulo: 'P&IDs', icono: '', colHeaders: ['Código P&ID', 'Título del Plano', 'Rev', 'Estado', 'Archivo PDF', 'Responsable'] },
+  lineas: { titulo: 'Líneas de Piping', icono: '', colHeaders: ['Tag Línea', 'NPS', 'Servicio', 'Clase', 'Material', 'P&ID Ref', 'Longitud (m)', 'Presión (bar)', 'Estado'] },
+  isometricos: { titulo: 'Isométricos', icono: '', colHeaders: ['Código Isométrico', 'Hoja', 'Línea Padre', 'Rev', 'Plano Cliente', 'Estado Spooleado', 'Estado'] },
+  spools: { titulo: 'Spools', icono: '', colHeaders: ['Código Spool', 'Isométrico', 'Tipo', 'Peso (kg)', 'Longitud (m)', 'Ubicación Actual', 'Etapa', 'Estado'] },
+  'lista-juntas': { titulo: 'Juntas / Soldaduras', icono: '', colHeaders: ['ID Junta', 'Isométrico', 'Spool', 'Tipo (BW/FW)', 'NPS', 'Clase', 'Material', 'Estado Soldadura'] },
+  valvulas: { titulo: 'Válvulas', icono: '', colHeaders: ['Tag Válvula', 'Línea', 'NPS', 'Clase', 'Descripción', 'Estado Montaje'] },
+  soportes: { titulo: 'Soportes', icono: '', colHeaders: ['Tag Soporte', 'Línea', 'Isométrico', 'Tipo Soporte', 'NPS', 'Alcance', 'Estado Fabricación'] },
+  mto: { titulo: 'MTO / Cubicaciones', icono: '', colHeaders: ['Código Material', 'Descripción', 'Línea / Iso', 'NPS', 'Cantidad', 'Unidad', 'Bodega', 'Estado'] }
 };
 
 function abrirVisorPiping(proyectoId, codigo, nombre) {

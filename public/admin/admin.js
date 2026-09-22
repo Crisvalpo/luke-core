@@ -1,6 +1,16 @@
 // Estado Global de la Vista Admin
 let todosLosTenants = [];
 
+// Iconos SVG Siluetas Globales (Estilo Outline Supabase)
+const SVG_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+const SVG_USERS = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+const SVG_EXCEL = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
+const SVG_FOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+const SVG_TRASH = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+const SVG_PLUS = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const SVG_LINK = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+const SVG_BUILDING = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>`;
+
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacion();
   cargarTenants();
@@ -291,10 +301,7 @@ function renderizarTenants(tenants) {
     return;
   }
 
-  const SVG_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
-  const SVG_USERS = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-  const SVG_EXCEL = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
-  const SVG_FOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 3px;"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+
 
   let htmlRows = tenants.map(t => {
     const colorPrimario = t.config?.color_primario || '#10b981';
@@ -1586,10 +1593,12 @@ function navegarASeccion(seccion) {
   seccionActual = seccion;
   const tenantsGrid = document.getElementById('tenants-container');
   const dotacionSec = document.getElementById('dotacion-container');
+  const schemaSec = document.getElementById('schema-container');
   const visorSec = document.getElementById('visor-piping-container');
   const visorCuadrillasSec = document.getElementById('visor-cuadrillas-container');
   const navTenants = document.getElementById('nav-link-tenants');
   const navDotacion = document.getElementById('nav-link-dotacion');
+  const navSchema = document.getElementById('nav-link-schema');
   const topbarTitulo = document.getElementById('topbar-titulo');
   const btnNuevo = document.getElementById('btn-nuevo-cliente');
 
@@ -1600,21 +1609,35 @@ function navegarASeccion(seccion) {
 
   if (seccion === 'dotacion') {
     if (tenantsGrid) tenantsGrid.style.display = 'none';
+    if (schemaSec) schemaSec.style.display = 'none';
     if (dotacionSec) dotacionSec.style.display = 'block';
     if (navTenants) navTenants.classList.remove('active');
+    if (navSchema) navSchema.classList.remove('active');
     if (navDotacion) navDotacion.classList.add('active');
     if (topbarTitulo) topbarTitulo.innerText = `Dotación de Personal — ${nombreEmpresa}`;
     if (btnNuevo && user?.rol !== 'super_admin') {
-      btnNuevo.innerText = '➕ Invitar Personal';
+      btnNuevo.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg> Invitar Personal`;
       btnNuevo.onclick = () => abrirModalInvitarAdminDirecto();
       btnNuevo.style.display = 'inline-flex';
     }
     cargarDotacionEmpresa(tenantSeleccionadoDotacion?.id);
+  } else if (seccion === 'schema') {
+    if (tenantsGrid) tenantsGrid.style.display = 'none';
+    if (dotacionSec) dotacionSec.style.display = 'none';
+    if (schemaSec) schemaSec.style.display = 'block';
+    if (navTenants) navTenants.classList.remove('active');
+    if (navDotacion) navDotacion.classList.remove('active');
+    if (navSchema) navSchema.classList.add('active');
+    if (topbarTitulo) topbarTitulo.innerText = 'Mapa del Mundo DB — Esquema de Tablas Luke Core';
+    if (btnNuevo) btnNuevo.style.display = 'none';
+    cargarMapaMundoDB();
   } else {
     if (tenantsGrid) tenantsGrid.style.display = 'grid';
     if (dotacionSec) dotacionSec.style.display = 'none';
+    if (schemaSec) schemaSec.style.display = 'none';
     if (navTenants) navTenants.classList.add('active');
     if (navDotacion) navDotacion.classList.remove('active');
+    if (navSchema) navSchema.classList.remove('active');
     if (topbarTitulo) {
       if (user?.rol === 'super_admin') {
         topbarTitulo.innerText = 'Gestión de Empresas';
@@ -1623,7 +1646,7 @@ function navegarASeccion(seccion) {
       }
     }
     if (btnNuevo && user?.rol !== 'super_admin') {
-      btnNuevo.innerText = '➕ Nuevo Proyecto';
+      btnNuevo.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Nuevo Proyecto`;
       btnNuevo.onclick = () => {
         const t = todosLosTenants[0] || {};
         abrirModalFaenas(t.id, t.slug, t.razon_social);
@@ -1648,7 +1671,10 @@ async function cargarDotacionEmpresa(tenantIdParam) {
 
   const tituloHeader = document.getElementById('dotacion-titulo-header');
   if (tituloHeader) {
-    tituloHeader.innerText = `👥 Dotación de Personal — ${razonSocialTenant}`;
+    tituloHeader.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Dotación de Personal — ${razonSocialTenant}</span>
+    `;
   }
 
   try {
@@ -1666,8 +1692,9 @@ async function cargarDotacionEmpresa(tenantIdParam) {
       container.innerHTML = `
         <div style="text-align: center; padding: 2.5rem; background: var(--bg-container); border: 1px dashed var(--border-container); border-radius: 8px; color: var(--color-text-muted);">
           No hay personal registrado en la dotación de esta empresa.<br><br>
-          <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem;">
-            ➕ Invitar al Primer Integrante
+          <button class="btn btn-primary" onclick="abrirModalInvitarAdminDirecto()" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+            Invitar al Primer Integrante
           </button>
         </div>
       `;
@@ -1678,7 +1705,7 @@ async function cargarDotacionEmpresa(tenantIdParam) {
     const grupos = {};
     personal.forEach(p => {
       const key = p.proyecto_codigo || p.proyecto_id || 'SIN_PROYECTO';
-      const nombreGrupo = p.proyecto_nombre ? `${p.proyecto_codigo} — ${p.proyecto_nombre}` : (p.proyecto_codigo || '🏢 Administración General (Sin Proyecto)');
+      const nombreGrupo = p.proyecto_nombre ? `${p.proyecto_codigo} — ${p.proyecto_nombre}` : (p.proyecto_codigo || 'Administración General (Sin Proyecto)');
       if (!grupos[key]) {
         grupos[key] = {
           codigo: p.proyecto_codigo || 'GENERAL',
@@ -1951,6 +1978,163 @@ async function solicitarCambioClavePerfil() {
   } catch (error) {
     alert(`❌ ${error.message}`);
   }
+}
+
+// =============================================================================
+// MAPA DEL MUNDO DB — EXPLORADOR VISUAL DE TABLAS Y RELACIONES POSTGRESQL
+// =============================================================================
+let dbSchemaState = {
+  tables: []
+};
+
+async function cargarMapaMundoDB() {
+  const container = document.getElementById('schema-world-map');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">Cargando esquema relacional de la base de datos...</div>';
+
+  try {
+    const res = await fetch('/api/v1/system/schema', {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error al obtener esquema');
+
+    dbSchemaState.tables = json.data?.tables || [];
+    renderizarMapaMundoDB('');
+  } catch (err) {
+    console.error('Error cargando esquema DB:', err);
+    container.innerHTML = `<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; padding: 1.5rem; border-radius: 8px; text-align: center;">No se pudo cargar el mapa de base de datos: ${err.message}</div>`;
+  }
+}
+
+function filtrarMapaMundoDB(query) {
+  renderizarMapaMundoDB(query);
+}
+
+function renderizarMapaMundoDB(queryParam = '') {
+  const container = document.getElementById('schema-world-map');
+  if (!container) return;
+
+  const q = (queryParam || '').toLowerCase().trim();
+  const tables = dbSchemaState.tables.filter(t => {
+    if (!q) return true;
+    const matchTableName = t.name.toLowerCase().includes(q);
+    const matchColName = t.columns.some(c => c.name.toLowerCase().includes(q));
+    const matchDomain = t.domain.toLowerCase().includes(q);
+    return matchTableName || matchColName || matchDomain;
+  });
+
+  if (tables.length === 0) {
+    container.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">No se encontraron tablas que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  // Agrupar por dominio funcional
+  const dominios = {};
+  tables.forEach(t => {
+    if (!dominios[t.domain]) dominios[t.domain] = [];
+    dominios[t.domain].push(t);
+  });
+
+  let html = '';
+  Object.keys(dominios).forEach(domainName => {
+    const tableList = dominios[domainName];
+    html += `
+      <div style="background: #f8fafc; border: 1px solid var(--border-container); border-radius: 10px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
+          <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 0.4rem;">
+            ${SVG_FOLDER} Región / Dominio: <span style="color: var(--color-primary);">${domainName}</span>
+          </h4>
+          <span style="font-size: 0.75rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 0.2rem 0.6rem; border-radius: 9999px; color: #475569; font-weight: 600;">
+            ${tableList.length} ${tableList.length === 1 ? 'Tabla' : 'Tablas'}
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          ${tableList.map(t => {
+            const pkCols = t.columns.filter(c => c.isPk).map(c => c.name).join(', ') || 'id';
+            return `
+              <div onclick="abrirModalTablaDetalle('${t.name}')" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--color-primary)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                  <div style="font-weight: 700; font-size: 0.9rem; color: #0f172a; font-family: monospace;">
+                    ${t.name}
+                  </div>
+                  <span style="font-size: 0.7rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">
+                    ${t.rowCount} filas
+                  </span>
+                </div>
+
+                <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.6rem;">
+                  🔑 PK: <code style="color: #0369a1;">${pkCols}</code> • ${t.columns.length} Cols
+                </div>
+
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                  ${t.relations.map(r => `
+                    <span style="font-size: 0.68rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 0.1rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;" title="Relación con ${r.foreignTable}">
+                      ${SVG_LINK} ${r.foreignTable}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function abrirModalTablaDetalle(tableName) {
+  const table = dbSchemaState.tables.find(t => t.name === tableName);
+  if (!table) return;
+
+  const titleEl = document.getElementById('tabla-modal-titulo');
+  const subEl = document.getElementById('tabla-modal-sub');
+  const bodyCols = document.getElementById('tabla-modal-body-cols');
+  const bodyRels = document.getElementById('tabla-modal-relaciones');
+
+  if (titleEl) titleEl.innerText = `Tabla: ${table.name}`;
+  if (subEl) subEl.innerText = `Esquema: ${table.schema} • ${table.rowCount} registros • Dominio: ${table.domain}`;
+
+  if (bodyCols) {
+    bodyCols.innerHTML = table.columns.map(c => `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 0.5rem 0.75rem; font-family: monospace; font-weight: 600; color: #0f172a;">${c.name}</td>
+        <td style="padding: 0.5rem 0.75rem; color: #0284c7; font-family: monospace;">${c.type}</td>
+        <td style="padding: 0.5rem 0.75rem; color: ${c.nullable ? '#64748b' : '#dc2626'};">${c.nullable ? 'SI' : 'NO'}</td>
+        <td style="padding: 0.5rem 0.75rem;">
+          ${c.isPk ? '<span style="background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">PRIMARY KEY</span>' : '—'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  if (bodyRels) {
+    if (table.relations && table.relations.length > 0) {
+      bodyRels.innerHTML = table.relations.map(r => `
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <strong style="color: #0369a1; font-family: monospace;">${table.name}.${r.column}</strong> → <span style="color: #0f172a; font-family: monospace; font-weight: 600;">${r.foreignTable}.${r.foreignColumn}</span>
+          </div>
+          <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.7rem;" onclick="abrirModalTablaDetalle('${r.foreignTable}')">
+            Ver ${r.foreignTable}
+          </button>
+        </div>
+      `).join('');
+    } else {
+      bodyRels.innerHTML = '<div style="color: #94a3b8; font-style: italic;">No tiene llaves foráneas salientes hacia otras tablas.</div>';
+    }
+  }
+
+  const modal = document.getElementById('modal-tabla-detalle');
+  if (modal) modal.classList.add('active');
+}
+
+function cerrarModalTablaDetalle() {
+  const modal = document.getElementById('modal-tabla-detalle');
+  if (modal) modal.classList.remove('active');
 }
 
 
