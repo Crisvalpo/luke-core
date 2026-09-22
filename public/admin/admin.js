@@ -80,8 +80,16 @@ function verificarAutenticacion() {
       const user = JSON.parse(userJson);
       aplicarEstiloSidebarPorRol(user);
 
-      // Si no es Super-Admin, adaptar la vista a su Entorno de Empresa
-      if (user.rol !== 'super_admin') {
+      const esStaff = user.rol === 'super_admin' || user.rol === 'staff';
+
+      // El Mapa del Mundo DB es exclusivo para el equipo Staff LukeAPP
+      const navSchema = document.getElementById('nav-link-schema');
+      if (navSchema) {
+        navSchema.style.display = esStaff ? 'flex' : 'none';
+      }
+
+      // Si no es Super-Admin / Staff, adaptar la vista a su Entorno de Empresa
+      if (!esStaff) {
         const btnNuevo = document.getElementById('btn-nuevo-cliente');
         if (btnNuevo) {
           if (user.rol === 'operario' || user.rol === 'admin_proyecto') {
@@ -1680,6 +1688,11 @@ function navegarASeccion(seccion) {
     }
     cargarDotacionEmpresa(tenantSeleccionadoDotacion?.id);
   } else if (seccion === 'schema') {
+    const esStaff = user?.rol === 'super_admin' || user?.rol === 'staff';
+    if (!esStaff) {
+      navegarASeccion('tenants');
+      return;
+    }
     if (tenantsGrid) tenantsGrid.style.display = 'none';
     if (dotacionSec) dotacionSec.style.display = 'none';
     if (schemaSec) schemaSec.style.display = 'block';
@@ -2299,6 +2312,19 @@ let dbSchemaState = {
 async function cargarMapaMundoDB() {
   const container = document.getElementById('schema-world-map');
   if (!container) return;
+
+  const userJson = localStorage.getItem('luke_core_user');
+  let esStaff = false;
+  try {
+    const u = JSON.parse(userJson || '{}');
+    esStaff = u.rol === 'super_admin' || u.rol === 'staff';
+  } catch {}
+
+  if (!esStaff) {
+    container.innerHTML = '<div style="background: #fee2e2; border: 1px solid #fca5a5; color: #c21a25; padding: 1.5rem; border-radius: 8px; text-align: center; font-weight: 500;">🚫 Acceso Restringido: El Mapa del Mundo DB es una herramienta de arquitectura reservada exclusivamente para el equipo Staff de LukeAPP.</div>';
+    return;
+  }
+
   container.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">Cargando esquema relacional de la base de datos...</div>';
 
   try {

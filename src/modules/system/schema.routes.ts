@@ -1,14 +1,16 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database.js';
 import { sendSuccess, sendError } from '../../shared/utils/response.js';
+import { requireAuth, requireSuperAdmin } from '../../shared/middlewares/authGuard.js';
 
 export const schemaRouter = Router();
 
 /**
  * GET /api/v1/system/schema
  * Auditoría dinámica y clasificación completa de todos los esquemas y tablas de la base de datos PostgreSQL
+ * Restringido exclusivamente para personal de Staff / Super-Admin
  */
-schemaRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
+schemaRouter.get('/', requireAuth, requireSuperAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // 1. Obtener todas las tablas de la base de datos
     const tablesResult = await query(`

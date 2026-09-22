@@ -44,11 +44,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 /**
- * Middleware para requerir rol super_admin
+ * Middleware para requerir rol super_admin o staff
  */
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.user || req.user.rol !== 'super_admin') {
-    return sendError(res, 'Permiso denegado: Esta acción requiere privilegios de Super-Administrador', 403);
+  if (!req.user || (req.user.rol !== 'super_admin' && req.user.rol !== 'staff')) {
+    return sendError(res, 'Permiso denegado: Esta acción requiere privilegios de Staff o Super-Administrador', 403);
   }
   next();
 }
