@@ -2057,19 +2057,30 @@ function renderizarMapaMundoDB(queryParam = '') {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
           ${tableList.map(t => {
             const pkCols = t.columns.filter(c => c.isPk).map(c => c.name).join(', ') || 'id';
+            const classif = t.classification || { label: 'Luke Core', badgeBg: '#ecfdf5', badgeColor: '#047857' };
             return `
               <div onclick="abrirModalTablaDetalle('${t.name}')" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" onmouseover="this.style.borderColor='var(--color-primary)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.transform='none'">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                  <div style="font-weight: 700; font-size: 0.9rem; color: #0f172a; font-family: monospace;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem; gap: 0.5rem;">
+                  <div style="font-weight: 700; font-size: 0.88rem; color: #0f172a; font-family: monospace;">
                     ${t.name}
                   </div>
-                  <span style="font-size: 0.7rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">
+                  <span style="font-size: 0.7rem; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600; white-space: nowrap;">
                     ${t.rowCount} filas
                   </span>
                 </div>
 
+                <div style="margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.68rem; background: ${classif.badgeBg}; color: ${classif.badgeColor}; border: 1px solid ${classif.badgeColor}40; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600; display: inline-block;">
+                    ${classif.label}
+                  </span>
+                </div>
+
+                <div style="font-size: 0.78rem; color: #475569; margin-bottom: 0.6rem; line-height: 1.35; background: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #f1f5f9;">
+                  ${t.description || 'Entidad de datos del sistema.'}
+                </div>
+
                 <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.6rem;">
-                  🔑 PK: <code style="color: #0369a1;">${pkCols}</code> • ${t.columns.length} Cols
+                  PK: <code style="color: #0369a1;">${pkCols}</code> • ${t.columns.length} Cols
                 </div>
 
                 <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
